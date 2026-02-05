@@ -15,7 +15,7 @@ USE community_canteen;
 -- ================================
 
 -- 用户表
-CREATE TABLE user (
+CREATE TABLE users (
     user_id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL,
     password VARCHAR(100) NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE user_role (
     user_id INT,
     role_id INT,
     PRIMARY KEY (user_id, role_id),
-    FOREIGN KEY (user_id) REFERENCES user(user_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (role_id) REFERENCES role(role_id)
 );
 
@@ -192,7 +192,7 @@ INSERT INTO role VALUES
 (6,'用餐者');
 
 -- 默认管理员用户
-INSERT INTO user(username,password,phone)
+INSERT INTO users(username,password,phone)
 VALUES ('admin','123456','13800000000');
 
 -- 管理员角色绑定

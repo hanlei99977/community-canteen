@@ -79,6 +79,13 @@ bool UserService::registerUser(const std::string& username,
         // 1️⃣ 开启事务
         conn->setAutoCommit(false);
 
+        // 2️⃣ 校验用户名是否存在
+        if (isUsernameExists(username)) {
+            conn->rollback();
+            conn->setAutoCommit(true);
+            return false;
+        }
+
         // 2️⃣ 插入用户
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn->prepareStatement(
@@ -128,3 +135,29 @@ bool UserService::registerUser(const std::string& username,
         return false;
     }
 }
+
+bool UserService::isUsernameExists(const std::string& username) {
+    try {
+        Database& db = Database::getInstance();
+        sql::Connection* conn = db.getConnection();
+
+        std::unique_ptr<sql::PreparedStatement> pstmt(
+            conn->prepareStatement(
+                "SELECT 1 FROM users WHERE username = ? LIMIT 1"
+            )
+        );
+
+        pstmt->setString(1, username);
+
+        std::unique_ptr<sql::ResultSet> res(
+            pstmt->executeQuery()
+        );
+
+        return res->next(); // 查到即存在
+    }
+    catch (sql::SQLException& e) {
+        std::cerr << "[Check Username Error] " << e.what() << std::endl;
+        return true; // 出异常时保守处理，认为存在
+    }
+}
+

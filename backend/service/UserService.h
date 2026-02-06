@@ -14,6 +14,9 @@ public:
     bool registerUser(const std::string& username,
                       const std::string& password,
                       const std::string& phone);
+
+    // 用户名是否存在
+    bool isUsernameExists(const std::string& username);
 };
 
 #endif

@@ -4,7 +4,8 @@
 -- ================================
 
 -- 创建数据库
-CREATE DATABASE IF NOT EXISTS community_canteen
+DROP DATABASE IF EXISTS community_canteen;
+CREATE DATABASE community_canteen
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_general_ci;
 
@@ -50,7 +51,7 @@ CREATE TABLE admin_region (
     admin_id INT,
     level VARCHAR(20),
     region_name VARCHAR(50),
-    FOREIGN KEY (admin_id) REFERENCES user(user_id)
+    FOREIGN KEY (admin_id) REFERENCES users(user_id)
 );
 
 -- 公告表
@@ -60,7 +61,7 @@ CREATE TABLE announcement (
     content TEXT,
     publish_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     publisher_id INT,
-    FOREIGN KEY (publisher_id) REFERENCES user(user_id)
+    FOREIGN KEY (publisher_id) REFERENCES users(user_id)
 );
 
 -- ================================
@@ -76,7 +77,7 @@ CREATE TABLE canteen (
     community VARCHAR(50),
     manager_id INT,
     status INT DEFAULT 1,
-    FOREIGN KEY (manager_id) REFERENCES user(user_id)
+    FOREIGN KEY (manager_id) REFERENCES users(user_id)
 );
 
 -- 食堂工作人员表
@@ -135,7 +136,7 @@ CREATE TABLE orders (
     total_price DECIMAL(6,2),
     order_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(20),
-    FOREIGN KEY (user_id) REFERENCES user(user_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
 );
 
@@ -161,7 +162,7 @@ CREATE TABLE rating (
     comment VARCHAR(200),
     time DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, canteen_id),
-    FOREIGN KEY (user_id) REFERENCES user(user_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
 );
 
@@ -178,26 +179,3 @@ CREATE TABLE ingredient_purchase (
     FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
 );
 
--- ================================
--- 8. 初始数据
--- ================================
-
--- 角色初始化
-INSERT INTO role VALUES
-(1,'系统管理员'),
-(2,'市级管理员'),
-(3,'区级管理员'),
-(4,'食堂管理员'),
-(5,'社区监督者'),
-(6,'用餐者');
-
--- 默认管理员用户
-INSERT INTO users(username,password,phone)
-VALUES ('admin','123456','13800000000');
-
--- 管理员角色绑定
-INSERT INTO user_role VALUES (1,1);
-
--- 示例社区食堂
-INSERT INTO canteen(code,name,address,community,manager_id)
-VALUES ('CT001','幸福社区食堂','幸福路1号','幸福社区',1);

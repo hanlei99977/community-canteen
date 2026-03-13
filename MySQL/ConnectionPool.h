@@ -1,0 +1,41 @@
+#ifndef CONNECTION_POOL_H
+#define CONNECTION_POOL_H
+
+#include <mysql_driver.h>
+#include <mysql_connection.h>
+
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <memory>
+
+class ConnectionPool {
+public:
+
+    static ConnectionPool& getInstance();
+
+    sql::Connection* getConnection();
+
+    void releaseConnection(sql::Connection* conn);
+
+private:
+
+    ConnectionPool();
+
+    void initPool(int size);
+
+private:
+
+    std::queue<sql::Connection*> pool;
+
+    std::mutex mtx;
+
+    std::condition_variable cv;
+
+    sql::mysql::MySQL_Driver* driver;
+
+    int maxSize;
+
+};
+
+#endif

@@ -1,14 +1,18 @@
 #include "UserService.h"
 #include "../model/Role.h"
 #include <cppconn/prepared_statement.h>
-#include "../../MySQL/Database.h"
+#include "../../MySQL/ConnectionPool.h"
 
-bool UserService::login(const std::string& username,
-                        const std::string& password,
-                        User& user) {
+bool UserService::login
+(
+const std::string& username,
+const std::string& password,
+User& user
+) 
+{
+    auto* conn = ConnectionPool::getInstance().getConnection();
     try {
-        Database& db = Database::getInstance();
-        sql::Connection* conn = db.getConnection();
+       
 
         // 1️⃣ 校验用户名 + 密码
         std::unique_ptr<sql::PreparedStatement> pstmt(
@@ -60,21 +64,24 @@ bool UserService::login(const std::string& username,
             int roleId = roleRes->getInt("role_id");
             user.roles.push_back(roleFromId(roleId));
         }
-
+        ConnectionPool::getInstance().releaseConnection(conn);
         return true;
     }
     catch (sql::SQLException& e) {
         std::cerr << "[Login Error] " << e.what() << std::endl;
+        ConnectionPool::getInstance().releaseConnection(conn);
         return false;
     }
 }
 
 bool UserService::registerUser(const std::string& username,
                                const std::string& password,
-                               const std::string& phone) {
-    try {
-        Database& db = Database::getInstance();
-        sql::Connection* conn = db.getConnection();
+                               const std::string& phone) 
+{
+    auto* conn = ConnectionPool::getInstance().getConnection();
+    try 
+    {
+        
 
         // 1️⃣ 开启事务
         conn->setAutoCommit(false);
@@ -121,26 +128,26 @@ bool UserService::registerUser(const std::string& username,
         // 5️⃣ 提交事务
         conn->commit();
         conn->setAutoCommit(true);
-
+        ConnectionPool::getInstance().releaseConnection(conn);
         return true;
     }
     catch (sql::SQLException& e) {
         std::cerr << "[Register Error] " << e.what() << std::endl;
 
         try {
-            Database::getInstance().getConnection()->rollback();
-            Database::getInstance().getConnection()->setAutoCommit(true);
+            ConnectionPool::getInstance().getConnection()->rollback();
+            ConnectionPool::getInstance().getConnection()->setAutoCommit(true);
         } catch (...) {}
-
+        ConnectionPool::getInstance().releaseConnection(conn);
         return false;
     }
 }
 
-bool UserService::isUsernameExists(const std::string& username) {
-    try {
-        Database& db = Database::getInstance();
-        sql::Connection* conn = db.getConnection();
-
+bool UserService::isUsernameExists(const std::string& username) 
+{
+    auto* conn = ConnectionPool::getInstance().getConnection();
+    try 
+    {
         std::unique_ptr<sql::PreparedStatement> pstmt(
             conn->prepareStatement(
                 "SELECT 1 FROM users WHERE username = ? LIMIT 1"
@@ -152,11 +159,12 @@ bool UserService::isUsernameExists(const std::string& username) {
         std::unique_ptr<sql::ResultSet> res(
             pstmt->executeQuery()
         );
-
+        ConnectionPool::getInstance().releaseConnection(conn);
         return res->next(); // 查到即存在
     }
     catch (sql::SQLException& e) {
         std::cerr << "[Check Username Error] " << e.what() << std::endl;
+        ConnectionPool::getInstance().releaseConnection(conn);
         return true; // 出异常时保守处理，认为存在
     }
 }

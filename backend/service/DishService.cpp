@@ -3,13 +3,15 @@
 #include <cppconn/resultset.h>
 #include <memory>
 #include <iostream>
-#include "../../MySQL/Database.h"
+#include "../../MySQL/ConnectionPool.h"
 
 using namespace std;
 
-bool DishService::addDish(const Dish& dish) {
-    try {
-        auto* conn = Database::getInstance().getConnection();
+bool DishService::addDish(const Dish& dish) 
+{
+    auto* conn = ConnectionPool::getInstance().getConnection();
+    try 
+    {
         unique_ptr<sql::PreparedStatement> pstmt(
             conn->prepareStatement(
                 "INSERT INTO dish(canteen_id, name, type, price, calories, nutrition_info) "
@@ -23,16 +25,20 @@ bool DishService::addDish(const Dish& dish) {
         pstmt->setInt(5, dish.calories);
         pstmt->setString(6, dish.nutritionInfo);
         pstmt->executeUpdate();
+        ConnectionPool::getInstance().releaseConnection(conn);
         return true;
     } catch (sql::SQLException& e) {
         cerr << "[Add Dish Error] " << e.what() << endl;
+        ConnectionPool::getInstance().releaseConnection(conn);
         return false;
     }
 }
 
-bool DishService::updateDish(const Dish& dish) {
+bool DishService::updateDish(const Dish& dish) 
+{
+    auto* conn = ConnectionPool::getInstance().getConnection();
     try {
-        auto* conn = Database::getInstance().getConnection();
+        
         unique_ptr<sql::PreparedStatement> pstmt(
             conn->prepareStatement(
                 "UPDATE dish SET name=?, type=?, price=?, calories=?, nutrition_info=? "
@@ -45,33 +51,40 @@ bool DishService::updateDish(const Dish& dish) {
         pstmt->setInt(4, dish.calories);
         pstmt->setString(5, dish.nutritionInfo);
         pstmt->setInt(6, dish.dishId);
+        ConnectionPool::getInstance().releaseConnection(conn);
         return pstmt->executeUpdate() > 0;
     } catch (sql::SQLException& e) {
         cerr << "[Update Dish Error] " << e.what() << endl;
+        ConnectionPool::getInstance().releaseConnection(conn);
         return false;
     }
 }
 
-bool DishService::deleteDish(int dishId) {
+bool DishService::deleteDish(int dishId) 
+{
+     auto* conn = ConnectionPool::getInstance().getConnection();
     try {
-        auto* conn = Database::getInstance().getConnection();
+       
         unique_ptr<sql::PreparedStatement> pstmt(
             conn->prepareStatement(
                 "DELETE FROM dish WHERE dish_id=?"
             )
         );
         pstmt->setInt(1, dishId);
+        ConnectionPool::getInstance().releaseConnection(conn);
         return pstmt->executeUpdate() > 0;
     } catch (sql::SQLException& e) {
         cerr << "[Delete Dish Error] " << e.what() << endl;
+        ConnectionPool::getInstance().releaseConnection(conn);
         return false;
     }
 }
 
 vector<Dish> DishService::listDishesByCanteen(int canteenId) {
     vector<Dish> list;
+    auto* conn = ConnectionPool::getInstance().getConnection();
     try {
-        auto* conn = Database::getInstance().getConnection();
+       
         unique_ptr<sql::PreparedStatement> pstmt(
             conn->prepareStatement(
                 "SELECT * FROM dish WHERE canteen_id=?"
@@ -94,5 +107,7 @@ vector<Dish> DishService::listDishesByCanteen(int canteenId) {
     } catch (sql::SQLException& e) {
         cerr << "[List Dish Error] " << e.what() << endl;
     }
+    
+    ConnectionPool::getInstance().releaseConnection(conn);
     return list;
 }

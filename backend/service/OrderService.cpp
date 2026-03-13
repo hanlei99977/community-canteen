@@ -3,36 +3,43 @@
 #include <cppconn/resultset.h>
 #include <memory>
 #include <iostream>
-#include "../../MySQL/Database.h"
+#include "../../MySQL/ConnectionPool.h"
 
 using namespace std;
 
-bool OrderService::createOrder(int userId,
-                               int canteenId,
-                               const vector<OrderItem>& items) {
-    auto* conn = Database::getInstance().getConnection();
+bool OrderService::createOrder(
+int userId,
+int canteenId,
+const vector<OrderItem>& items
+)
+{
+    auto* conn = ConnectionPool::getInstance().getConnection();
 
-    try {
+    try 
+    {
         conn->setAutoCommit(false);
 
         // 1️⃣ 计算总价
         double total = 0.0;
-        for (auto& item : items) {
-            unique_ptr<sql::PreparedStatement> pstmt(
-                conn->prepareStatement(
-                    "SELECT price FROM dish WHERE dish_id=?"
-                )
+        for (auto& item : items) 
+        {
+            unique_ptr<sql::PreparedStatement> pstmt
+            (
+                conn->prepareStatement("SELECT price FROM dish WHERE dish_id=?")
             );
             pstmt->setInt(1, item.dishId);
             auto res = unique_ptr<sql::ResultSet>(pstmt->executeQuery());
-            if (res->next()) {
+            if (res->next()) 
+            {
                 total += res->getDouble("price") * item.quantity;
             }
         }
 
         // 2️⃣ 插入订单
-        unique_ptr<sql::PreparedStatement> pstmtOrder(
-            conn->prepareStatement(
+        unique_ptr<sql::PreparedStatement> pstmtOrder
+        (
+            conn->prepareStatement
+            (
                 "INSERT INTO orders(user_id, canteen_id, total_price, status) "
                 "VALUES (?, ?, ?, '已下单')"
             )
@@ -44,19 +51,21 @@ bool OrderService::createOrder(int userId,
 
         // 3️⃣ 获取 order_id
         unique_ptr<sql::Statement> stmt(conn->createStatement());
-        auto resId = unique_ptr<sql::ResultSet>(
-            stmt->executeQuery("SELECT LAST_INSERT_ID()")
-        );
+        auto resId = unique_ptr<sql::ResultSet>(stmt->executeQuery("SELECT LAST_INSERT_ID()"));
 
         int orderId = 0;
-        if (resId->next()) {
+        if (resId->next()) 
+        {
             orderId = resId->getInt(1);
         }
 
         // 4️⃣ 插入订单明细
-        for (auto& item : items) {
-            unique_ptr<sql::PreparedStatement> pstmtItem(
-                conn->prepareStatement(
+        for (auto& item : items) 
+        {
+            unique_ptr<sql::PreparedStatement> pstmtItem
+            (
+                conn->prepareStatement
+                (
                     "INSERT INTO order_item(order_id, dish_id, quantity) "
                     "VALUES (?, ?, ?)"
                 )
@@ -69,29 +78,34 @@ bool OrderService::createOrder(int userId,
 
         conn->commit();
         conn->setAutoCommit(true);
+
+        ConnectionPool::getInstance().releaseConnection(conn);
         return true;
     }
-    catch (sql::SQLException& e) {
+    catch (sql::SQLException& e) 
+    {
         cerr << "[Create Order Error] " << e.what() << endl;
         conn->rollback();
         conn->setAutoCommit(true);
+
+        ConnectionPool::getInstance().releaseConnection(conn);
         return false;
     }
 }
 
 vector<Order> OrderService::listOrdersByUser(int userId) {
-    vector<Order> list;
-    try {
-        auto* conn = Database::getInstance().getConnection();
-        unique_ptr<sql::PreparedStatement> pstmt(
-            conn->prepareStatement(
-                "SELECT * FROM orders WHERE user_id=?"
-            )
+    vector<Order> list; 
+    auto* conn = ConnectionPool::getInstance().getConnection();
+    try 
+    {
+            unique_ptr<sql::PreparedStatement> pstmt(
+            conn->prepareStatement("SELECT * FROM orders WHERE user_id=?")
         );
         pstmt->setInt(1, userId);
 
         auto res = unique_ptr<sql::ResultSet>(pstmt->executeQuery());
-        while (res->next()) {
+        while (res->next()) 
+        {
             Order o;
             o.orderId = res->getInt("order_id");
             o.userId = res->getInt("user_id");
@@ -101,8 +115,10 @@ vector<Order> OrderService::listOrdersByUser(int userId) {
             o.status = res->getString("status");
             list.push_back(o);
         }
-    } catch (sql::SQLException& e) {
+    } catch (sql::SQLException& e) 
+    {
         cerr << "[List Order Error] " << e.what() << endl;
     }
+    ConnectionPool::getInstance().releaseConnection(conn);
     return list;
 }

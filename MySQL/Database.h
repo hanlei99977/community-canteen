@@ -12,38 +12,14 @@
 
 class Database {
 public:
-    // 获取单例
-    static Database& getInstance();
 
-    // 获取数据库连接
-    sql::Connection* getConnection();
+    static sql::mysql::MySQL_Driver* getDriver();//获取 MySQL 驱动实例
 
     // SELECT 查询
-    sql::ResultSet* query(const std::string& sql);
+    static sql::ResultSet* query(sql::Connection* conn, const std::string& sql);
 
     // INSERT / UPDATE / DELETE
-    int update(const std::string& sql);
-
-    // 禁止拷贝
-    Database(const Database&) = delete;
-    Database& operator=(const Database&) = delete;
-
-private:
-    // 私有构造（只允许 getInstance 调用）
-    Database(
-        const std::string& host,
-        const std::string& user,
-        const std::string& password,
-        const std::string& database
-    );
-
-    ~Database();
-
-private:
-    static Database* instance;
-
-    sql::mysql::MySQL_Driver* driver;
-    sql::Connection* conn;
+    static int update(sql::Connection* conn, const std::string& sql);
 };
 
 #endif

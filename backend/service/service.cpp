@@ -1,0 +1,119 @@
+#include "service.h"
+
+/**********************************************
+ * UserService
+ *********************************************/
+bool UserService::registerUser(const User& user) {
+    UserDAO dao;
+
+    // 简单校验（可以扩展）
+    if (user.getUsername().empty() || user.getPassword().empty()) {
+        return false;
+    }
+
+    return dao.insertUser(user);
+}
+
+std::shared_ptr<User> UserService::login(
+    const std::string& username,
+    const std::string& password
+) {
+    UserDAO dao;
+    return dao.getUserByUsernameAndPassword(username, password);
+}
+
+/**********************************************
+ * CanteenService
+ *********************************************/
+std::vector<Canteen> CanteenService::getAllCanteens() {
+    CanteenDAO dao;
+    return dao.getAllCanteens();
+}
+
+std::shared_ptr<Canteen> CanteenService::getCanteenById(int id) {
+    CanteenDAO dao;
+    return dao.getCanteenById(id);
+}
+
+/**********************************************
+ * MenuService
+ *********************************************/
+std::vector<Dish> MenuService::getTodayMenu(int canteen_id, const std::string& date) {
+    MenuDAO dao;
+    return dao.getMenuByDate(canteen_id, date);
+}
+
+/**********************************************
+ * OrderService
+ *********************************************/
+bool OrderService::placeOrder(int user_id,
+                              int canteen_id,
+                              const std::vector<OrderItem>& items) {
+
+    // ⭐ 并发保护（简单版）
+    std::lock_guard<std::mutex> lock(orderMutex);
+
+    if (items.empty()) return false;
+
+    DishDAO dishDAO;
+    OrderDAO orderDAO;
+
+    double total = 0.0;
+
+    // 1️⃣ 计算总价（业务逻辑）
+    for (const auto& item : items) {
+        auto dishes = dishDAO.getDishesByCanteen(canteen_id);
+
+        for (const auto& d : dishes) {
+            if (d.getId() == item.getDishId()) {
+                total += d.getPrice() * item.getQuantity();
+            }
+        }
+    }
+
+    // 2️⃣ 构造订单
+    Order order;
+    order.setUserId(user_id);
+    order.setOrderForUserId(user_id);
+    order.setCanteenId(canteen_id);
+    order.setTotalPrice(total);
+    order.setStatus("pending");
+
+    // 3️⃣ 创建订单（事务）
+    return orderDAO.createOrder(order, items);
+}
+
+/**********************************************
+ * RatingService
+ *********************************************/
+bool RatingService::submitRating(const Rating& rating) {
+    RatingDAO dao;
+
+    // 校验评分
+    if (rating.getScore() < 1 || rating.getScore() > 5) {
+        return false;
+    }
+
+    return dao.insertRating(rating);
+}
+
+std::vector<Rating> RatingService::getRatings(int canteen_id) {
+    RatingDAO dao;
+    return dao.getRatingsByCanteen(canteen_id);
+}
+
+/**********************************************
+ * ReportService
+ *********************************************/
+bool ReportService::submitReport(const Report& report) {
+    ReportDAO dao;
+
+    if (report.getContent().empty()) return false;
+
+    return dao.insertReport(report);
+}
+
+std::vector<Report> ReportService::getReports(int canteen_id) {
+    ReportDAO dao;
+    return dao.getReportsByCanteen(canteen_id);
+}

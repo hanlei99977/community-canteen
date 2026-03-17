@@ -9,78 +9,97 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 START TRANSACTION;
 
--- ================================
--- 1 角色初始化
--- ================================
+-- ===============================
+-- 地区初始化
+-- ===============================
+INSERT INTO region(region_name,region_level,parent_id) VALUES
+('沈阳市','市级',NULL),
+('和平区','区级',1),
+('幸福社区','社区级',2),
+('和谐社区','社区级',2),
+('阳光社区','社区级',2);
 
-INSERT INTO role VALUES
+-- ===============================
+-- 管理员级别初始化
+-- ===============================
+INSERT INTO level(level_id,level_name) VALUES
 (1,'系统管理员'),
 (2,'市级管理员'),
 (3,'区级管理员'),
-(4,'食堂管理员'),
-(5,'用餐者');
+(4,'食堂管理员');
 
 -- ================================
--- 2 用户初始化
+-- 家庭初始化
 -- ================================
-
-INSERT INTO users(username,password,phone,address) VALUES
-('admin','123456','13800000000','市政府'),
-('city_admin','123456','13800000001','市民政局'),
-('district_admin','123456','13800000002','和平区民政局'),
-('canteen_admin','123456','13800000003','幸福社区'),
-
-('zhangsan','123456','13800000004','幸福社区'),
-('lisi','123456','13800000005','幸福社区'),
-('wangwu','123456','13800000006','和谐社区'),
-('zhaoliu','123456','13800000007','和谐社区'),
-('sunqi','123456','13800000008','阳光社区'),
-('zhouba','123456','13800000009','阳光社区');
+INSERT INTO family(family_name) VALUES
+('张三家庭'),
+('李四家庭'),
+('王五家庭');
 
 -- ================================
--- 3 用户角色
+-- 用户初始化
 -- ================================
-
-INSERT INTO user_role VALUES
-(1,1),
-(2,2),
-(3,3),
-(4,4),
-(5,5),
-(6,5),
-(7,5),
-(8,5),
-(9,5),
-(10,5);
-
--- ================================
--- 4 管理区域
--- ================================
-
-INSERT INTO admin_region VALUES
-(2,'市级','沈阳市'),
-(3,'区级','和平区');
+INSERT INTO users(username,age,password,phone,address) VALUES
+('admin',35,'admin123','13800000000','沈阳市'),
+('city_admin',40,'city123','13800000001','沈阳市'),
+('district_admin',38,'district123','13800000002','和平区'),
+('xingfu_canteen_manager',30,'canteen123','13800000003','幸福社区'),
+('hexie_canteen_manager',32,'canteen123','13800000004','和谐社区'),
+('yangguang_canteen_manager',28,'canteen123','13800000005','阳光社区'),
+('zhangsan',70,'zhangsan123','13800000004','幸福社区'),
+('zhangsan_father',75,'zhangsan_father123','13800000005','幸福社区'),
+('zhangsan_mother',68,'zhangsan_mother123','13800000006','幸福社区'),
+('lisi',65,'lisi123','13800000007','和谐社区'),
+('lisi_spouse',63,'lisi_spouse123','13800000008','和谐社区'),
+('lisi_father',90,'lisi_father123','13800000009','和谐社区'),
+('wangwu',80,'wangwu123','13800000010','阳光社区'),
+('wangwu_spouse',78,'wangwu_spouse123','13800000011','阳光社区'),
+('wangwu_father',100,'wangwu_father123','13800000012','阳光社区');
 
 -- ================================
--- 5 食堂
+-- 管理员初始化   
 -- ================================
+INSERT INTO admin(user_id,level_id,region_id) VALUES
+(1,1,NULL),  -- 系统管理员不绑定具体地区
+(2,2,1),     -- 市级管理员负责整个沈阳市
+(3,3,2),     -- 区级管理员负责和平区
+(4,4,3),     -- 食堂管理员负责幸福社区
+(5,4,4),     -- 食堂管理员负责和谐社区
+(6,4,5);     -- 食堂管理员负责阳光社区
 
-INSERT INTO canteen(code,name,address,community,manager_id) VALUES
-('CT001','幸福社区食堂','幸福路1号','幸福社区',4),
-('CT002','和谐社区食堂','和谐路2号','和谐社区',4),
-('CT003','阳光社区食堂','阳光路3号','阳光社区',4);
+-- ===============================
+-- 用餐者初始化
+-- ===============================
+INSERT INTO diner(user_id,family_id,disease_history,taste_preference) VALUES
+(7,1,'高血压','清淡'),
+(8,1,'糖尿病','低糖'),
+(9,1,'无','喜欢吃咸口味'),
+(10,2,'心脏病','喜欢吃清淡口味'),
+(11,2,'无','喜欢吃辣口味'),
+(12,2,'高血脂','喜欢吃低脂口味'),
+(13,3,'无','喜欢吃咸口味'),
+(14,3,'高血压','喜欢吃清淡口味'),
+(15,3,'糖尿病','喜欢吃低糖口味');
 
 -- ================================
--- 6 公告
+-- 公告
 -- ================================
-
 INSERT INTO announcement(title,content,publisher_id) VALUES
 ('食堂开业通知','社区长者食堂正式投入运营',1),
 ('食品安全通知','所有食材来源可追溯',1),
 ('营业时间调整','午餐时间延长至13:30',2);
 
 -- ================================
--- 7 菜品
+-- 食堂
+-- ================================
+INSERT INTO canteen(code,name,address,region_id,manager_id) VALUES
+('XFC001','幸福食堂','幸福社区文化活动中心',3,4),
+('HXC001','和谐食堂','和谐社区文化活动中心',4,5),
+('YGC001','阳光食堂','阳光社区文化活动中心',5,6);
+
+
+-- ================================
+-- 菜品
 -- ================================
 
 INSERT INTO dish(canteen_id,name,type,price,calories,nutrition_info) VALUES
@@ -110,7 +129,7 @@ INSERT INTO daily_menu(canteen_id,date,meal_type) VALUES
 -- 9 餐单菜品
 -- ================================
 
-INSERT INTO menu_dish VALUES
+INSERT INTO menu_dish(menu_id,dish_id) VALUES
 (1,1),
 (1,2),
 (1,3),
@@ -127,24 +146,7 @@ INSERT INTO menu_dish VALUES
 (4,9);
 
 -- ================================
--- 10 家庭
--- ================================
-
-INSERT INTO family(family_name) VALUES
-('张三家庭'),
-('李四家庭');
-
-INSERT INTO family_member VALUES
-(1,5,'本人'),
-(1,6,'父亲'),
-(1,7,'母亲'),
-
-(2,8,'本人'),
-(2,9,'配偶'),
-(2,10,'父亲');
-
--- ================================
--- 11 订单
+-- 订单
 -- ================================
 
 INSERT INTO orders(user_id,order_for_user_id,canteen_id,total_price,status) VALUES
@@ -157,7 +159,7 @@ INSERT INTO orders(user_id,order_for_user_id,canteen_id,total_price,status) VALU
 -- 12 订单详情
 -- ================================
 
-INSERT INTO order_item VALUES
+INSERT INTO order_item(order_id,dish_id,quantity) VALUES
 (1,1,1),
 (1,2,1),
 
@@ -171,22 +173,22 @@ INSERT INTO order_item VALUES
 -- 13 评价
 -- ================================
 
-INSERT INTO rating VALUES
-(5,1,5,'饭菜很好','2026-03-01'),
-(6,1,4,'味道不错','2026-03-01'),
-(8,2,5,'服务很好','2026-03-01');
+INSERT INTO rating(user_id,canteen_id,order_id,score,comment,time) VALUES
+(5,1,1,5,'菜品味道很好', '2026-03-01 12:30:00'),
+(5,1,2,4,'菜品不错，但分量有点少', '2026-03-01 18:30:00'),
+(8,2,3,3,'菜品口味一般', '2026-03-01 12:45:00'),
+(9,3,4,5,'非常满意，食堂环境也很好', '2026-03-01 13:00:00');
 
 -- ================================
--- 14 食材采购
+-- 进货账单表
 -- ================================
-
-INSERT INTO ingredient_purchase(canteen_id,amount,date) VALUES
-(1,500.00,'2026-03-01'),
-(2,450.00,'2026-03-01'),
-(3,520.00,'2026-03-01');
+INSERT INTO purchase_bill(canteen_id,amount,purchase_date,remark) VALUES
+(1,500.00,'2026-03-01','春季采购'),
+(2,450.00,'2026-03-01','春季采购'),
+(3,520.00,'2026-03-01','春季采购');
 
 -- ================================
--- 15 举报
+-- 投诉与反馈
 -- ================================
 
 INSERT INTO report(user_id,canteen_id,type,content,create_time) VALUES

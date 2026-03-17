@@ -1,3 +1,6 @@
+-- sudo mysql -u root -p < community_canteen.sql
+-- sudo mysql -u root -p < DatabaseInit.sql
+
 -- ================================
 -- 社区长者食堂管理系统数据库
 -- 数据库名：community_canteen
@@ -44,7 +47,8 @@ CREATE TABLE family (
 -- 用户表
 CREATE TABLE users (
     user_id INT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(20) NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    age INT,
     password VARCHAR(50) NOT NULL,
     phone VARCHAR(11),  -- 联系电话
     id_card VARCHAR(18),  -- 身份证号码
@@ -194,16 +198,16 @@ CREATE TABLE purchase_bill (
 );
 
 -- ================================
---  举报与反馈
+--  投诉与反馈
 -- ================================
 CREATE TABLE report (
     report_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     canteen_id INT NOT NULL,
-    type INT,  -- 举报类型：1-食品安全问题，2-服务态度问题，3-环境卫生问题，4-其他
-    content TEXT,  -- 举报内容
+    type INT,  -- 投诉类型：1-食品安全问题，2-服务态度问题，3-环境卫生问题，4-其他
+    content TEXT,  -- 投诉内容
     status INT DEFAULT 0,  -- 0: 待处理, 1: 已处理, 2: 不予处理
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 举报时间
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,  -- 投诉时间
     handle_time DATETIME,  -- 处理时间
     handler_id INT,  -- 处理人（管理员用户ID）
     FOREIGN KEY (user_id) REFERENCES users(user_id),

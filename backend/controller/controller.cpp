@@ -9,29 +9,28 @@ void Controller::initRoutes(httplib::Server& server) {
     // ============================
     // 用户登录接口
     // ============================
-#include "response.h"
-server.Post("/login", [](const httplib::Request& req, httplib::Response& res) {
-    try {
-        json body = json::parse(req.body);
+    server.Post("/login", [](const httplib::Request& req, httplib::Response& res) {
+        try {
+            json body = json::parse(req.body);
 
-        UserService service;
-        auto user = service.login(body["username"], body["password"]);
+            UserService service;
+            auto user = service.login(body["username"], body["password"]);
 
-        if (user) {
-            json data = {
-                {"user_id", user->getId()},
-                {"username", user->getUsername()}
-            };
+            if (user) {
+                json data = {
+                    {"user_id", user->getId()},
+                    {"username", user->getUsername()}
+                };
 
-            res.set_content(Response::success(data), "application/json");
-        } else {
-            res.set_content(Response::error("用户名或密码错误"), "application/json");
+                res.set_content(Response::success(data), "application/json");
+            } else {
+                res.set_content(Response::error("用户名或密码错误"), "application/json");
+            }
+
+        } catch (...) {
+            res.set_content(Response::error("请求格式错误", -1), "application/json");
         }
-
-    } catch (...) {
-        res.set_content(Response::error("请求格式错误", -1), "application/json");
-    }
-});
+    });
 
     // ============================
     // 注册接口
@@ -55,21 +54,21 @@ server.Post("/login", [](const httplib::Request& req, httplib::Response& res) {
     // ============================
     // 获取食堂列表
     // ============================
-server.Get("/canteens", [](const httplib::Request&, httplib::Response& res) {
-    CanteenService service;
-    auto list = service.getAllCanteens();
+    server.Get("/canteens", [](const httplib::Request&, httplib::Response& res) {
+        CanteenService service;
+        auto list = service.getAllCanteens();
 
-    json arr = json::array();
+        json arr = json::array();
 
-    for (const auto& c : list) {
-        arr.push_back({
-            {"id", c.getId()},
-            {"name", c.getName()}
-        });
-    }
+        for (const auto& c : list) {
+            arr.push_back({
+                {"id", c.getId()},
+                {"name", c.getName()}
+            });
+        }
 
-    res.set_content(Response::success(arr), "application/json");
-});
+        res.set_content(Response::success(arr), "application/json");
+    });
 
     // ============================
     // 获取菜单
@@ -97,34 +96,34 @@ server.Get("/canteens", [](const httplib::Request&, httplib::Response& res) {
     // ============================
     // 下单
     // ============================
-server.Post("/orders", [](const httplib::Request& req, httplib::Response& res) {
-    try {
-        json body = json::parse(req.body);
+    server.Post("/orders", [](const httplib::Request& req, httplib::Response& res) {
+        try {
+            json body = json::parse(req.body);
 
-        int user_id = body["user_id"];
-        int canteen_id = body["canteen_id"];
+            int user_id = body["user_id"];
+            int canteen_id = body["canteen_id"];
 
-        std::vector<OrderItem> items;
+            std::vector<OrderItem> items;
 
-        for (auto& item : body["items"]) {
-            OrderItem oi;
-            oi.setDishId(item["dish_id"]);
-            oi.setQuantity(item["quantity"]);
-            items.push_back(oi);
+            for (auto& item : body["items"]) {
+                OrderItem oi;
+                oi.setDishId(item["dish_id"]);
+                oi.setQuantity(item["quantity"]);
+                items.push_back(oi);
+            }
+
+            OrderService service;
+
+            if (service.placeOrder(user_id, canteen_id, items)) {
+                res.set_content(Response::success(), "application/json");
+            } else {
+                res.set_content(Response::error("下单失败"), "application/json");
+            }
+
+        } catch (...) {
+            res.set_content(Response::error("JSON格式错误", -1), "application/json");
         }
-
-        OrderService service;
-
-        if (service.placeOrder(user_id, canteen_id, items)) {
-            res.set_content(Response::success(), "application/json");
-        } else {
-            res.set_content(Response::error("下单失败"), "application/json");
-        }
-
-    } catch (...) {
-        res.set_content(Response::error("JSON格式错误", -1), "application/json");
-    }
-});
+    });
 
     // ============================
     // 提交评价

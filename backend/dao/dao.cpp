@@ -342,7 +342,7 @@ std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date
             itemStmt->setInt(1, order_id);
             itemStmt->setInt(2, item.getDishId());
             itemStmt->setInt(3, item.getQuantity());
-
+            //executeUpdate返回受影响的行数，如果为0说明插入失败
             if (itemStmt->executeUpdate() == 0) {
                 conn->rollback();
                 return false;

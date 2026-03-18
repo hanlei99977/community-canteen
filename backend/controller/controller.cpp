@@ -1,5 +1,6 @@
 #include "controller.h"
 #include <nlohmann/json.hpp>
+#include "response.h"
 
 using json = nlohmann::json;
 
@@ -8,36 +9,28 @@ void Controller::initRoutes(httplib::Server& server) {
     // ============================
     // 用户登录接口
     // ============================
+#include "response.h"
 server.Post("/login", [](const httplib::Request& req, httplib::Response& res) {
-    json response;
-
     try {
         json body = json::parse(req.body);
 
-        std::string username = body["username"];
-        std::string password = body["password"];
-
         UserService service;
-        auto user = service.login(username, password);
+        auto user = service.login(body["username"], body["password"]);
 
         if (user) {
-            response["code"] = 0;
-            response["message"] = "success";
-            response["data"] = {
+            json data = {
                 {"user_id", user->getId()},
                 {"username", user->getUsername()}
             };
+
+            res.set_content(Response::success(data), "application/json");
         } else {
-            response["code"] = 1;
-            response["message"] = "invalid username or password";
+            res.set_content(Response::error("用户名或密码错误"), "application/json");
         }
 
     } catch (...) {
-        response["code"] = -1;
-        response["message"] = "bad request";
+        res.set_content(Response::error("请求格式错误", -1), "application/json");
     }
-
-    res.set_content(response.dump(), "application/json");
 });
 
     // ============================
@@ -75,12 +68,7 @@ server.Get("/canteens", [](const httplib::Request&, httplib::Response& res) {
         });
     }
 
-    json response;
-    response["code"] = 0;
-    response["message"] = "success";
-    response["data"] = arr;
-
-    res.set_content(response.dump(4), "application/json");
+    res.set_content(Response::success(arr), "application/json");
 });
 
     // ============================
@@ -110,8 +98,6 @@ server.Get("/canteens", [](const httplib::Request&, httplib::Response& res) {
     // 下单
     // ============================
 server.Post("/orders", [](const httplib::Request& req, httplib::Response& res) {
-    json response;
-
     try {
         json body = json::parse(req.body);
 
@@ -130,19 +116,14 @@ server.Post("/orders", [](const httplib::Request& req, httplib::Response& res) {
         OrderService service;
 
         if (service.placeOrder(user_id, canteen_id, items)) {
-            response["code"] = 0;
-            response["message"] = "order created";
+            res.set_content(Response::success(), "application/json");
         } else {
-            response["code"] = 1;
-            response["message"] = "order failed";
+            res.set_content(Response::error("下单失败"), "application/json");
         }
 
     } catch (...) {
-        response["code"] = -1;
-        response["message"] = "invalid json";
+        res.set_content(Response::error("JSON格式错误", -1), "application/json");
     }
-
-    res.set_content(response.dump(), "application/json");
 });
 
     // ============================

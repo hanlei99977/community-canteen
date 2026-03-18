@@ -321,9 +321,9 @@ std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date
         }
 
         // 获取自增ID
-        std::unique_ptr<sql::Statement> stmt(conn->createStatement());
+        std::unique_ptr<sql::Statement> cstmt(conn->createStatement());
         std::unique_ptr<sql::ResultSet> rs(
-            stmt->executeQuery("SELECT LAST_INSERT_ID()")
+            cstmt->executeQuery("SELECT LAST_INSERT_ID()")
         );
 
         int order_id = -1;

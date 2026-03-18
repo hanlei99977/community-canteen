@@ -1,32 +1,47 @@
 #include "controller.h"
-#include <iostream>
+#include <nlohmann/json.hpp>
 
-// 简单 JSON 拼接（后面可以换 json库）
-std::string jsonResponse(const std::string& key, const std::string& value) {
-    return "{\"" + key + "\":\"" + value + "\"}";
-}
+using json = nlohmann::json;
 
 void Controller::initRoutes(httplib::Server& server) {
 
     // ============================
-    // 用户登录
+    // 用户登录接口
     // ============================
-    server.Post("/login", [](const httplib::Request& req, httplib::Response& res) {
-        auto username = req.get_param_value("username");
-        auto password = req.get_param_value("password");
+server.Post("/login", [](const httplib::Request& req, httplib::Response& res) {
+    json response;
+
+    try {
+        json body = json::parse(req.body);
+
+        std::string username = body["username"];
+        std::string password = body["password"];
 
         UserService service;
         auto user = service.login(username, password);
 
         if (user) {
-            res.set_content("{\"status\":\"success\"}", "application/json");
+            response["code"] = 0;
+            response["message"] = "success";
+            response["data"] = {
+                {"user_id", user->getId()},
+                {"username", user->getUsername()}
+            };
         } else {
-            res.set_content("{\"status\":\"fail\"}", "application/json");
+            response["code"] = 1;
+            response["message"] = "invalid username or password";
         }
-    });
+
+    } catch (...) {
+        response["code"] = -1;
+        response["message"] = "bad request";
+    }
+
+    res.set_content(response.dump(), "application/json");
+});
 
     // ============================
-    // 注册
+    // 注册接口
     // ============================
     server.Post("/register", [](const httplib::Request& req, httplib::Response& res) {
         User user;
@@ -38,30 +53,35 @@ void Controller::initRoutes(httplib::Server& server) {
 
         UserService service;
 
-        if (service.registerUser(user)) {
-            res.set_content("{\"status\":\"success\"}", "application/json");
-        } else {
-            res.set_content("{\"status\":\"fail\"}", "application/json");
-        }
+        json response;
+        response["status"] = service.registerUser(user) ? "success" : "fail";
+
+        res.set_content(response.dump(), "application/json");
     });
 
     // ============================
     // 获取食堂列表
     // ============================
-    server.Get("/canteens", [](const httplib::Request&, httplib::Response& res) {
-        CanteenService service;
-        auto list = service.getAllCanteens();
+server.Get("/canteens", [](const httplib::Request&, httplib::Response& res) {
+    CanteenService service;
+    auto list = service.getAllCanteens();
 
-        std::string json = "[";
-        for (size_t i = 0; i < list.size(); i++) {
-            json += "{\"id\":" + std::to_string(list[i].getId()) +
-                    ",\"name\":\"" + list[i].getName() + "\"}";
-            if (i != list.size() - 1) json += ",";
-        }
-        json += "]";
+    json arr = json::array();
 
-        res.set_content(json, "application/json");
-    });
+    for (const auto& c : list) {
+        arr.push_back({
+            {"id", c.getId()},
+            {"name", c.getName()}
+        });
+    }
+
+    json response;
+    response["code"] = 0;
+    response["message"] = "success";
+    response["data"] = arr;
+
+    res.set_content(response.dump(4), "application/json");
+});
 
     // ============================
     // 获取菜单
@@ -73,41 +93,57 @@ void Controller::initRoutes(httplib::Server& server) {
         MenuService service;
         auto dishes = service.getTodayMenu(canteen_id, date);
 
-        std::string json = "[";
-        for (size_t i = 0; i < dishes.size(); i++) {
-            json += "{\"id\":" + std::to_string(dishes[i].getId()) +
-                    ",\"name\":\"" + dishes[i].getName() +
-                    "\",\"price\":" + std::to_string(dishes[i].getPrice()) + "}";
+        json arr = json::array();
 
-            if (i != dishes.size() - 1) json += ",";
+        for (const auto& d : dishes) {
+            json obj;
+            obj["id"] = d.getId();
+            obj["name"] = d.getName();
+            obj["price"] = d.getPrice();
+            arr.push_back(obj);
         }
-        json += "]";
 
-        res.set_content(json, "application/json");
+        res.set_content(arr.dump(4), "application/json");
     });
 
     // ============================
-    // 下单（简化版）
+    // 下单
     // ============================
-    server.Post("/order", [](const httplib::Request& req, httplib::Response& res) {
-        int user_id = std::stoi(req.get_param_value("user_id"));
-        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+server.Post("/orders", [](const httplib::Request& req, httplib::Response& res) {
+    json response;
 
-        // 简化：只支持一个菜
-        OrderItem item;
-        item.setDishId(std::stoi(req.get_param_value("dish_id")));
-        item.setQuantity(std::stoi(req.get_param_value("quantity")));
+    try {
+        json body = json::parse(req.body);
 
-        std::vector<OrderItem> items = { item };
+        int user_id = body["user_id"];
+        int canteen_id = body["canteen_id"];
+
+        std::vector<OrderItem> items;
+
+        for (auto& item : body["items"]) {
+            OrderItem oi;
+            oi.setDishId(item["dish_id"]);
+            oi.setQuantity(item["quantity"]);
+            items.push_back(oi);
+        }
 
         OrderService service;
 
         if (service.placeOrder(user_id, canteen_id, items)) {
-            res.set_content("{\"status\":\"success\"}", "application/json");
+            response["code"] = 0;
+            response["message"] = "order created";
         } else {
-            res.set_content("{\"status\":\"fail\"}", "application/json");
+            response["code"] = 1;
+            response["message"] = "order failed";
         }
-    });
+
+    } catch (...) {
+        response["code"] = -1;
+        response["message"] = "invalid json";
+    }
+
+    res.set_content(response.dump(), "application/json");
+});
 
     // ============================
     // 提交评价
@@ -121,11 +157,10 @@ void Controller::initRoutes(httplib::Server& server) {
 
         RatingService service;
 
-        if (service.submitRating(r)) {
-            res.set_content("{\"status\":\"success\"}", "application/json");
-        } else {
-            res.set_content("{\"status\":\"fail\"}", "application/json");
-        }
+        json response;
+        response["status"] = service.submitRating(r) ? "success" : "fail";
+
+        res.set_content(response.dump(), "application/json");
     });
 
     // ============================
@@ -140,10 +175,9 @@ void Controller::initRoutes(httplib::Server& server) {
 
         ReportService service;
 
-        if (service.submitReport(report)) {
-            res.set_content("{\"status\":\"success\"}", "application/json");
-        } else {
-            res.set_content("{\"status\":\"fail\"}", "application/json");
-        }
+        json response;
+        response["status"] = service.submitReport(report) ? "success" : "fail";
+
+        res.set_content(response.dump(), "application/json");
     });
 }

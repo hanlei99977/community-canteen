@@ -15,11 +15,22 @@ bool UserService::registerUser(const User& user) {
 }
 
 std::shared_ptr<User> UserService::login(
-    const std::string& username,
-    const std::string& password
+    std::string& username,
+    std::string& password
 ) {
     UserDAO dao;
-    return dao.getUserByUsernameAndPassword(username, password);
+     // 去空格（很重要）
+    username.erase(0, username.find_first_not_of(" "));
+    username.erase(username.find_last_not_of(" ") + 1);
+
+    password.erase(0, password.find_first_not_of(" "));
+    password.erase(password.find_last_not_of(" ") + 1);
+
+    auto user = dao.getUserByUsernameAndPassword(username, password);
+    if (user && user->getStatus() == 1) {
+        return user;
+    }
+    return nullptr;
 }
 
 /**********************************************
@@ -60,10 +71,9 @@ bool OrderService::placeOrder(int user_id,
 
     double total = 0.0;
 
+    auto dishes = dishDAO.getDishesByCanteen(canteen_id);// 获取食堂菜品（可以优化成批量查询）
     // 1️⃣ 计算总价（业务逻辑）
     for (const auto& item : items) {
-        auto dishes = dishDAO.getDishesByCanteen(canteen_id);
-
         for (const auto& d : dishes) {
             if (d.getId() == item.getDishId()) {
                 total += d.getPrice() * item.getQuantity();

@@ -11,7 +11,7 @@
 class UserService {
 public:
     bool registerUser(const User& user);
-    std::shared_ptr<User> login(const std::string& username, const std::string& password);
+    std::shared_ptr<User> login(std::string& username, std::string& password);
 };
 
 // ================================

@@ -37,10 +37,12 @@ void Controller::initRoutes(httplib::Server& server) {
     // ============================
     server.Post("/register", [](const httplib::Request& req, httplib::Response& res) {
         User user;
-        user.setUsername(req.get_param_value("username"));
-        user.setPassword(req.get_param_value("password"));
-        user.setAge(std::stoi(req.get_param_value("age")));
-        user.setPhone(req.get_param_value("phone"));
+        auto body = nlohmann::json::parse(req.body);
+
+        user.setUsername(body["username"]);
+        user.setPassword(body["password"]);
+        user.setAge(body["age"]);
+        user.setPhone(body["phone"]);
         user.setStatus(1);
 
         UserService service;
@@ -130,10 +132,13 @@ void Controller::initRoutes(httplib::Server& server) {
     // ============================
     server.Post("/rating", [](const httplib::Request& req, httplib::Response& res) {
         Rating r;
-        r.setUserId(std::stoi(req.get_param_value("user_id")));
-        r.setCanteenId(std::stoi(req.get_param_value("canteen_id")));
-        r.setScore(std::stoi(req.get_param_value("score")));
-        r.setComment(req.get_param_value("comment"));
+        auto body = nlohmann::json::parse(req.body);
+
+        r.setUserId(body["user_id"]);
+        r.setCanteenId(body["canteen_id"]);
+        r.setScore(body["score"]);
+        r.setComment(body["comment"]);
+        r.setOrderId(body["order_id"]);
 
         RatingService service;
 
@@ -148,10 +153,11 @@ void Controller::initRoutes(httplib::Server& server) {
     // ============================
     server.Post("/report", [](const httplib::Request& req, httplib::Response& res) {
         Report report;
-        report.setUserId(std::stoi(req.get_param_value("user_id")));
-        report.setCanteenId(std::stoi(req.get_param_value("canteen_id")));
-        report.setType(std::stoi(req.get_param_value("type")));
-        report.setContent(req.get_param_value("content"));
+        auto body = nlohmann::json::parse(req.body);
+        report.setUserId(body["user_id"]);
+        report.setCanteenId(body["canteen_id"]);
+        report.setType(body["type"]);
+        report.setContent(body["content"]);
 
         ReportService service;
 

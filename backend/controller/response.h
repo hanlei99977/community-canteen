@@ -6,31 +6,19 @@ using json = nlohmann::json;
 class Response {
 public:
 
-    // 成功（带数据）
-    static std::string success(const json& data = json::object()) {
+    static std::string success(const json& data = json::object(), const std::string& msg = "success") {
         json res;
         res["code"] = 0;
-        res["message"] = "success";
+        res["message"] = msg;
         res["data"] = data;
         return res.dump();
     }
 
-    // 失败
-    static std::string error(const std::string& msg, int code = 1) {
+    static std::string error(int code, const std::string& msg) {
         json res;
         res["code"] = code;
         res["message"] = msg;
-        return res.dump();
-    }
-
-    // 自定义（高级用法）
-    static std::string build(int code, const std::string& msg, const json& data = json()) {
-        json res;
-        res["code"] = code;
-        res["message"] = msg;
-        if (!data.is_null()) {
-            res["data"] = data;
-        }
+        res["data"] = nullptr;
         return res.dump();
     }
 };

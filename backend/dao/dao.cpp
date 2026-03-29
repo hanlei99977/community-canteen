@@ -8,11 +8,12 @@
 bool UserDAO::insertUser(const User& user)
 {
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "INSERT INTO user(username, password, age, phone, id_card, address, register_time, status) "
+                "INSERT INTO users(username, password, age, phone, id_card, address, register_time, status) "
                 "VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)"
             )
         );
@@ -32,11 +33,12 @@ bool UserDAO::insertUser(const User& user)
 std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(const std::string& username, const std::string& password)
 {
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "SELECT * FROM user WHERE username=? AND password=?"
+                "SELECT * FROM users WHERE username=? AND password=?"
             )
         );
 
@@ -63,11 +65,12 @@ std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(const std::string& u
 std::shared_ptr<User> UserDAO::getUserById(int user_id)
 {
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "SELECT * FROM user WHERE user_id=?"
+                "SELECT * FROM users WHERE user_id=?"
             )
         );
 
@@ -97,7 +100,8 @@ std::shared_ptr<User> UserDAO::getUserById(int user_id)
  *********************************************/
 bool AdminDAO::insertAdmin(const Admin& admin) {
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -115,7 +119,8 @@ bool AdminDAO::insertAdmin(const Admin& admin) {
 
 std::shared_ptr<Admin> AdminDAO::getAdminByUserId(int user_id) {
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -143,7 +148,8 @@ std::shared_ptr<Admin> AdminDAO::getAdminByUserId(int user_id) {
  *********************************************/
 bool DinerDAO::insertDiner(const Diner& diner) {
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -163,7 +169,8 @@ bool DinerDAO::insertDiner(const Diner& diner) {
 std::shared_ptr<Diner> DinerDAO::getDinerByUserId(int user_id)
 {
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -192,7 +199,9 @@ std::vector<Canteen> CanteenDAO::getAllCanteens() {
     std::vector<Canteen> list;
 
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("SELECT * FROM canteen")
         );
@@ -212,7 +221,9 @@ std::vector<Canteen> CanteenDAO::getAllCanteens() {
 
 std::shared_ptr<Canteen> CanteenDAO::getCanteenById(int id) {
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("SELECT * FROM canteen WHERE canteen_id=?")
         );
@@ -239,7 +250,9 @@ std::vector<Dish> DishDAO::getDishesByCanteen(int canteen_id)
     std::vector<Dish> list;
 
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("SELECT * FROM dish WHERE canteen_id=?")
         );
@@ -266,7 +279,8 @@ std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date
     std::vector<Dish> list;
 
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -298,13 +312,15 @@ std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date
  ****************************************/
  bool OrderDAO::createOrder(const Order& order, const std::vector<OrderItem>& items) {
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
         conn->setAutoCommit(false); // 开启事务
 
         // 1️⃣ 插入订单
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "INSERT INTO `order`(user_id, order_for_user_id, canteen_id, total_price, order_time, status) "
+                "INSERT INTO `orders`(user_id, order_for_user_id, canteen_id, total_price, order_time, status) "
                 "VALUES (?, ?, ?, ?, NOW(), ?)"
             )
         );
@@ -359,11 +375,12 @@ std::vector<Order> OrderDAO::getOrdersByUser(int user_id)
     std::vector<Order> list;
 
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "SELECT * FROM `order` WHERE user_id=?"
+                "SELECT * FROM `orders` WHERE user_id=?"
             )
         );
 
@@ -392,7 +409,8 @@ std::vector<Order> OrderDAO::getOrdersByUser(int user_id)
  ****************************************/
 bool RatingDAO::insertRating(const Rating& rating) {
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -416,7 +434,8 @@ bool RatingDAO::insertRating(const Rating& rating) {
     std::vector<Rating> list;
 
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -447,7 +466,8 @@ bool RatingDAO::insertRating(const Rating& rating) {
  ****************************************/
 bool ReportDAO::insertReport(const Report& report) {
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -470,7 +490,8 @@ std::vector<Report> ReportDAO::getReportsByCanteen(int canteen_id)
     std::vector<Report> list;
 
     try {
-        auto conn = ConnectionPool::getInstance().getConnection();
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(

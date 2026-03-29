@@ -9,6 +9,7 @@
 #include <condition_variable>
 #include <memory>
 
+//连接池类
 class ConnectionPool {
 public:
 
@@ -36,6 +37,28 @@ private:
 
     int maxSize;
 
+};
+
+
+//连接守卫类
+class DBConnectionGuard {
+private:
+    sql::Connection* conn;
+
+public:
+    DBConnectionGuard() {
+        conn = ConnectionPool::getInstance().getConnection();
+    }
+
+    ~DBConnectionGuard() {
+        if (conn) {
+            ConnectionPool::getInstance().releaseConnection(conn);
+        }
+    }
+
+    sql::Connection* get() {
+        return conn;
+    }
 };
 
 #endif

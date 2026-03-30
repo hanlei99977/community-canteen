@@ -46,6 +46,7 @@ void Controller::initRoutes(httplib::Server& server) {
 
                 res.status = 200;
                 res.set_content(Response::success(data), "application/json");
+                std::cout << "用户 " << username << " 登录成功" << std::endl;
             } else {
                 res.status = 401;
                 res.set_content(Response::error(401, "用户名或密码错误"), "application/json");
@@ -62,6 +63,8 @@ void Controller::initRoutes(httplib::Server& server) {
     // ============================
     server.Post("/register", [](const httplib::Request& req, httplib::Response& res) {
         try {
+
+            std::cout <<"注册用户信息为：" << "req.body = " << req.body << std::endl;
             json body = json::parse(req.body);
 
             User user;

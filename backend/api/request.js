@@ -9,7 +9,7 @@ const service = axios.create({
   }
 });
 
-// 请求拦截器
+// 请求拦截器,作用是在发送请求之前对请求进行一些处理，比如添加 token、设置请求头等
 service.interceptors.request.use(
   (config) => {
     // 可加 token
@@ -24,7 +24,7 @@ service.interceptors.request.use(
   }
 );
 
-// 响应拦截器
+// 响应拦截器，作用是在接收到响应后对响应进行一些处理，比如统一处理错误、提取数据等
 service.interceptors.response.use(
   (response) => {
     const res = response.data;

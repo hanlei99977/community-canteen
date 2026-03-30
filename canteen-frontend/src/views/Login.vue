@@ -1,20 +1,24 @@
 <template>
   <div class="login-container">
     <el-card class="login-card">
-      <h2>社区食堂登录</h2>
+      <h2 style="display:flex;align-items: center;gap: 15px;justify-content: center;">社区食堂登录</h2>
 
       <el-form :model="form">
         <el-form-item label="用户名">
           <el-input v-model="form.username" placeholder="请输入用户名" />
         </el-form-item>
 
-        <el-form-item label="密码">
+        <el-form-item label="密码  ">
           <el-input v-model="form.password" type="password" placeholder="请输入密码" />
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="handleLogin">登录</el-button>
+          <el-button type="primary" @click="handleLogin" style="display:flex;align-items: center;gap: 15px;justify-content: center;">登录</el-button>
         </el-form-item>
+
+        <el-button type="text" @click="goRegister" style="display:flex;align-items: center;gap: 15px;justify-content: center;">
+          没有账号？去注册
+        </el-button>
       </el-form>
     </el-card>
   </div>
@@ -49,6 +53,11 @@ const handleLogin = async () => {
     ElMessage.error('请求失败，请检查后端')
   }
 }
+
+const goRegister = () => {
+  router.push('/register')
+}
+
 </script>
 
 <style scoped>

@@ -209,6 +209,7 @@ void Controller::initRoutes(httplib::Server& server) {
             for (const auto& o : orders) {
                 arr.push_back({
                     {"order_id", o.getOrderId()},
+                    {"order_for_user_id", o.getOrderForUserId()},
                     {"canteen_name", o.getCanteenName()},
                     {"total_price", o.getTotalPrice()},
                     {"create_time", o.getCreateTime()}
@@ -243,8 +244,8 @@ void Controller::initRoutes(httplib::Server& server) {
             for (const auto& i : items) {
                 arr.push_back({
                     {"dish_name", i.getDishName()},
-                    {"quantity", i.getQuantity()},
-                    {{"price", i.getPrice()}}
+                    {"price", i.getPrice()},
+                    {"quantity", i.getQuantity()}
 
                 });
                 std::cout << "订单详情项：dish_name=" << i.getDishName() << ", quantity=" << i.getQuantity() << ", price=" << i.getPrice() << std::endl;

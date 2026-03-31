@@ -300,6 +300,7 @@ std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date
             Dish d;
             d.setId(res->getInt("dish_id"));
             d.setName(res->getString("name"));
+            d.setPrice(res->getDouble("price"));
             list.push_back(d);
         }
     } catch (...) {}

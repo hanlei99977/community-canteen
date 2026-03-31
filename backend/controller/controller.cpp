@@ -119,7 +119,7 @@ void Controller::initRoutes(httplib::Server& server) {
         try {
             int canteen_id = std::stoi(req.get_param_value("canteen_id"));
             std::string date = req.get_param_value("date");
-
+            std::cout << "请求菜单参数：canteen_id=" << canteen_id << ", date=" << date << std::endl;
             MenuService service;
             auto dishes = service.getTodayMenu(canteen_id, date);
 
@@ -131,6 +131,7 @@ void Controller::initRoutes(httplib::Server& server) {
                     {"name", d.getName()},
                     {"price", d.getPrice()}
                 });
+                std::cout << "菜单项：id=" << d.getId() << ", name=" << d.getName() << ", price=" << d.getPrice() << std::endl;
             }
 
             res.set_content(Response::success(arr), "application/json");
@@ -145,11 +146,12 @@ void Controller::initRoutes(httplib::Server& server) {
     // ============================
     server.Post("/orders", [](const httplib::Request& req, httplib::Response& res) {
         try {
+            std::cout << "下单请求体：" << req.body << std::endl;
             json body = json::parse(req.body);
 
             int user_id = body["user_id"];
             int canteen_id = body["canteen_id"];
-
+            std::cout << "下单参数：user_id=" << user_id << ", canteen_id=" << canteen_id << std::endl;
             std::vector<OrderItem> items;
 
             for (auto& item : body["items"]) {
@@ -185,6 +187,8 @@ void Controller::initRoutes(httplib::Server& server) {
             r.setScore(body["score"]);
             r.setComment(body["comment"]);
             r.setOrderId(body["order_id"]);
+            std::cout << "评价参数：user_id=" << r.getUserId() << ", canteen_id=" << r.getCanteenId()
+                      << ", score=" << r.getScore() << ", comment=" << r.getComment() << std::endl;
 
             RatingService service;
 
@@ -211,6 +215,8 @@ void Controller::initRoutes(httplib::Server& server) {
             report.setCanteenId(body["canteen_id"]);
             report.setType(body["type"]);
             report.setContent(body["content"]);
+            std::cout << "举报参数：user_id=" << report.getUserId() << ", canteen_id=" << report.getCanteenId()
+                      << ", type=" << report.getType() << ", content=" << report.getContent() << std::endl;
 
             ReportService service;
 

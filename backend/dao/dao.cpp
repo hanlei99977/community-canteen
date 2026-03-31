@@ -348,6 +348,7 @@ std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date
             order_id = rs->getInt(1);
         }
 
+
         // 2️⃣ 插入订单项
         for (const auto& item : items) {
             auto itemStmt = std::unique_ptr<sql::PreparedStatement>(
@@ -371,32 +372,40 @@ std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date
     } catch (...) { return false; }
 }
 
-std::vector<Order> OrderDAO::getOrdersByUser(int user_id)
+std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
 {
-    std::vector<Order> list;
+    std::vector<OrderVO> list;
 
     try {
         DBConnectionGuard guard;
         auto* conn = guard.get();
 
-        auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement(
-                "SELECT * FROM `orders` WHERE user_id=?"
-            )
-        );
+    auto stmt = std::unique_ptr<sql::PreparedStatement>(
+        conn->prepareStatement(R"(
+            SELECT 
+                o.order_id AS order_id,
+                o.order_for_user_id,
+                c.name AS canteen_name,
+                o.total_price,
+                o.order_time
+            FROM orders o
+            JOIN canteen c ON o.canteen_id = c.canteen_id
+            WHERE o.user_id = ?
+            ORDER BY o.order_id DESC
+        )")
+    );
 
         stmt->setInt(1, user_id);
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
 
         while (res->next()) {
-            Order o;
-            o.setId(res->getInt("order_id"));
-            o.setUserId(res->getInt("user_id"));
+            OrderVO o;
+            o.setOrderId(res->getInt("order_id"));
             o.setOrderForUserId(res->getInt("order_for_user_id"));
-            o.setCanteenId(res->getInt("canteen_id"));
-            o.setTotalPrice(res->getDouble("total_price"));
-            o.setOrderTime(res->getString("order_time"));
-            o.setStatus(res->getString("status"));
+            o.setCanteenName(res->getString("canteen_name"));
+            o.setTotalPrice(std::stod(res->getString("total_price").c_str()));
+            o.setCreateTime(res->getString("order_time"));
+
             list.push_back(o);
         }
     } catch (...) {}
@@ -404,6 +413,48 @@ std::vector<Order> OrderDAO::getOrdersByUser(int user_id)
     return list;
 }
 
+std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByUser(int user_id)
+{
+    std::vector<OrderDetailVO> list;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(R"(
+                SELECT 
+                    d.name AS dish_name,
+                    d.price,
+                    oi.quantity
+                FROM orders o
+                JOIN order_item oi ON oi.order_id = o.order_id
+                JOIN dish d ON oi.dish_id = d.dish_id
+                WHERE o.user_id = ?
+                ORDER BY o.order_id DESC
+            )")
+        );
+
+        stmt->setInt(1, user_id);
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            OrderDetailVO vo(
+                res->getString("dish_name"),
+                res->getInt("quantity"),
+                std::stod(res->getString("price").c_str())
+            );
+
+            list.push_back(vo);
+        }
+
+    } catch (const std::exception& e) {
+        std::cout << "查询订单失败: " << e.what() << std::endl;
+    }
+
+    return list;
+}
 
 /*****************************************
  * RatingDao

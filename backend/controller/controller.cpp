@@ -192,6 +192,68 @@ void Controller::initRoutes(httplib::Server& server) {
     });
 
     // ============================
+    // 查看订单
+    // ============================
+    server.Get("/orders", [](const httplib::Request& req, httplib::Response& res) {
+        try {
+            int user_id = std::stoi(req.get_param_value("user_id"));
+            std::cout << "查看订单参数：user_id=" << user_id << std::endl;
+
+            OrderService service;
+            auto orders = service.getOrdersByUser(user_id);
+
+            OrderService itemService;
+
+            json arr = json::array();
+
+            for (const auto& o : orders) {
+                arr.push_back({
+                    {"order_id", o.getOrderId()},
+                    {"canteen_name", o.getCanteenName()},
+                    {"total_price", o.getTotalPrice()},
+                    {"create_time", o.getCreateTime()}
+                });
+                std::cout << "订单：order_id=" << o.getOrderId() << ", canteen_name=" << o.getCanteenName()
+                          << ", total_price=" << o.getTotalPrice() << ", create_time=" << o.getCreateTime() << std::endl;
+            }
+
+            res.set_content(Response::success(arr), "application/json");
+
+        } catch (...) {
+            res.set_content(Response::error(400, "参数错误"), "application/json");
+        }
+    });
+
+    // ============================
+    // 订单详情
+    // ============================
+    server.Get("/order_details", [](const httplib::Request& req, httplib::Response& res) {
+        try {
+            int order_id = std::stoi(req.get_param_value("order_id"));
+            std::cout << "订单详情参数：order_id=" << order_id << std::endl;
+            OrderService service;
+            auto items = service.getOrdersDetailsByUser(order_id);
+
+            json arr = json::array();
+
+            for (const auto& i : items) {
+                arr.push_back({
+                    {"dish_name", i.getDishName()},
+                    {"quantity", i.getQuantity()},
+                    {{"price", i.getPrice()}}
+
+                });
+                std::cout << "订单详情项：dish_name=" << i.getDishName() << ", quantity=" << i.getQuantity() << ", price=" << i.getPrice() << std::endl;
+            }
+
+            res.set_content(Response::success(arr), "application/json");
+
+        } catch (...) {
+            res.set_content(Response::error(400, "参数错误"), "application/json");
+        }
+    });
+
+    // ============================
     // 评价
     // ============================
     server.Post("/rating", [](const httplib::Request& req, httplib::Response& res) {

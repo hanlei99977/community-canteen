@@ -1,4 +1,6 @@
 #include "service.h"
+#include <iostream>
+#include <map>
 
 /**********************************************
  * UserService
@@ -91,6 +93,17 @@ bool OrderService::placeOrder(int user_id,
 
     // 3️⃣ 创建订单（事务）
     return orderDAO.createOrder(order, items);
+}
+
+std::vector<OrderVO> OrderService::getOrdersByUser(int user_id)
+{
+    OrderDAO dao;
+    return dao.getOrdersByUser(user_id);
+}
+
+std::vector<OrderDetailVO> OrderService::getOrdersDetailsByUser(int user_id) {
+    OrderDAO dao;
+    return dao.getOrdersDetailsByUser(user_id);
 }
 
 /**********************************************

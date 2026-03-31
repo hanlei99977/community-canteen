@@ -2,6 +2,8 @@
 #include <memory>
 #include <vector>
 #include "../model/model.h"
+#include "../model/vo.h"
+
 
 // ================================
 // 用户
@@ -62,7 +64,8 @@ public:
 class OrderDAO {
 public:
     bool createOrder(const Order& order, const std::vector<OrderItem>& items);
-    std::vector<Order> getOrdersByUser(int user_id);
+    std::vector<OrderVO> getOrdersByUser(int user_id);
+    std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id);
 };
 
 // ================================

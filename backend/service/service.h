@@ -3,6 +3,7 @@
 #include <vector>
 #include <mutex>
 #include "../model/model.h"
+#include "../model/vo.h"
 #include "../dao/dao.h"
 
 // ================================
@@ -39,6 +40,8 @@ public:
     bool placeOrder(int user_id,
                     int canteen_id,
                     const std::vector<OrderItem>& items);
+    std::vector<OrderVO> getOrdersByUser(int user_id);
+    std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id);
 
 private:
     std::mutex orderMutex; // ⭐ 防止并发重复下单

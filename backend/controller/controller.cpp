@@ -229,10 +229,14 @@ void Controller::initRoutes(httplib::Server& server) {
     // ============================
     server.Get("/order_details", [](const httplib::Request& req, httplib::Response& res) {
         try {
+            std::cout << "订单详情请求参数：order_id=" << req.get_param_value("order_id") << ", user_id=" << req.get_param_value("user_id") << std::endl;
             int order_id = std::stoi(req.get_param_value("order_id"));
             std::cout << "订单详情参数：order_id=" << order_id << std::endl;
+            int user_id = std::stoi(req.get_param_value("user_id"));
+            std::cout << "订单详情参数：user_id=" << user_id << std::endl;
+
             OrderService service;
-            auto items = service.getOrdersDetailsByUser(order_id);
+            auto items = service.getOrdersDetailsByUser(user_id,order_id);
 
             json arr = json::array();
 

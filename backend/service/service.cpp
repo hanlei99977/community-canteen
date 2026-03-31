@@ -101,9 +101,9 @@ std::vector<OrderVO> OrderService::getOrdersByUser(int user_id)
     return dao.getOrdersByUser(user_id);
 }
 
-std::vector<OrderDetailVO> OrderService::getOrdersDetailsByUser(int user_id) {
+std::vector<OrderDetailVO> OrderService::getOrdersDetailsByUser(int user_id,int order_id) {
     OrderDAO dao;
-    return dao.getOrdersDetailsByUser(user_id);
+    return dao.getOrdersDetailsByUser(user_id,order_id);
 }
 
 /**********************************************

@@ -41,7 +41,7 @@ public:
                     int canteen_id,
                     const std::vector<OrderItem>& items);
     std::vector<OrderVO> getOrdersByUser(int user_id);
-    std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id);
+    std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
 
 private:
     std::mutex orderMutex; // ⭐ 防止并发重复下单

@@ -65,7 +65,7 @@ class OrderDAO {
 public:
     bool createOrder(const Order& order, const std::vector<OrderItem>& items);
     std::vector<OrderVO> getOrdersByUser(int user_id);
-    std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id);
+    std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
 };
 
 // ================================

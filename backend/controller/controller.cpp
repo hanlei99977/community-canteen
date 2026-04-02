@@ -202,14 +202,12 @@ void Controller::initRoutes(httplib::Server& server) {
             OrderService service;
             auto orders = service.getOrdersByUser(user_id);
 
-            OrderService itemService;
-
             json arr = json::array();
 
             for (const auto& o : orders) {
                 arr.push_back({
                     {"order_id", o.getOrderId()},
-                    {"order_for_user_id", o.getOrderForUserId()},
+                    {"order_for_user_name", o.getOrderForUserName()},
                     {"canteen_name", o.getCanteenName()},
                     {"total_price", o.getTotalPrice()},
                     {"create_time", o.getCreateTime()}

@@ -2,10 +2,12 @@
 #include <string>
 #include <vector>
 
+
+//订单列表页VO
 class OrderVO {
 private:
     int order_id;
-    int order_for_user_id;
+    std::string order_for_user_name;
     std::string canteen_name;
     std::string create_time;
     double total_price;
@@ -13,8 +15,8 @@ public:
     int getOrderId() const { return order_id; }
     void setOrderId(int id) { order_id = id; }
 
-    int getOrderForUserId() const { return order_for_user_id; }
-    void setOrderForUserId(int id) { order_for_user_id = id; }
+    std::string getOrderForUserName() const { return order_for_user_name; }
+    void setOrderForUserName(const std::string& name) { order_for_user_name = name; }
 
     std::string getCanteenName() const { return canteen_name; }
     void setCanteenName(const std::string& name) { canteen_name = name; }
@@ -27,6 +29,7 @@ public:
 
 };
 
+//订单详情页VO
 class OrderDetailVO {
 private:
     std::string dish_name;

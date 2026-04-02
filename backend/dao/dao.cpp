@@ -382,14 +382,15 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
 
     auto stmt = std::unique_ptr<sql::PreparedStatement>(
         conn->prepareStatement(R"(
-            SELECT 
+             SELECT 
                 o.order_id AS order_id,
-                o.order_for_user_id,
+                u.username AS order_for_user_name,
                 c.name AS canteen_name,
                 o.total_price,
                 o.order_time
             FROM orders o
             JOIN canteen c ON o.canteen_id = c.canteen_id
+            JOIN users u ON u.user_id  = o.order_for_user_id 
             WHERE o.user_id = ?
             ORDER BY o.order_id DESC
         )")
@@ -401,7 +402,7 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
         while (res->next()) {
             OrderVO o;
             o.setOrderId(res->getInt("order_id"));
-            o.setOrderForUserId(res->getInt("order_for_user_id"));
+            o.setOrderForUserName(res->getString("order_for_user_name"));
             o.setCanteenName(res->getString("canteen_name"));
             o.setTotalPrice(std::stod(res->getString("total_price").c_str()));
             o.setCreateTime(res->getString("order_time"));

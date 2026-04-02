@@ -30,7 +30,7 @@ CREATE TABLE region (
 -- ================================
 CREATE TABLE level (
     level_id INT PRIMARY KEY,
-    level_name ENUM('系统管理员', '市级管理员', '区级管理员', '食堂管理员') NOT NULL
+    level_name ENUM('系统管理员', '市级管理员', '区级管理员') NOT NULL
 );
 
 -- ================================
@@ -77,6 +77,20 @@ CREATE TABLE diner(
     FOREIGN KEY (family_id) REFERENCES family(family_id)
 );
 
+-- 管理员申请表
+CREATE TABLE admin_apply (
+    apply_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    level_id INT,          -- 申请的管理员级别
+    region_id INT,         -- 申请管理的区域
+    status INT DEFAULT 0,  -- 0待审核 1通过 2拒绝
+    apply_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    review_time DATETIME,
+    reviewer_id INT,       -- 审核人（系统管理员）
+    
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
 -- 公告表
 CREATE TABLE announcement (
     announce_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -104,6 +118,12 @@ CREATE TABLE canteen (
     FOREIGN KEY (region_id) REFERENCES region(region_id)
 );
 
+CREATE TABLE canteen_manager (
+    user_id INT PRIMARY KEY,
+    canteen_id INT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
+);
 -- ================================
 --  菜品与餐单
 -- ================================

@@ -3,14 +3,14 @@
 #include <vector>
 #include "../model/model.h"
 #include "../model/vo.h"
-
+#include "../../MySQL/ConnectionPool.h"
 
 // ================================
 // 用户
 // ================================
 class UserDAO {
 public:
-    bool insertUser(const User& user);
+    int insertUser(sql::Connection *conn, const User& user);
     std::shared_ptr<User> getUserByUsernameAndPassword(const std::string&, const std::string&);
     std::shared_ptr<User> getUserById(int user_id);
 };
@@ -20,7 +20,7 @@ public:
 // ================================
 class AdminDAO {
 public:
-    bool insertAdmin(const Admin& admin);
+    bool insertAdmin(sql::Connection *conn, int user_id);
     std::shared_ptr<Admin> getAdminByUserId(int user_id);
 };
 
@@ -29,8 +29,16 @@ public:
 // ================================
 class DinerDAO {
 public:
-    bool insertDiner(const Diner& diner);
+    bool insertDiner(sql::Connection *conn, int user_id);
     std::shared_ptr<Diner> getDinerByUserId(int user_id);
+};
+
+// ================================
+// 管理人
+// ================================
+class ManagerDAO {
+public:
+    bool insertManager(sql::Connection *conn, int user_id);
 };
 
 // ================================
@@ -63,11 +71,19 @@ public:
 // ================================
 class OrderDAO {
 public:
-    bool createOrder(const Order& order, const std::vector<OrderItem>& items);
+    int insertOrder(sql::Connection *conn, const Order& order, const std::vector<OrderItem>& items);
     std::vector<OrderVO> getOrdersByUser(int user_id);
     std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
 };
 
+// ================================
+// 订单详情
+// ================================
+class OrderItemDAO {
+public:
+    bool insertOrderItems(sql::Connection *conn, int order_id, const std::vector<OrderItem>& items);
+    std::vector<OrderItem> getOrderItemsByOrderId(int order_id);
+};
 // ================================
 // 评价
 // ================================

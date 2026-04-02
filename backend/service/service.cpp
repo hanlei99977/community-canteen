@@ -1,19 +1,61 @@
 #include "service.h"
 #include <iostream>
 #include <map>
+#include "../../MySQL/ConnectionPool.h"
 
 /**********************************************
  * UserService
  *********************************************/
-bool UserService::registerUser(const User& user) {
+bool UserService::registerUser(const User& user ,int role) {
     UserDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    bool res = true;
 
-    // 简单校验（可以扩展）
-    if (user.getUsername().empty() || user.getPassword().empty()) {
+    try {
+        conn->setAutoCommit(false); // 开启事务
+
+        // 简单校验（可以扩展）
+        if (user.getUsername().empty() || user.getPassword().empty()) {
+            conn->rollback();
+            return false;
+        }
+
+        int user_id = dao.insertUser(conn, user);
+        if (user_id == -1) {
+            conn->rollback();
+            return false;
+        }
+
+        switch (role) {
+            case 1: // diner
+                DinerDAO dinerDAO;
+                res = dinerDAO.insertDiner(conn, user_id);
+                break;
+            case 2: // admin
+                AdminDAO adminDAO;
+                res = adminDAO.insertAdmin(conn, user_id);
+                break;
+            case 3: // manager
+                ManagerDAO managerDAO;
+                res = managerDAO.insertManager(conn, user_id);
+                break;
+            default:
+                conn->rollback();
+                return false;
+        }
+
+        if (!res) {
+            conn->rollback();
+            return false;
+        }
+        conn->commit(); // 提交事务
+        return true;
+    }
+    catch (...) {
+        conn->rollback();
         return false;
     }
-
-    return dao.insertUser(user);
 }
 
 std::shared_ptr<User> UserService::login(
@@ -63,36 +105,59 @@ bool OrderService::placeOrder(int user_id,
                               int canteen_id,
                               const std::vector<OrderItem>& items) {
 
-    // ⭐ 并发保护（简单版）
-    std::lock_guard<std::mutex> lock(orderMutex);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
 
-    if (items.empty()) return false;
+    try{
+        conn->setAutoCommit(false); // 开启事务
+        // ⭐ 并发保护（简单版）
+        std::lock_guard<std::mutex> lock(orderMutex);
+        
+        if (items.empty()) return false;
 
-    DishDAO dishDAO;
-    OrderDAO orderDAO;
+        DishDAO dishDAO;
+        OrderDAO orderDAO;
 
-    double total = 0.0;
+        double total = 0.0;
 
-    auto dishes = dishDAO.getDishesByCanteen(canteen_id);// 获取食堂菜品（可以优化成批量查询）
-    // 1️⃣ 计算总价（业务逻辑）
-    for (const auto& item : items) {
-        for (const auto& d : dishes) {
-            if (d.getId() == item.getDishId()) {
-                total += d.getPrice() * item.getQuantity();
+        auto dishes = dishDAO.getDishesByCanteen(canteen_id);// 获取食堂菜品（可以优化成批量查询）
+        // 1️⃣ 计算总价（业务逻辑）
+        for (const auto& item : items) {
+            for (const auto& d : dishes) {
+                if (d.getId() == item.getDishId()) {
+                    total += d.getPrice() * item.getQuantity();
+                }
             }
         }
-    }
 
-    // 2️⃣ 构造订单
-    Order order;
-    order.setUserId(user_id);
-    order.setOrderForUserId(user_id);
-    order.setCanteenId(canteen_id);
-    order.setTotalPrice(total);
-    order.setStatus("pending");
+        // 2️⃣ 构造订单
+        Order order;
+        order.setUserId(user_id);
+        order.setOrderForUserId(user_id);
+        order.setCanteenId(canteen_id);
+        order.setTotalPrice(total);
+        order.setStatus("pending");
 
-    // 3️⃣ 创建订单（事务）
-    return orderDAO.createOrder(order, items);
+        // 3️⃣ 创建订单（事务）
+        int order_id = orderDAO.insertOrder(conn, order, items);
+        if (order_id == -1) {
+            conn->rollback();
+            return false;
+        }
+
+        OrderItemDAO orderItemDAO;
+        if (!orderItemDAO.insertOrderItems(conn, order_id, items)) {
+            conn->rollback();
+            return false;
+        }
+
+        conn->commit(); // 提交事务
+        return true;
+        
+    }catch (...) {
+            conn->rollback();
+            return false;
+        }
 }
 
 std::vector<OrderVO> OrderService::getOrdersByUser(int user_id)

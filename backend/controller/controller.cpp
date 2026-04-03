@@ -230,9 +230,7 @@ void Controller::initRoutes(httplib::Server& server) {
         try {
             std::cout << "订单详情请求参数：order_id=" << req.get_param_value("order_id") << ", user_id=" << req.get_param_value("user_id") << std::endl;
             int order_id = std::stoi(req.get_param_value("order_id"));
-            std::cout << "订单详情参数：order_id=" << order_id << std::endl;
             int user_id = std::stoi(req.get_param_value("user_id"));
-            std::cout << "订单详情参数：user_id=" << user_id << std::endl;
 
             OrderService service;
             auto items = service.getOrdersDetailsByUser(user_id,order_id);
@@ -349,6 +347,45 @@ void Controller::initRoutes(httplib::Server& server) {
 
         } catch (...) {
             res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+        }
+    });
+
+    // ============================
+    // 用户个人中心
+    // ============================
+    server.Get("/userCenter", [](const httplib::Request& req, httplib::Response& res) {
+        try {
+            int user_id = std::stoi(req.get_param_value("user_id"));
+            std::cout << "个人中心请求参数：user_id=" << user_id << std::endl;
+
+            UserService service;
+            auto user = service.getDinerCenterByUserId(user_id);
+
+            if (user) {
+                json data = {
+                    {"user_id", user->getUserId()},
+                    {"username", user->getUsername()},
+                    {"age", user->getAge()},
+                    {"phone", user->getPhone()},
+                    {"idCard", user->getIdCard()},
+                    {"address", user->getAddress()},
+                    {"familyId", user->getFamilyId()},
+                    {"familyName", user->getFamilyName()},
+                    {"diseaseHistory", user->getDiseaseHistory()},
+                    {"tastePreference", user->getTastePreference()}
+                };
+
+                res.status = 200;
+                res.set_content(Response::success(data), "application/json");
+                std::cout << "用户 " << user->getUsername() << " 个人中心数据获取成功" << std::endl;
+            } else {
+                res.status = 404;
+                res.set_content(Response::error(404, "用户未找到"), "application/json");
+            }
+
+        } catch (...) {
+            res.status = 500;
+            res.set_content(Response::error(500, "服务器错误"), "application/json");
         }
     });
 }

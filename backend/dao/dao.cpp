@@ -213,6 +213,42 @@ std::shared_ptr<Diner> DinerDAO::getDinerByUserId(int user_id)
     } catch (...) {}
     return nullptr;
 }
+
+std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(int user_id)
+{
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT u.username, u.age, u.phone, u.id_card, u.address,d.family_id, f.family_name, d.disease_history, d.taste_preference "
+                "FROM users u JOIN diner d ON u.user_id = d.user_id "
+                "LEFT JOIN family f ON d.family_id = f.family_id "
+                "WHERE u.user_id=?"
+            )
+        );
+
+        stmt->setInt(1, user_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        if (res->next()) {
+            auto vo = std::make_shared<DinerCenterVO>();
+            vo->setUserId(user_id);
+            vo->setUsername(res->getString("username"));
+            vo->setAge(res->getInt("age"));
+            vo->setPhone(res->getString("phone"));
+            vo->setIdCard(res->getString("id_card"));
+            vo->setAddress(res->getString("address"));
+            vo->setFamilyId(res->getInt("family_id"));
+            vo->setFamilyName(res->getString("family_name"));
+            vo->setDiseaseHistory(res->getString("disease_history"));
+            vo->setTastePreference(res->getString("taste_preference"));
+            return vo;
+        }
+    } catch (...) {}
+    return nullptr;
+}
 /*****************************************
  * CanteenDao
  ****************************************/

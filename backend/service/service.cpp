@@ -77,6 +77,10 @@ std::shared_ptr<User> UserService::login(
     return nullptr;
 }
 
+std::shared_ptr<DinerCenterVO> UserService::getDinerCenterByUserId(int user_id) {
+    DinerDAO dao;
+    return dao.getDinerCenterByUserId(user_id);
+}
 /**********************************************
  * CanteenService
  *********************************************/

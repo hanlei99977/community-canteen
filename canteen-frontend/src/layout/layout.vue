@@ -17,6 +17,8 @@
         <el-menu-item index="/home">首页</el-menu-item>
         <el-menu-item index="/canteens">食堂列表</el-menu-item>
         <el-menu-item index="/orders">我的订单</el-menu-item>
+        <el-menu-item index="/userCenter">用户中心</el-menu-item>
+
       </el-menu>
     </el-aside>
 

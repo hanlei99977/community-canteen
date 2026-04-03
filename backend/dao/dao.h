@@ -43,6 +43,16 @@ public:
 };
 
 // ================================
+// 家庭
+// ================================
+class FamilyDAO {
+public:
+    bool insertFamily(const Family& family);
+    Family getFamilyByUserId(int user_id);
+    std::vector<Family> getFamilyList();
+};
+
+// ================================
 // 食堂
 // ================================
 class CanteenDAO {

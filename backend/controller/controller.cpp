@@ -388,5 +388,32 @@ void Controller::initRoutes(httplib::Server& server) {
             res.set_content(Response::error(500, "服务器错误"), "application/json");
         }
     });
+
+     // ============================
+    // 家庭列表
+    // ============================
+    server.Get("/familyList", [](const httplib::Request& req, httplib::Response& res) {
+        try{
+            std::cout << "家庭列表请求" << std::endl;
+
+            FamilyService service;
+            auto familyList = service.getFamilyList();
+
+            json arr = json::array();
+
+            for (const auto& f : familyList) {
+                arr.push_back({
+                    {"family_id", f.getId()},
+                    {"family_name", f.getName()}
+                });
+                std::cout << "家庭列表项：family_id=" << f.getId() << ", family_name=" << f.getName() << std::endl;
+            }
+            res.set_content(Response::success(arr), "application/json");
+        } catch (...) {
+            res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+
+        }
+    });
+
 }
 

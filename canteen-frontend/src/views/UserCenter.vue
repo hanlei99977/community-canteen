@@ -41,7 +41,7 @@
             <el-option
               v-for="item in familyList"
               :key="item.family_id"
-              :label="item.family_name"
+              :label="item.family_name + ' (ID:' + item.family_id + ')'"
               :value="item.family_id"
             />
           </el-select>
@@ -105,8 +105,8 @@ const getUserInfo = async () => {
 
 // 获取家庭列表
 const getFamilyList = async () => {
-  const res = await axios.get('/api/family/list')
-  familyList.value = res.data
+  const res = await axios.get('http://192.168.56.100:8080/familyList')
+  familyList.value = res.data.data
 }
 
 // 更新用户
@@ -124,8 +124,8 @@ const updateUser = async () => {
 }
 
 onMounted(() => {
-  getUserInfo()
   getFamilyList()
+  getUserInfo()
 })
 </script>
 

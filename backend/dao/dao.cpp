@@ -1,9 +1,9 @@
 #include "dao.h"
 #include <cppconn/prepared_statement.h>
 
-/**********************************************
+/***************************************************************************************
  * UserDao
- *********************************************/
+ ***************************************************************************************/
 int UserDAO::insertUser(sql::Connection *conn, const User& user)
 {
     try {
@@ -249,9 +249,86 @@ std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(int user_id)
     } catch (...) {}
     return nullptr;
 }
-/*****************************************
+/***************************************************************************************
+ * FamilyDao
+***************************************************************************************/
+bool FamilyDAO::insertFamily(const Family& family) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO family(family_name) "
+                "VALUES (?)"
+            )
+        );
+
+        stmt->setString(1, family.getName());
+
+        if (stmt->executeUpdate() == 0) {
+            return false;
+        }
+
+        return true;
+    } catch (...) { return false; }
+}
+
+Family FamilyDAO::getFamilyByUserId(int user_id) {
+    Family family;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT f.family_id, f.family_name FROM family f "
+                "JOIN diner d ON f.family_id = d.family_id "
+                "WHERE d.user_id=?"
+            )
+        );
+
+        stmt->setInt(1, user_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            family.setId(res->getInt("family_id"));
+            family.setName(res->getString("family_name"));
+        }
+    } catch (...) {}
+
+    return family;
+}
+
+std::vector<Family> FamilyDAO::getFamilyList() {
+    std::vector<Family> list;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT f.family_id, f.family_name FROM family f "
+            )
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            Family f;
+            f.setId(res->getInt("family_id"));
+            f.setName(res->getString("family_name"));
+            list.push_back(f);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
+/***************************************************************************************
  * CanteenDao
- ****************************************/
+ ***************************************************************************************/
 std::vector<Canteen> CanteenDAO::getAllCanteens() {
     std::vector<Canteen> list;
 
@@ -299,9 +376,9 @@ std::shared_ptr<Canteen> CanteenDAO::getCanteenById(int id) {
     return nullptr;
 }
 
-/*****************************************
+/***************************************************************************************
  * DishDao
- ****************************************/
+ ***************************************************************************************/
 std::vector<Dish> DishDAO::getDishesByCanteen(int canteen_id)
 {
     std::vector<Dish> list;
@@ -329,9 +406,9 @@ std::vector<Dish> DishDAO::getDishesByCanteen(int canteen_id)
     return list;
 }
 
-/*****************************************
+/***************************************************************************************
  * MenuDao
- ****************************************/
+ ***************************************************************************************/
 std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date) {
     std::vector<Dish> list;
 
@@ -365,9 +442,9 @@ std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date
     return list;
 }
 
-/*****************************************
+/***************************************************************************************
  * OrderDao
- ****************************************/
+ ***************************************************************************************/
  int OrderDAO::insertOrder(sql::Connection *conn, const Order& order, const std::vector<OrderItem>& items) {
     try {
         // 1️⃣ 插入订单
@@ -490,9 +567,9 @@ std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByUser(int user_id,int orde
     return list;
 }
 
-/*****************************************
+/***************************************************************************************
  * OrderItemDao
- ****************************************/
+ ***************************************************************************************/
 bool OrderItemDAO::insertOrderItems(sql::Connection *conn, int order_id, const std::vector<OrderItem>& items) {
     try {
         for (const auto& item : items) {
@@ -514,9 +591,9 @@ bool OrderItemDAO::insertOrderItems(sql::Connection *conn, int order_id, const s
     } catch (...) { return false; }
 }
 
-/*****************************************
+/***************************************************************************************
  * RatingDao
- ****************************************/
+ ***************************************************************************************/
 bool RatingDAO::insertRating(const Rating& rating) {
     try {
         DBConnectionGuard guard;
@@ -571,9 +648,9 @@ bool RatingDAO::insertRating(const Rating& rating) {
     return list;
 }
 
-/*****************************************
+/***************************************************************************************
  * ReportDao
- ****************************************/
+***************************************************************************************/
 bool ReportDAO::insertReport(const Report& report) {
     try {
         DBConnectionGuard guard;

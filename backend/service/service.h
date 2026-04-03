@@ -17,6 +17,15 @@ public:
 };
 
 // ================================
+// 家庭服务
+// ================================
+class FamilyService {
+public:
+    Family getFamilyByUserId(int user_id);
+    std::vector<Family> getFamilyList();
+};
+
+// ================================
 // 食堂服务
 // ================================
 class CanteenService {

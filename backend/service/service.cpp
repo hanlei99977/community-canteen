@@ -81,6 +81,20 @@ std::shared_ptr<DinerCenterVO> UserService::getDinerCenterByUserId(int user_id) 
     DinerDAO dao;
     return dao.getDinerCenterByUserId(user_id);
 }
+
+/**********************************************
+ * FamilyService
+ *********************************************/
+Family FamilyService::getFamilyByUserId(int user_id) {
+    FamilyDAO dao;
+    return dao.getFamilyByUserId(user_id);
+}
+
+std::vector<Family> FamilyService::getFamilyList() {
+    FamilyDAO dao;
+    return dao.getFamilyList();
+}
+
 /**********************************************
  * CanteenService
  *********************************************/

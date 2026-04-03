@@ -98,8 +98,7 @@ const loadDetails = async (order) => {
         order_id: order.order_id
       }
     })
-console.log('返回数据:', res.data)
-console.log('items:', res.data.data)
+
     if (res.data.code === 0) {
       order.items = res.data.data
       order.loaded = true

@@ -40,7 +40,7 @@ private:
 };
 
 
-//连接守卫类
+//连接控制制类，RAII风格
 class DBConnectionGuard {
 private:
     sql::Connection* conn;
@@ -61,4 +61,25 @@ public:
     }
 };
 
+//事务控制
+class TransactionGuard {
+public:
+    sql::Connection* conn;
+    bool committed = false;
+
+    TransactionGuard(sql::Connection* c) : conn(c) {
+        conn->setAutoCommit(false);
+    }
+
+    void commit() {
+        conn->commit();
+        committed = true;
+    }
+
+    ~TransactionGuard() {
+        if (!committed) {
+            conn->rollback();
+        }
+    }
+};
 #endif

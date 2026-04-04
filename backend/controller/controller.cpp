@@ -353,6 +353,7 @@ void Controller::initRoutes(httplib::Server& server) {
     // ============================
     // 用户个人中心
     // ============================
+    //用户信息获取
     server.Get("/userCenter", [](const httplib::Request& req, httplib::Response& res) {
         try {
             int user_id = std::stoi(req.get_param_value("user_id"));
@@ -389,7 +390,64 @@ void Controller::initRoutes(httplib::Server& server) {
         }
     });
 
-     // ============================
+    //用户信息修改
+    server.Post("/userCenterUpdate", [](const httplib::Request& req, httplib::Response& res) {
+        try{
+            json body = json::parse(req.body);
+            std::cout << "个人中心更新请求体：" << req.body << std::endl;
+
+            DinerCenterVO user;
+            if (body["user_id"].is_number()) {
+                user.setUserId(body["user_id"]);
+            } else if (body["user_id"].is_string()) {
+                user.setUserId(std::stoi(body["user_id"].get<std::string>()));
+            }
+            if (body["age"].is_number()) {
+                user.setAge(body["age"]);
+            } else if (body["age"].is_string()) {
+                user.setAge(std::stoi(body["age"].get<std::string>()));
+            }
+            if (body.contains("phone")) {
+                user.setPhone(body["phone"]);
+            }
+
+            if (body.contains("address")) {
+                user.setAddress(body["address"]);
+            }
+
+            if (body.contains("id_card")) {
+                user.setIdCard(body["id_card"]);
+            }
+            if (body.contains("disease_history")) {
+                user.setDiseaseHistory(body["disease_history"]);
+            }
+            if (body.contains("taste_preference")) {
+                user.setTastePreference(body["taste_preference"]);
+            }
+            
+            if (body["family_id"].is_number()) {
+                user.setFamilyId(body["family_id"]);
+            } else if (body["family_id"].is_string()) {
+                user.setFamilyId(std::stoi(body["family_id"].get<std::string>()));
+            }
+
+            std::cout<<"个人信息解析成功"<<std::endl;
+
+            UserService service;
+            if (service.updateDinerCenter(user)) {
+                res.set_content(Response::success(), "application/json");
+                std::cout << "用户 " << user.getUserId() << " 个人中心数据更新成功" << std::endl;
+            } else {
+                std::cerr << "用户 " << user.getUserId() << " 个人中心数据更新失败" << std::endl;
+                res.set_content(Response::error(500, "更新失败"), "application/json");
+            }
+        }
+       catch (const std::exception& e) {
+            std::cerr << "更新异常: " << e.what() << std::endl;
+            res.set_content(Response::error(500, "服务器错误"), "application/json");
+        }
+    });    
+    // ============================
     // 家庭列表
     // ============================
     server.Get("/familyList", [](const httplib::Request& req, httplib::Response& res) {

@@ -13,6 +13,7 @@ public:
     int insertUser(sql::Connection *conn, const User& user);
     std::shared_ptr<User> getUserByUsernameAndPassword(const std::string&, const std::string&);
     std::shared_ptr<User> getUserById(int user_id);
+    bool updateUser(sql::Connection *conn, const DinerCenterVO& user);
 };
 
 // ================================
@@ -32,6 +33,7 @@ public:
     bool insertDiner(sql::Connection *conn, int user_id);
     std::shared_ptr<Diner> getDinerByUserId(int user_id);
     std::shared_ptr<DinerCenterVO> getDinerCenterByUserId(int user_id);
+    bool updateDiner(sql::Connection *conn, const DinerCenterVO& diner);
 };
 
 // ================================

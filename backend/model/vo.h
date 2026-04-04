@@ -58,7 +58,7 @@ private:
     std::string username;
     int age;
     std::string phone;
-    std::string idCard;
+    std::string id_card;
     std::string address;
     int familyId;
     std::string familyName;
@@ -77,8 +77,8 @@ public:
     std::string getPhone() const { return phone; }
     void setPhone(const std::string& p) { phone = p; }
 
-    std::string getIdCard() const { return idCard; }
-    void setIdCard(const std::string& id) { idCard = id; }
+    std::string getIdCard() const { return id_card; }
+    void setIdCard(const std::string& id) { id_card = id; }
 
     std::string getAddress() const { return address; }
     void setAddress(const std::string& addr) { address = addr; }

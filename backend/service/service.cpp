@@ -13,17 +13,15 @@ bool UserService::registerUser(const User& user ,int role) {
     bool res = true;
 
     try {
-        conn->setAutoCommit(false); // 开启事务
+        TransactionGuard tx(conn);
 
         // 简单校验（可以扩展）
         if (user.getUsername().empty() || user.getPassword().empty()) {
-            conn->rollback();
             return false;
         }
 
         int user_id = dao.insertUser(conn, user);
         if (user_id == -1) {
-            conn->rollback();
             return false;
         }
 
@@ -41,19 +39,16 @@ bool UserService::registerUser(const User& user ,int role) {
                 res = managerDAO.insertManager(conn, user_id);
                 break;
             default:
-                conn->rollback();
                 return false;
         }
 
         if (!res) {
-            conn->rollback();
             return false;
         }
-        conn->commit(); // 提交事务
+        tx.commit(); // 提交事务
         return true;
     }
     catch (...) {
-        conn->rollback();
         return false;
     }
 }
@@ -82,6 +77,34 @@ std::shared_ptr<DinerCenterVO> UserService::getDinerCenterByUserId(int user_id) 
     return dao.getDinerCenterByUserId(user_id);
 }
 
+bool UserService::updateDinerCenter(const DinerCenterVO& diner) {
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+
+   try{
+        TransactionGuard tx(conn);
+
+        UserDAO userDAO;
+        DinerDAO dinerdao;
+        if (!userDAO.updateUser(conn, diner))
+        {
+            std::cout << "更新 user 信息失败" << std::endl;
+            return false;
+        }
+        if (!dinerdao.updateDiner(conn, diner))
+        {
+            std::cout << "更新 diner 信息失败" << std::endl;
+            return false;
+        }
+
+        tx.commit();
+        return true;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "error: " << e.what() << std::endl;
+        return false;
+    }
+}
 /**********************************************
  * FamilyService
  *********************************************/
@@ -127,7 +150,7 @@ bool OrderService::placeOrder(int user_id,
     auto* conn = guard.get();
 
     try{
-        conn->setAutoCommit(false); // 开启事务
+        TransactionGuard tx(conn);
         // ⭐ 并发保护（简单版）
         std::lock_guard<std::mutex> lock(orderMutex);
         
@@ -159,21 +182,18 @@ bool OrderService::placeOrder(int user_id,
         // 3️⃣ 创建订单（事务）
         int order_id = orderDAO.insertOrder(conn, order, items);
         if (order_id == -1) {
-            conn->rollback();
             return false;
         }
 
         OrderItemDAO orderItemDAO;
         if (!orderItemDAO.insertOrderItems(conn, order_id, items)) {
-            conn->rollback();
             return false;
         }
 
-        conn->commit(); // 提交事务
+        tx.commit(); // 提交事务
         return true;
         
     }catch (...) {
-            conn->rollback();
             return false;
         }
 }

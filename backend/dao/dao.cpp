@@ -162,6 +162,28 @@ std::shared_ptr<User> UserDAO::getUserById(int user_id)
     return nullptr;
 }
 
+bool UserDAO::updateUser(sql::Connection *conn, const DinerCenterVO& user) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE users SET age=?, phone=?, id_card=?, address=? "
+                "WHERE user_id=?"
+            )
+        );
+
+        stmt->setInt(1, user.getAge());
+        stmt->setString(2, user.getPhone());
+        stmt->setString(3, user.getIdCard());
+        stmt->setString(4, user.getAddress());
+        stmt->setInt(5, user.getUserId());
+        if (stmt->executeUpdate() == 0) {
+            std::cout<<"没有对 users 表进行更新"<<std::endl; 
+        }
+        
+        return true;
+    } catch (...) { return false; }
+}
+
 std::shared_ptr<Admin> AdminDAO::getAdminByUserId(int user_id) {
     try {
         DBConnectionGuard guard;
@@ -249,6 +271,29 @@ std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(int user_id)
     } catch (...) {}
     return nullptr;
 }
+
+bool DinerDAO::updateDiner(sql::Connection *conn, const DinerCenterVO& diner) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE diner SET family_id=?, disease_history=?, taste_preference=? "
+                "WHERE user_id=?"
+            )
+        );
+
+        stmt->setInt(1, diner.getFamilyId());
+        stmt->setString(2, diner.getDiseaseHistory());
+        stmt->setString(3, diner.getTastePreference());
+        stmt->setInt(4, diner.getUserId());
+        if (stmt->executeUpdate() == 0) {
+            std::cout<<"没有对diner表进行更新"<<std::endl; 
+        }
+
+        return true;
+    } catch (...) { return false; }
+}
+
+
 /***************************************************************************************
  * FamilyDao
 ***************************************************************************************/

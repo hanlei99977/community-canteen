@@ -243,3 +243,17 @@ CREATE INDEX idx_orders_canteen ON orders(canteen_id);
 CREATE INDEX idx_dish_canteen ON dish(canteen_id);
 CREATE INDEX idx_menu_canteen ON daily_menu(canteen_id);
 CREATE INDEX idx_report_canteen ON report(canteen_id);
+
+
+-- ================================
+--  插入基本的数据
+-- ================================
+INSERT INTO users(username, age, password, phone, address)
+VALUES ('admin', 35, 'admin123', '13800000000', '系统');
+
+INSERT INTO admin(user_id, level_id, region_id)
+VALUES (LAST_INSERT_ID(), 1, NULL);
+
+INSERT INTO family(family_id, family_name) VALUES
+(1,'未设置家庭');
+

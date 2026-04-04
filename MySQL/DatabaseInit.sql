@@ -55,7 +55,6 @@ INSERT INTO users(username, age, password, phone, address) VALUES
 -- 管理员初始化
 -- ===============================
 INSERT INTO admin(user_id, level_id, region_id) VALUES
-(1,1,NULL),   -- 系统管理员
 (2,2,1),      -- 市级管理员
 (3,3,2);      -- 区级管理员
 

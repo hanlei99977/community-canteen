@@ -4,6 +4,48 @@
 
 using json = nlohmann::json;
 
+// 安全地从 JSON 中获取参数，支持数字字符串自动转换
+int getIntSafe(const json& body, const std::string& key, int defaultVal = 0) {
+    // 如果参数不存在或为 null，返回默认值
+    if (!body.contains(key) || body[key].is_null()) 
+    {
+        std::cout << "参数 " << key << " 不存在或为 null" << defaultVal << std::endl;
+        return defaultVal;
+    }
+
+    // 如果已经是整数，直接返回
+    if (body[key].is_number_integer()) {
+        return body[key];
+    }
+
+    // 支持字符串数字自动转换
+    if (body[key].is_string()) {
+        try {
+            return std::stoi(body[key].get<std::string>());
+        } catch (...) {
+            return defaultVal;// 转换失败返回默认值
+        }
+    }
+
+    return defaultVal;
+}
+
+// 获取字符串参数，支持数字自动转换为字符串
+std::string getStringSafe(const json& body, const std::string& key, const std::string& defaultVal = "") {
+    if (!body.contains(key) || body[key].is_null()) return defaultVal;
+
+    if (body[key].is_string()) {
+        return body[key];
+    }
+
+    // 支持 number → string
+    if (body[key].is_number()) {
+        return std::to_string(body[key].get<int>());
+    }
+
+    return defaultVal;
+}
+
 void Controller::initRoutes(httplib::Server& server) {
 
     // ============================
@@ -25,9 +67,8 @@ void Controller::initRoutes(httplib::Server& server) {
     server.Post("/login", [](const httplib::Request& req, httplib::Response& res) {
         try {
             json body = json::parse(req.body);
-
-            std::string username = body["username"];
-            std::string password = body["password"];
+            std::string username = getStringSafe(body, "username");
+            std::string password = getStringSafe(body, "password");
 
             if (username.empty() || password.empty()) {
                 res.status = 400;
@@ -68,15 +109,10 @@ void Controller::initRoutes(httplib::Server& server) {
             json body = json::parse(req.body);
 
             User user;
-            user.setUsername(body["username"]);
-            user.setPassword(body["password"]);
-            if (body["age"].is_number()) {
-                user.setAge(body["age"]);
-            } else if (body["age"].is_string()) {
-                user.setAge(std::stoi(body["age"].get<std::string>())); // 默认年龄为0
-            }
-            user.setPhone(body["phone"]);
-            
+            user.setUsername(getStringSafe(body, "username"));
+            user.setPassword(getStringSafe(body, "password"));
+            user.setAge(getIntSafe(body, "age"));
+            user.setPhone(getStringSafe(body, "phone"));
             user.setStatus(1);
 
             if (user.getUsername().empty() || user.getPassword().empty()) {
@@ -85,6 +121,11 @@ void Controller::initRoutes(httplib::Server& server) {
                 return;
             }
 
+            if (user.getAge() <= 0 || user.getAge() > 150) {
+                res.status = 400;
+                res.set_content(Response::error(400, "年龄必须在1-150之间"), "application/json");
+                return;
+            }
             UserService service;
 
             if (service.registerUser(user)) {
@@ -156,18 +197,9 @@ void Controller::initRoutes(httplib::Server& server) {
 
             int user_id     = 0;
             int canteen_id  = 0;
-
-            if (body["user_id"].is_number()) {
-                user_id = body["user_id"];
-            } else if (body["user_id"].is_string()) {
-                user_id = std::stoi(body["user_id"].get<std::string>());
-            }
-
-            if (body["canteen_id"].is_number()) {
-                canteen_id = body["canteen_id"];
-            } else if (body["canteen_id"].is_string()) {
-                canteen_id = std::stoi(body["canteen_id"].get<std::string>());
-            }
+            user_id = getIntSafe(body, "user_id");
+            canteen_id = getIntSafe(body, "canteen_id");
+           
             std::cout << "下单参数：user_id=" << user_id << ", canteen_id=" << canteen_id << std::endl;
             std::vector<OrderItem> items;
 
@@ -262,32 +294,12 @@ void Controller::initRoutes(httplib::Server& server) {
             json body = json::parse(req.body);
 
             Rating r;
-            if (body["user_id"].is_number()) {
-                r.setUserId(body["user_id"]);
-            } else if (body["user_id"].is_string()) {
-                r.setUserId(std::stoi(body["user_id"].get<std::string>()));
-            }
-            if (body["canteen_id"].is_number()) {
-                r.setCanteenId(body["canteen_id"]);
-            } else if (body["canteen_id"].is_string()) {
-                r.setCanteenId(std::stoi(body["canteen_id"].get<std::string>()));
-            }
-            if (body["score"].is_number()) {
-                r.setScore(body["score"]);
-            } else if (body["score"].is_string()) {
-                r.setScore(std::stoi(body["score"].get<std::string>()));
-            }
-            if (body["comment"].is_string()) {
-                r.setComment(body["comment"]);
-            }else {
-                r.setComment("");
-                std::cout << "评价内容为空" << std::endl;
-            }
-            if (body["order_id"].is_number()) {
-                r.setOrderId(body["order_id"]);
-            } else if (body["order_id"].is_string()) {
-                r.setOrderId(std::stoi(body["order_id"].get<std::string>()));
-            }
+            r.setUserId(getIntSafe(body, "user_id"));
+            r.setCanteenId(getIntSafe(body, "canteen_id"));
+            r.setScore(getIntSafe(body, "score"));
+            r.setComment(getStringSafe(body, "comment"));
+            r.setOrderId(getIntSafe(body, "order_id"));
+
             std::cout << "评价参数：user_id=" << r.getUserId() << ", canteen_id=" << r.getCanteenId()
                       << ", score=" << r.getScore() << ", comment=" << r.getComment() << std::endl;
 
@@ -312,28 +324,11 @@ void Controller::initRoutes(httplib::Server& server) {
             json body = json::parse(req.body);
 
             Report report;
-            if (body["user_id"].is_number()) {
-                report.setUserId(body["user_id"]);
-            } else if (body["user_id"].is_string()) {
-                report.setUserId(std::stoi(body["user_id"].get<std::string>()));
-            }
-            if (body["canteen_id"].is_number()) {
-                report.setCanteenId(body["canteen_id"]);
-            } else if (body["canteen_id"].is_string()) {
-                report.setCanteenId(std::stoi(body["canteen_id"].get<std::string>()));
-            }
-            if (body["type"].is_number()) {
-                report.setType(body["type"]);
-            } else if (body["type"].is_string()) {
-                report.setType(std::stoi(body["type"].get<std::string>()));
-            }
-            
-            if (body["content"].is_string()) {
-                report.setContent(body["content"]);
-            } else {
-                report.setContent("");
-                std::cout << "投诉内容为空" << std::endl;
-            }
+            report.setUserId(getIntSafe(body, "user_id"));
+            report.setCanteenId(getIntSafe(body, "canteen_id"));
+            report.setType(getIntSafe(body, "type"));
+            report.setContent(getStringSafe(body, "content"));
+
             std::cout << "举报参数：user_id=" << report.getUserId() << ", canteen_id=" << report.getCanteenId()
                       << ", type=" << report.getType() << ", content=" << report.getContent() << std::endl;
 
@@ -397,42 +392,28 @@ void Controller::initRoutes(httplib::Server& server) {
             std::cout << "个人中心更新请求体：" << req.body << std::endl;
 
             DinerCenterVO user;
-            if (body["user_id"].is_number()) {
-                user.setUserId(body["user_id"]);
-            } else if (body["user_id"].is_string()) {
-                user.setUserId(std::stoi(body["user_id"].get<std::string>()));
-            }
-            if (body["age"].is_number()) {
-                user.setAge(body["age"]);
-            } else if (body["age"].is_string()) {
-                user.setAge(std::stoi(body["age"].get<std::string>()));
-            }
-            if (body.contains("phone")) {
-                user.setPhone(body["phone"]);
-            }
-
-            if (body.contains("address")) {
-                user.setAddress(body["address"]);
-            }
-
-            if (body.contains("id_card")) {
-                user.setIdCard(body["id_card"]);
-            }
-            if (body.contains("disease_history")) {
-                user.setDiseaseHistory(body["disease_history"]);
-            }
-            if (body.contains("taste_preference")) {
-                user.setTastePreference(body["taste_preference"]);
-            }
-            
-            if (body["family_id"].is_number()) {
-                user.setFamilyId(body["family_id"]);
-            } else if (body["family_id"].is_string()) {
-                user.setFamilyId(std::stoi(body["family_id"].get<std::string>()));
-            }
+            user.setUserId(getIntSafe(body, "user_id"));
+            user.setAge(getIntSafe(body, "age"));
+            user.setPhone(getStringSafe(body, "phone"));
+            user.setAddress(getStringSafe(body, "address"));
+            user.setIdCard(getStringSafe(body, "id_card"));
+            user.setDiseaseHistory(getStringSafe(body, "disease_history"));
+            user.setTastePreference(getStringSafe(body, "taste_preference"));
+            user.setFamilyId(getIntSafe(body, "family_id"));
 
             std::cout<<"个人信息解析成功"<<std::endl;
 
+            if (user.getUserId() == 0) {
+                res.status = 400;
+                res.set_content(Response::error(400, "用户ID不能为空"), "application/json");
+                return;
+            }
+            if (user.getAge() <= 0 || user.getAge() > 150) {
+                res.status = 400;
+                res.set_content(Response::error(400, "年龄必须在1-150之间"), "application/json");
+                return;
+            }
+            
             UserService service;
             if (service.updateDinerCenter(user)) {
                 res.set_content(Response::success(), "application/json");

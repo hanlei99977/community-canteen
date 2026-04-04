@@ -21,7 +21,7 @@
         </el-form-item>
 
         <el-form-item label="身份证号">
-          <el-input v-model="form.idCard" />
+          <el-input v-model="form.id_card" />
         </el-form-item>
 
         <!-- 饮食习惯 -->
@@ -32,6 +32,15 @@
             <el-option label="低脂" value="低脂" />
             <el-option label="咸口" value="咸口" />
             <el-option label="辣口" value="辣口" />
+          </el-select>
+        </el-form-item>
+
+        <!-- 饮食习惯 -->
+        <el-form-item label="疾病史(如有)">
+          <el-select v-model="form.disease_history" placeholder="请选择">
+            <el-option label="无" value="无" />
+            <el-option label="高血压" value="高血压" />
+            <el-option label="糖尿病" value="糖尿病" />
           </el-select>
         </el-form-item>
 
@@ -67,7 +76,7 @@ const form = ref({
   username: '',
   age: '',
   phone: '',
-  idCard: '',
+  id_card: '',
   address: '',
   taste_preference: '',
   disease_history: '',
@@ -111,12 +120,14 @@ const getFamilyList = async () => {
 
 // 更新用户
 const updateUser = async () => {
-  await axios.post('/api/user/update', {
+  await axios.post('http://192.168.56.100:8080/userCenterUpdate', {
     user_id: form.value.user_id,
     age: form.value.age,
     phone: form.value.phone,
     address: form.value.address,
+    id_card:form.value.id_card,
     taste_preference: form.value.taste_preference,
+    disease_history: form.value.disease_history,
     family_id: form.value.family_id
   })
 

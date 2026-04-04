@@ -61,7 +61,7 @@ const loadOrders = async () => {
   try {
     const user = JSON.parse(localStorage.getItem('user'))
 
-    const res = await axios.get('http://192.168.56.100:8080/orders', {
+    const res = await axios.get('http://192.168.56.100:8080/getOrders', {
       params: {
         user_id: user.user_id
       }

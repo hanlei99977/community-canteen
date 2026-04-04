@@ -89,7 +89,7 @@ const submitOrder = async () => {
 
   try {
     const res = await axios.post(
-      'http://192.168.56.100:8080/orders',
+      'http://192.168.56.100:8080/placeOrder',
       {
         user_id: user.user_id,
         canteen_id: Number(canteen_id),

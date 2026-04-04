@@ -5,4 +5,27 @@
 class Controller {
 public:
     static void initRoutes(httplib::Server& server);
+
+private:
+    static void registerUserRoutes(httplib::Server& server);
+    static void registerOrderRoutes(httplib::Server& server);
+    static void registerCanteenRoutes(httplib::Server& server);
+    static void registerUserCenterRoutes(httplib::Server& server);
+
+    //用户注册登录
+    static void handleLogin(const httplib::Request& req, httplib::Response& res);
+    static void handleRegister(const httplib::Request& req, httplib::Response& res);
+    //食堂相关
+    static void handleCanteens(const httplib::Request& req, httplib::Response& res);
+    static void handleMenu(const httplib::Request& req, httplib::Response& res);
+    //订单相关
+    static void handlePlaceOrder(const httplib::Request& req, httplib::Response& res);
+    static void handleGetOrders(const httplib::Request& req, httplib::Response& res);
+    static void handleOrderDetails(const httplib::Request& req, httplib::Response& res);
+    static void handleRating(const httplib::Request& req, httplib::Response& res);
+    static void handleReport(const httplib::Request& req, httplib::Response& res);
+    //个人中心相关
+    static void handleUserCenter(const httplib::Request& req, httplib::Response& res);
+    static void handleUserCenterUpdate(const httplib::Request& req, httplib::Response& res);
+    static void handleFamilyList(const httplib::Request& req, httplib::Response& res);
 };

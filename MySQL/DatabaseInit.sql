@@ -20,14 +20,6 @@ INSERT INTO region(region_name, region_level, parent_id) VALUES
 ('阳光社区','社区级',3);
 
 -- ===============================
--- 管理员级别初始化
--- ===============================
-INSERT INTO level(level_id, level_name) VALUES
-(1,'系统管理员'),
-(2,'市级管理员'),
-(3,'区级管理员');
-
--- ===============================
 -- 家庭初始化
 -- ===============================
 INSERT INTO family(family_name) VALUES

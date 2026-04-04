@@ -413,7 +413,9 @@ void Controller::initRoutes(httplib::Server& server) {
                 res.set_content(Response::error(400, "年龄必须在1-150之间"), "application/json");
                 return;
             }
-            
+            if (user.getFamilyId() == 0) {
+                user.setFamilyId(1); // 默认设置为“未设置家庭”
+            }
             UserService service;
             if (service.updateDinerCenter(user)) {
                 res.set_content(Response::success(), "application/json");

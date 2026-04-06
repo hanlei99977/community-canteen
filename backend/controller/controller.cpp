@@ -146,6 +146,7 @@ void Controller::handleRegister(const httplib::Request& req, httplib::Response& 
         user.setAge(getIntSafe(body, "age"));
         user.setPhone(getStringSafe(body, "phone"));
         user.setStatus(1);
+        std::string role = getStringSafe(body, "role", "diner");
 
         if (user.getUsername().empty() || user.getPassword().empty()) {
             res.status = 400;
@@ -161,7 +162,8 @@ void Controller::handleRegister(const httplib::Request& req, httplib::Response& 
 
         UserService service;
 
-        if (service.registerUser(user)) {
+        if (service.registerUser(user, role == "admin" ? 2 : role == "manager" ? 3 : 1)) {
+             std::cout << "用户 " << user.getUsername() << " 注册成功" << std::endl;
             res.set_content(Response::success(), "application/json");
         } else {
             res.set_content(Response::error(500, "注册失败"), "application/json");

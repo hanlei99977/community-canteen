@@ -6,6 +6,14 @@
 
       <el-form :model="form">
 
+        <el-form-item label="注册身份">
+          <el-radio-group v-model="form.role">
+            <el-radio label="diner">用餐者</el-radio>
+            <el-radio label="manager">食堂管理者</el-radio>
+            <el-radio label="admin">管理员</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
         <el-form-item label="用户名">
           <el-input v-model="form.username" />
         </el-form-item>
@@ -50,7 +58,8 @@ const form = reactive({
   username: '',
   password: '',
   age: 18,
-  phone: ''
+  phone: '',
+  role:'diner'
 })
 
 const handleRegister = async () => {

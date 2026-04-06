@@ -85,7 +85,7 @@ bool ManagerDAO::insertManager(sql::Connection *conn, int user_id)
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "INSERT INTO manager(user_id) "
+                "INSERT INTO canteen_manager(user_id) "
                 "VALUES (?)"
             )
         );

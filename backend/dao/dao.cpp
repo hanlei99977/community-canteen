@@ -184,6 +184,51 @@ bool UserDAO::updateUser(sql::Connection *conn, const DinerCenterVO& user) {
     } catch (...) { return false; }
 }
 
+std::string UserDAO::getUserRole(int user_id)
+{
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    // 查 admin 表
+    auto stmt1 = std::unique_ptr<sql::PreparedStatement>(
+        conn->prepareStatement("SELECT level_id FROM admin WHERE user_id = ?")
+    );
+    stmt1->setInt(1, user_id);
+    auto res1 = std::unique_ptr<sql::ResultSet>(stmt1->executeQuery());
+
+    if (res1->next()) {
+        int level = res1->getInt("level_id");
+
+        switch(level) {
+            case 1: return "system_admin";
+            case 2: return "admin";
+            default: return "admin";
+        }
+    }
+
+    // 查 diner 表
+    auto stmt2 = std::unique_ptr<sql::PreparedStatement>(
+        conn->prepareStatement("SELECT user_id FROM diner WHERE user_id = ?")
+    );
+    stmt2->setInt(1, user_id);
+    auto res2 = std::unique_ptr<sql::ResultSet>(stmt2->executeQuery());
+
+    if (res2->next()) {
+        return "diner";
+    }
+
+    // 查canteen_manager表
+    auto stmt3 = std::unique_ptr<sql::PreparedStatement>(
+        conn->prepareStatement("SELECT * FROM canteen_manager WHERE user_id = ?")
+    );
+    stmt3->setInt(1, user_id);
+    auto res3 = std::unique_ptr<sql::ResultSet>(stmt3->executeQuery());
+    if (res3->next()) {
+        return "canteen_manager";
+    }
+
+    return "unknown";
+}
+
 std::shared_ptr<Admin> AdminDAO::getAdminByUserId(int user_id) {
     try {
         DBConnectionGuard guard;

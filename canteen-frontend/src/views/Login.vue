@@ -36,16 +36,29 @@ const form = reactive({
   password: ''
 })
 
+// 登录
 const handleLogin = async () => {
+
+  // ✅ 1. 基本校验
+  if (!form.username || !form.password) {
+    ElMessage.warning('请输入用户名和密码')
+    return
+  }
+
   try {
     const res = await axios.post('http://192.168.56.100:8080/login', form)
 
     if (res.data.code === 0) {
       ElMessage.success('登录成功')
-      // ⭐ 存用户信息
-      localStorage.setItem('user', JSON.stringify(res.data.data))
-      // ⭐ 跳转首页（关键）
+
+      const user = res.data.data  // ⭐ 后端返回的数据
+      const role = user.role      // ⭐ 关键：角色
+
+      // ✅ 2. 存用户信息
+      localStorage.setItem('user', JSON.stringify(user))
+
       router.push('/home')
+
     } else {
       ElMessage.error('用户名或密码错误')
     }
@@ -54,6 +67,8 @@ const handleLogin = async () => {
   }
 }
 
+
+// 去注册
 const goRegister = () => {
   router.push('/register')
 }

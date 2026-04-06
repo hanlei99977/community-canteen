@@ -105,6 +105,14 @@ bool UserService::updateDinerCenter(const DinerCenterVO& diner) {
         return false;
     }
 }
+
+std::string UserService::getUserRole(int user_id) {
+    UserDAO dao;
+    if (user_id <= 0) {
+        return "unknown";
+    }
+    return dao.getUserRole(user_id);
+}   
 /**********************************************
  * FamilyService
  *********************************************/

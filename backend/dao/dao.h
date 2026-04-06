@@ -14,6 +14,7 @@ public:
     std::shared_ptr<User> getUserByUsernameAndPassword(const std::string&, const std::string&);
     std::shared_ptr<User> getUserById(int user_id);
     bool updateUser(sql::Connection *conn, const DinerCenterVO& user);
+    std::string getUserRole(int user_id);
 };
 
 // ================================

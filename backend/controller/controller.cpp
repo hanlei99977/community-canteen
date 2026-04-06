@@ -113,11 +113,13 @@ void Controller::handleLogin(const httplib::Request& req, httplib::Response& res
 
         UserService service;
         auto user = service.login(username, password);
-
+        std::string role = service.getUserRole(user ? user->getId() : -1);
+        
         if (user) {
             json data = {
                 {"user_id", user->getId()},
-                {"username", user->getUsername()}
+                {"username", user->getUsername()},
+                {"role", role}
             };
 
             res.status = 200;

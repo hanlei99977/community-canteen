@@ -14,49 +14,109 @@
         text-color="#fff"
         active-text-color="#ffd04b"
       >
-        <el-menu-item index="/home">首页</el-menu-item>
-        <el-menu-item index="/canteens">食堂列表</el-menu-item>
-        <el-menu-item index="/orders">我的订单</el-menu-item>
-        <el-menu-item index="/userCenter">用户中心</el-menu-item>
+        <!-- ================== 用餐者专属 ================== -->
+        <el-menu-item v-if="isDiner" index="/home">首页</el-menu-item>
+        <el-menu-item v-if="isDiner" index="/canteens">食堂列表</el-menu-item>
+        <el-menu-item v-if="isDiner" index="/orders">我的订单</el-menu-item>
+        <el-menu-item v-if="isDiner" index="/userCenter">用户中心</el-menu-item>
+
+        <!-- ================== 系统管理员专属 ================== -->
+        <el-menu-item v-if="isSystemAdmin" index="/adminManage">
+          管理员管理
+        </el-menu-item>
+
+        <el-menu-item v-if="isSystemAdmin" index="/adminApply">
+          管理员申请
+        </el-menu-item>
+
+        <!-- ================== 系统管理员 + 普通管理员 ================== -->
+        <el-menu-item v-if="isAdmin" index="/dinerManage">
+          用餐者管理
+        </el-menu-item>
+
+        <el-menu-item v-if="isAdmin" index="/canteenManage">
+          食堂管理
+        </el-menu-item>
+
+        <el-menu-item v-if="isAdmin" index="/announcement">
+          公告发布
+        </el-menu-item>
+
+        <el-menu-item v-if="isAdmin" index="/reportManage">
+          举报处理
+        </el-menu-item>
+
+        <!-- ================== 食堂管理员 ================== -->
+        <el-menu-item v-if="isCanteenAdmin" index="/menuManage">
+          每日餐单
+        </el-menu-item>
+
+        <el-menu-item v-if="isCanteenAdmin" index="/purchase">
+          日常采购
+        </el-menu-item>
 
       </el-menu>
     </el-aside>
 
     <!-- 右侧 -->
     <el-container>
-
-      <!-- 顶部栏 -->
       <el-header style="display:flex;align-items: center;gap: 15px;justify-content: flex-end;">
-          <span>{{ user.username }}</span>
-          <el-button type="danger" size="small" @click="logout">
-            退出
-          </el-button>
+        <span>{{ user.username }}</span>
+        <el-button type="danger" size="small" @click="logout">
+          退出
+        </el-button>
       </el-header>
 
-      <!-- ⭐ 关键：内容出口 -->
       <el-main>
         <router-view />
       </el-main>
-
     </el-container>
 
   </el-container>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const user = ref({})
+
+const user = ref({
+  username: '',
+  role: ''
+})
 
 onMounted(() => {
   const u = localStorage.getItem('user')
-  if (u) user.value = JSON.parse(u)
+  if (u) {
+    user.value = JSON.parse(u)
+  } else {
+    router.push('/login')
+  }
 })
+
+/* ================== 角色判断（推荐这样写） ================== */
+
+// 用餐者
+const isDiner = computed(() => user.value.role === 'diner')
+
+// 系统管理员
+const isSystemAdmin = computed(() => user.value.role === 'system_admin')
+
+// 普通管理员（包含系统管理员）
+const isAdmin = computed(() =>
+  user.value.role === 'system_admin' ||
+  user.value.role === 'admin'
+)
+
+// 食堂管理员
+const isCanteenAdmin = computed(() =>
+  user.value.role === 'canteen_manager'
+)
 
 const logout = () => {
   localStorage.removeItem('user')
+  user.value = {}
   router.push('/login')
 }
 </script>

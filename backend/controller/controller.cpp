@@ -90,6 +90,7 @@ void Controller::registerCanteenRoutes(httplib::Server& server) {
     server.Get("/getMenus", handleGetCanteenMenus);
     server.Get("/getDishes", handleGetDishes);
     server.Post("/menuCreate", handleCreateMenu);
+    server.Post("/menuDelete", handleDeleteMenu);
 }
 
 // 个人中心相关路由
@@ -339,6 +340,27 @@ void Controller::handleCreateMenu(const httplib::Request& req, httplib::Response
 
     } catch (const std::exception& e) {
         std::cerr << "新建餐单失败: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleDeleteMenu(const httplib::Request& req, httplib::Response& res)
+{
+    std::cout<< " json内容是 " << req.body<<std::endl;
+    try {
+        json body = json::parse(req.body);
+        int menu_id = getIntSafe(body, "menu_id");
+
+        MenuService service;
+
+        if (service.eraseMenu(menu_id)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "删除餐单失败"), "application/json");
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "删除餐单失败: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }

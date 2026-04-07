@@ -44,6 +44,7 @@ public:
     std::vector<CanteenMenuVO> getMenuByCanteen(int canteen_id);
     std::vector<Dish> getDishsByCanteen(int canteen_id);
     bool insertMenu(const MenuCreateDTO& menu);
+    bool eraseMenu(const int menu_id);
 };
 
 // ================================

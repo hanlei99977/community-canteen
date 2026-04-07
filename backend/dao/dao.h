@@ -82,6 +82,7 @@ public:
     std::vector<Dish> getMenuByDate(int canteen_id, const std::string& date);
     std::vector<CanteenMenuVO> getMenuByCanteen(int canteen_id);
     bool insertMenu(const MenuCreateDTO& menu);
+    bool eraseMenu(const int menu_id);
 };
 
 // ================================

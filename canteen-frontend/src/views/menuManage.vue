@@ -165,7 +165,7 @@ const submit = async () => {
 
 // ================= 删除 =================
 const deleteMenu = async (menu_id) => {
-  await axios.post('http://192.168.56.100:8080/menu/delete', { menu_id })
+  await axios.post('http://192.168.56.100:8080/menuDelete', { menu_id })
   ElMessage.success("删除成功")
   getMenus()
 }

@@ -670,7 +670,43 @@ bool MenuDAO::insertMenu(const MenuCreateDTO& menu) {
     }
 }
 
+bool MenuDAO::eraseMenu(const int menu_id){
+    try {
+        DBConnectionGuard guard;
+        auto conn = guard.get();
+        TransactionGuard tx(conn);
+        //menu_dish
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "DELETE FROM menu_dish "
+                "WHERE menu_id=? "
+            )
+        );
 
+        stmt->setInt(1, menu_id);
+
+        if (stmt->executeUpdate() == 0) {
+            return false;
+        }
+
+        //daily_menu
+        stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "DELETE FROM daily_menu "
+                "WHERE menu_id=? "
+            )
+        );
+
+        stmt->setInt(1, menu_id);
+
+        if (stmt->executeUpdate() == 0) {
+            return false;
+        }
+        
+        tx.commit();
+        return true;
+    } catch (...) { return false; }
+}
 /***************************************************************************************
  * OrderDao
  ***************************************************************************************/

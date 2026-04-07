@@ -166,6 +166,12 @@ bool MenuService::insertMenu(const MenuCreateDTO& menu) {
     MenuDAO dao;
     return dao.insertMenu(menu);
 }
+
+bool MenuService::eraseMenu(const int menu_id)
+{
+    MenuDAO dao;
+    return dao.eraseMenu(menu_id);
+}
 /**********************************************
  * OrderService
  *********************************************/

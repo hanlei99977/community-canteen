@@ -3,6 +3,7 @@
 #include <vector>
 #include "../model/model.h"
 #include "../model/vo.h"
+#include "../model/dto.h"
 #include "../../MySQL/ConnectionPool.h"
 
 // ================================
@@ -62,6 +63,7 @@ class CanteenDAO {
 public:
     std::vector<Canteen> getAllCanteens();
     std::shared_ptr<Canteen> getCanteenById(int id);
+    int getCanteenIdByUserId(int user_id);
 };
 
 // ================================
@@ -78,6 +80,8 @@ public:
 class MenuDAO {
 public:
     std::vector<Dish> getMenuByDate(int canteen_id, const std::string& date);
+    std::vector<CanteenMenuVO> getMenuByCanteen(int canteen_id);
+    bool insertMenu(const MenuCreateDTO& menu);
 };
 
 // ================================

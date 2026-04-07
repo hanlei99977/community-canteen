@@ -87,6 +87,9 @@ void Controller::registerOrderRoutes(httplib::Server& server) {
 void Controller::registerCanteenRoutes(httplib::Server& server) {
     server.Get("/canteens", handleCanteens);
     server.Get("/menu", handleMenu);
+    server.Get("/getMenus", handleGetCanteenMenus);
+    server.Get("/getDishs", handleGetDishes);
+    server.Post("/menuCreate", handleCreateMenu);
 }
 
 // 个人中心相关路由
@@ -111,24 +114,38 @@ void Controller::handleLogin(const httplib::Request& req, httplib::Response& res
             return;
         }
 
-        UserService service;
-        auto user = service.login(username, password);
-        std::string role = service.getUserRole(user ? user->getId() : -1);
-        
-        if (user) {
-            json data = {
-                {"user_id", user->getId()},
-                {"username", user->getUsername()},
-                {"role", role}
-            };
+        UserService userService;
+        CanteenService canteenService; 
+        auto user = userService.login(username, password);
 
-            res.status = 200;
-            res.set_content(Response::success(data), "application/json");
-                std::cout << "用户 " << username << " 登录成功" << std::endl;
-        } else {
+        if (!user) {
             res.status = 401;
             res.set_content(Response::error(401, "用户名或密码错误"), "application/json");
+            return;
         }
+
+        int user_id = user->getId();
+        std::string role = userService.getUserRole(user_id);
+
+        // ⭐ 新增：canteen_id
+        int canteen_id = -1;
+
+        if (role == "canteen_manager") {
+            canteen_id = canteenService.getCanteenIdByUserId(user_id);
+        }
+
+        // ⭐ 返回数据
+        json data = {
+            {"user_id", user_id},
+            {"username", user->getUsername()},
+            {"role", role},
+            {"canteen_id", canteen_id}   // ⭐ 新增
+        };
+
+        res.status = 200;
+        res.set_content(Response::success(data), "application/json");
+
+        std::cout << "用户 " << username << "role" << role << " canteen_id " << canteen_id << " 登录成功" << std::endl; 
 
     } catch (...) {
         res.status = 500;
@@ -218,6 +235,110 @@ void Controller::handleMenu(const httplib::Request& req, httplib::Response& res)
 
     } catch (...) {
         res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+void Controller::handleGetCanteenMenus(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        std::cout << "请求食堂菜单参数：canteen_id=" << canteen_id << std::endl;
+
+        MenuService service;
+        auto menus = service.getMenuByCanteen(canteen_id);
+        std::cout << "查询到菜单数量：" << menus.size() << std::endl;
+
+        json arr = json::array();
+
+        for (auto& m : menus) {
+
+            json dishes = json::array();
+
+            // ⭐ 遍历菜品
+            for (const auto& d : m.getDishes()) {
+                dishes.push_back({
+                    {"dish_id", d.getId()},
+                    {"name", d.getName()},
+                    {"price", d.getPrice()}
+                });
+            }
+
+            // ⭐ 一个菜单
+            arr.push_back({
+                {"menu_id", m.getMenuId()},
+                {"date", m.getDate()},
+                {"meal_type", m.getType()},
+                {"dishes", dishes}
+            });
+        }
+
+        std::cout << "菜单数量：" << menus.size() << std::endl;
+
+        res.set_content(Response::success(arr), "application/json");
+
+    } catch (const std::exception& e) {
+        std::cerr << "handleGetCanteenMenus error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+void Controller::handleGetDishes(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        std::cout << "请求菜品列表参数：canteen_id=" << canteen_id << std::endl;
+        MenuService service;
+        auto dishes = service.getDishsByCanteen(canteen_id);
+
+        json arr = json::array();
+
+        for (const auto& d : dishes) {
+            arr.push_back({
+                {"id", d.getId()},
+                {"name", d.getName()},
+                {"type", d.getType()},
+                {"price", d.getPrice()},
+                {"calories", d.getCalories()},
+                {"nutrition_info", d.getNutritionInfo()}
+            });
+        }
+
+        std::cout << "菜品数量：" << dishes.size() << std::endl;
+        res.set_content(Response::success(arr), "application/json");
+
+    } catch (...) {
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+void Controller::handleCreateMenu(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        json body = json::parse(req.body);
+
+        MenuCreateDTO dto;
+        dto.setCanteenId(getIntSafe(body, "canteen_id"));
+        dto.setDate(getStringSafe(body, "date"));
+        dto.setMealType(getStringSafe(body, "meal_type"));
+
+        std::vector<int> dish_ids;
+        for (const auto& id : body["dish_ids"]) {
+            dish_ids.push_back(id.get<int>());
+        }
+
+        std::cout << "创建菜单参数：canteen_id=" << dto.getCanteenId() << ", date=" << dto.getDate() 
+                    << ", meal_type=" << dto.getMealType() << ", dish_ids=" << dish_ids.size() << std::endl;
+
+        MenuService service;
+
+        if (service.insertMenu(dto)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "创建菜单失败"), "application/json");
+        }
+
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
 

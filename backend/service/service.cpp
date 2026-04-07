@@ -113,6 +113,11 @@ std::string UserService::getUserRole(int user_id) {
     }
     return dao.getUserRole(user_id);
 }   
+
+int CanteenService::getCanteenIdByUserId(int user_id) {
+    CanteenDAO dao;
+    return dao.getCanteenIdByUserId(user_id);
+}
 /**********************************************
  * FamilyService
  *********************************************/
@@ -147,6 +152,20 @@ std::vector<Dish> MenuService::getTodayMenu(int canteen_id, const std::string& d
     return dao.getMenuByDate(canteen_id, date);
 }
 
+std::vector<CanteenMenuVO> MenuService::getMenuByCanteen(int canteen_id) {
+    MenuDAO dao;
+    return dao.getMenuByCanteen(canteen_id);
+}
+
+std::vector<Dish> MenuService::getDishsByCanteen(int canteen_id) {
+    DishDAO dao;
+    return dao.getDishesByCanteen(canteen_id);
+}
+
+bool MenuService::insertMenu(const MenuCreateDTO& menu) {
+    MenuDAO dao;
+    return dao.insertMenu(menu);
+}
 /**********************************************
  * OrderService
  *********************************************/

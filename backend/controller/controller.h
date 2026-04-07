@@ -18,6 +18,9 @@ private:
     //食堂相关
     static void handleCanteens(const httplib::Request& req, httplib::Response& res);
     static void handleMenu(const httplib::Request& req, httplib::Response& res);
+    static void handleGetCanteenMenus(const httplib::Request& req, httplib::Response& res);
+    static void handleGetDishes(const httplib::Request& req, httplib::Response& res);
+    static void handleCreateMenu(const httplib::Request& req, httplib::Response& res);
     //订单相关
     static void handlePlaceOrder(const httplib::Request& req, httplib::Response& res);
     static void handleGetOrders(const httplib::Request& req, httplib::Response& res);

@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
-
+#include "model.h"
 
 //订单列表页VO
 class OrderVO {
@@ -95,4 +95,29 @@ public:
     std::string getTastePreference() const { return tastePreference; }
     void setTastePreference(const std::string& pref) { tastePreference = pref; }
 
+};
+
+//每日餐单
+class CanteenMenuVO {
+private:
+    int menu_id;
+    std::string date;
+    std::string type;
+
+    std::vector<Dish> dishes; // 菜品名称列表
+public:
+    int getMenuId() const { return menu_id; }
+    void setMenuId(int id) { menu_id = id; }
+
+    std::string getDate() const { return date; }
+    void setDate(const std::string& d) { date = d; }
+
+    std::string getType() const { return type; }
+    void setType(const std::string& t) { type = t; }
+
+    std::vector<Dish>& getDishes() { return dishes; }
+    // ⭐ 添加菜品
+    void addDish(const Dish& dish) {
+        dishes.push_back(dish);
+    }
 };

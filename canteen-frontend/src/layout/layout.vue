@@ -14,8 +14,8 @@
         text-color="#fff"
         active-text-color="#ffd04b"
       >
+          <el-menu-item index="/home">首页</el-menu-item>
         <!-- ================== 用餐者专属 ================== -->
-        <el-menu-item v-if="isDiner" index="/home">首页</el-menu-item>
         <el-menu-item v-if="isDiner" index="/canteens">食堂列表</el-menu-item>
         <el-menu-item v-if="isDiner" index="/orders">我的订单</el-menu-item>
         <el-menu-item v-if="isDiner" index="/userCenter">用户中心</el-menu-item>
@@ -47,6 +47,10 @@
         </el-menu-item>
 
         <!-- ================== 食堂管理员 ================== -->
+        <el-menu-item v-if="isCanteenAdmin" index="/canteenManage">
+          我的食堂
+        </el-menu-item>
+
         <el-menu-item v-if="isCanteenAdmin" index="/menuManage">
           每日餐单
         </el-menu-item>

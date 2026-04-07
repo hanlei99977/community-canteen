@@ -2,8 +2,6 @@
 #include <memory>
 #include <vector>
 #include <mutex>
-#include "../model/model.h"
-#include "../model/vo.h"
 #include "../dao/dao.h"
 
 // ================================
@@ -34,6 +32,7 @@ class CanteenService {
 public:
     std::vector<Canteen> getAllCanteens();
     std::shared_ptr<Canteen> getCanteenById(int id);
+    int getCanteenIdByUserId(int user_id);
 };
 
 // ================================
@@ -42,6 +41,9 @@ public:
 class MenuService {
 public:
     std::vector<Dish> getTodayMenu(int canteen_id, const std::string& date);
+    std::vector<CanteenMenuVO> getMenuByCanteen(int canteen_id);
+    std::vector<Dish> getDishsByCanteen(int canteen_id);
+    bool insertMenu(const MenuCreateDTO& menu);
 };
 
 // ================================

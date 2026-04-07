@@ -8,6 +8,7 @@ import Menu from '../views/Menu.vue'
 import Layout from '../layout/Layout.vue'
 import Orders from '../views/Orders.vue'
 import UserCenter from '../views/UserCenter.vue'
+import menuManage from '../views/MenuManage.vue'
 
 const routes = [
   { path: '/login', component: Login },
@@ -21,7 +22,8 @@ const routes = [
       { path: '/canteens', component: CanteenList },
       { path: '/menu', component: Menu },
       { path: '/orders', component: Orders},
-      {path: '/userCenter', component: UserCenter}
+      { path: '/userCenter', component: UserCenter},
+      { path: '/menuManage', component: menuManage}
     ]
   }
 ]

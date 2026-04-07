@@ -516,7 +516,9 @@ std::vector<Dish> DishDAO::getDishesByCanteen(int canteen_id)
             d.setNutritionInfo(res->getString("nutrition_info"));
             list.push_back(d);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "查询菜品失败: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -558,6 +560,7 @@ std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date
 }
 
 std::vector<CanteenMenuVO> MenuDAO::getMenuByCanteen(int canteen_id) {
+    std::vector<CanteenMenuVO> list;
     try {
         DBConnectionGuard guard;
         auto* conn = guard.get();
@@ -598,17 +601,15 @@ std::vector<CanteenMenuVO> MenuDAO::getMenuByCanteen(int canteen_id) {
         }
 
         // 转 vector
-        std::vector<CanteenMenuVO> list;
         for (auto& [_, v] : menuMap) {
             list.push_back(v);
         }
 
-        return list;
     } catch (const std::exception& e) {
         std::cerr << "查询菜单失败: " << e.what() << std::endl;
     }
 
-    return {};
+    return list;
 }
 
 
@@ -663,7 +664,10 @@ bool MenuDAO::insertMenu(const MenuCreateDTO& menu) {
 
         tx.commit();
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "插入每日餐单失败: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 

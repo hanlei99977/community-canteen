@@ -88,7 +88,7 @@ void Controller::registerCanteenRoutes(httplib::Server& server) {
     server.Get("/canteens", handleCanteens);
     server.Get("/menu", handleMenu);
     server.Get("/getMenus", handleGetCanteenMenus);
-    server.Get("/getDishs", handleGetDishes);
+    server.Get("/getDishes", handleGetDishes);
     server.Post("/menuCreate", handleCreateMenu);
 }
 
@@ -294,7 +294,7 @@ void Controller::handleGetDishes(const httplib::Request& req, httplib::Response&
 
         for (const auto& d : dishes) {
             arr.push_back({
-                {"id", d.getId()},
+                {"dish_id", d.getId()},
                 {"name", d.getName()},
                 {"type", d.getType()},
                 {"price", d.getPrice()},
@@ -313,21 +313,21 @@ void Controller::handleGetDishes(const httplib::Request& req, httplib::Response&
 
 void Controller::handleCreateMenu(const httplib::Request& req, httplib::Response& res)
 {
+    std::cout<< " json内容是 " << req.body<<std::endl;
     try {
         json body = json::parse(req.body);
-
         MenuCreateDTO dto;
         dto.setCanteenId(getIntSafe(body, "canteen_id"));
         dto.setDate(getStringSafe(body, "date"));
         dto.setMealType(getStringSafe(body, "meal_type"));
 
-        std::vector<int> dish_ids;
+        std::cout<<" 餐厅 " << dto.getCanteenId() << " 新建每日餐单 "<<std::endl;
+
+       std::vector<int> dish_ids;
         for (const auto& id : body["dish_ids"]) {
             dish_ids.push_back(id.get<int>());
         }
-
-        std::cout << "创建菜单参数：canteen_id=" << dto.getCanteenId() << ", date=" << dto.getDate() 
-                    << ", meal_type=" << dto.getMealType() << ", dish_ids=" << dish_ids.size() << std::endl;
+        dto.setDishIds(dish_ids);
 
         MenuService service;
 
@@ -337,7 +337,8 @@ void Controller::handleCreateMenu(const httplib::Request& req, httplib::Response
             res.set_content(Response::error(500, "创建菜单失败"), "application/json");
         }
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "新建餐单失败: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }

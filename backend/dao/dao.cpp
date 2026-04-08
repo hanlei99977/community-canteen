@@ -500,7 +500,7 @@ std::vector<Dish> DishDAO::getDishesByCanteen(int canteen_id)
         auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("SELECT * FROM dish WHERE canteen_id=?")
+            conn->prepareStatement("SELECT * FROM dish WHERE canteen_id=? AND status = 1")
         );
 
         stmt->setInt(1, canteen_id);
@@ -521,6 +521,60 @@ std::vector<Dish> DishDAO::getDishesByCanteen(int canteen_id)
     }
 
     return list;
+}
+
+bool DishDAO::insertDish(const Dish& dish){
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt1 = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO dish(canteen_id, name, type, price, calories, nutrition_info) "
+                "VALUES (?, ?, ?, ?, ?, ?)"
+            )
+        );
+
+        stmt1->setInt(1, dish.getCanteenId());          // 1: canteen_id (int)
+        stmt1->setString(2, dish.getName());             // 2: name (string)
+        stmt1->setString(3, dish.getType());             // 3: type (string)
+        stmt1->setDouble(4, dish.getPrice());            // 4: price (decimal → double)
+        stmt1->setInt(5, dish.getCalories());            // 5: calories (int)
+        stmt1->setString(6, dish.getNutritionInfo());    // 6: nutrition_info (string)
+
+        if (stmt1->executeUpdate() == 0) {
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "插入菜品失败: " << e.what() << std::endl;
+        return false;
+    }
+
+}
+bool DishDAO::disableDishByDishId(const int dish_id){
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE dish SET status = 0 WHERE dish_id = ? "
+            )
+        );
+        stmt->setInt(1, dish_id);
+
+        if (stmt->executeUpdate() == 0) {
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "删除菜品失败: " << e.what() << std::endl;
+        return false;
+    }
+
 }
 
 /***************************************************************************************

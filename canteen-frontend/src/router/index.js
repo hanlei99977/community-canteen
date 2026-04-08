@@ -8,7 +8,8 @@ import Menu from '../views/Menu.vue'
 import Layout from '../layout/Layout.vue'
 import Orders from '../views/Orders.vue'
 import UserCenter from '../views/UserCenter.vue'
-import menuManage from '../views/MenuManage.vue'
+import MenuManage from '../views/MenuManage.vue'
+import DishManage from '../views/DishManage.vue'
 
 const routes = [
   { path: '/login', component: Login },
@@ -23,7 +24,8 @@ const routes = [
       { path: '/menu', component: Menu },
       { path: '/orders', component: Orders},
       { path: '/userCenter', component: UserCenter},
-      { path: '/menuManage', component: menuManage}
+      { path: '/menuManage', component: MenuManage},
+      { path: '/dishManage', component: DishManage}
     ]
   }
 ]

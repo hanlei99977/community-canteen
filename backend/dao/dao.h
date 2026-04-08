@@ -72,6 +72,8 @@ public:
 class DishDAO {
 public:
     std::vector<Dish> getDishesByCanteen(int canteen_id);
+    bool insertDish(const Dish& dish);
+    bool disableDishByDishId(const int dish_id);
 };
 
 // ================================

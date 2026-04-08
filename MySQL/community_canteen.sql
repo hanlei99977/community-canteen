@@ -137,6 +137,7 @@ CREATE TABLE dish (
     price DECIMAL(5,2),  -- 价格
     calories INT,  -- 热量
     nutrition_info VARCHAR(100),  -- 营养成分信息
+    status INT DEFAULT 1,
     FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
 );
 

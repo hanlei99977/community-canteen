@@ -173,11 +173,6 @@ std::vector<CanteenMenuVO> MenuService::getMenuByCanteen(int canteen_id) {
     return dao.getMenuByCanteen(canteen_id);
 }
 
-std::vector<Dish> MenuService::getDishsByCanteen(int canteen_id) {
-    DishDAO dao;
-    return dao.getDishesByCanteen(canteen_id);
-}
-
 bool MenuService::insertMenu(const MenuCreateDTO& menu) {
     MenuDAO dao;
     return dao.insertMenu(menu);
@@ -187,6 +182,24 @@ bool MenuService::eraseMenu(const int menu_id)
 {
     MenuDAO dao;
     return dao.eraseMenu(menu_id);
+}
+
+/**********************************************
+ * DishService
+ *********************************************/
+std::vector<Dish> DishService::getDishsByCanteen(int canteen_id) {
+    DishDAO dao;
+    return dao.getDishesByCanteen(canteen_id);
+}
+
+bool DishService::insertDish(const Dish& dish) {
+    DishDAO dao;
+    return dao.insertDish(dish);
+}
+
+bool DishService::disableDishByDishId(int dish_id) {
+    DishDAO dao;
+    return dao.disableDishByDishId(dish_id);
 }
 /**********************************************
  * OrderService

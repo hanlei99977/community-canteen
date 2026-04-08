@@ -43,9 +43,17 @@ class MenuService {
 public:
     std::vector<Dish> getTodayMenu(int canteen_id, const std::string& date);
     std::vector<CanteenMenuVO> getMenuByCanteen(int canteen_id);
-    std::vector<Dish> getDishsByCanteen(int canteen_id);
     bool insertMenu(const MenuCreateDTO& menu);
     bool eraseMenu(const int menu_id);
+};
+// ================================
+// 菜品服务
+// ================================
+class DishService{
+public:
+    std::vector<Dish> getDishsByCanteen(int canteen_id);
+    bool insertDish(const Dish& dish );
+    bool disableDishByDishId(const int dish_id);
 };
 
 // ================================

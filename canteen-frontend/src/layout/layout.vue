@@ -55,6 +55,10 @@
           每日餐单
         </el-menu-item>
 
+        <el-menu-item v-if="isCanteenAdmin" index="/dishManage">
+          菜品管理
+        </el-menu-item>
+
         <el-menu-item v-if="isCanteenAdmin" index="/purchase">
           日常采购
         </el-menu-item>

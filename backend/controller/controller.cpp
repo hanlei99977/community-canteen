@@ -86,11 +86,16 @@ void Controller::registerOrderRoutes(httplib::Server& server) {
 // 食堂相关路由
 void Controller::registerCanteenRoutes(httplib::Server& server) {
     server.Get("/canteens", handleCanteens);
+    // 餐单
     server.Get("/menu", handleMenu);
     server.Get("/getMenus", handleGetCanteenMenus);
-    server.Get("/getDishes", handleGetDishes);
     server.Post("/menuCreate", handleCreateMenu);
     server.Post("/menuDelete", handleDeleteMenu);
+    //菜品
+    server.Get("/getDishes", handleGetDishes);
+    server.Post("/dishCreate", handleCreateDish);
+    server.Post("/dishDisable", handleDisableDish);
+
 }
 
 // 个人中心相关路由
@@ -283,35 +288,6 @@ void Controller::handleGetCanteenMenus(const httplib::Request& req, httplib::Res
     }
 }
 
-void Controller::handleGetDishes(const httplib::Request& req, httplib::Response& res)
-{
-    try {
-        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
-        std::cout << "请求菜品列表参数：canteen_id=" << canteen_id << std::endl;
-        MenuService service;
-        auto dishes = service.getDishsByCanteen(canteen_id);
-
-        json arr = json::array();
-
-        for (const auto& d : dishes) {
-            arr.push_back({
-                {"dish_id", d.getId()},
-                {"name", d.getName()},
-                {"type", d.getType()},
-                {"price", d.getPrice()},
-                {"calories", d.getCalories()},
-                {"nutrition_info", d.getNutritionInfo()}
-            });
-        }
-
-        std::cout << "菜品数量：" << dishes.size() << std::endl;
-        res.set_content(Response::success(arr), "application/json");
-
-    } catch (...) {
-        res.set_content(Response::error(400, "参数错误"), "application/json");
-    }
-}
-
 void Controller::handleCreateMenu(const httplib::Request& req, httplib::Response& res)
 {
     std::cout<< " json内容是 " << req.body<<std::endl;
@@ -361,6 +337,88 @@ void Controller::handleDeleteMenu(const httplib::Request& req, httplib::Response
 
     } catch (const std::exception& e) {
         std::cerr << "删除餐单失败: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleGetDishes(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        std::cout << "请求菜品列表参数：canteen_id=" << canteen_id << std::endl;
+        DishService service;
+        auto dishes = service.getDishsByCanteen(canteen_id);
+
+        json arr = json::array();
+
+        for (const auto& d : dishes) {
+            arr.push_back({
+                {"dish_id", d.getId()},
+                {"name", d.getName()},
+                {"type", d.getType()},
+                {"price", d.getPrice()},
+                {"calories", d.getCalories()},
+                {"nutrition_info", d.getNutritionInfo()}
+            });
+        }
+
+        std::cout << "菜品数量：" << dishes.size() << std::endl;
+        res.set_content(Response::success(arr), "application/json");
+
+    } catch (...) {
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+void Controller::handleCreateDish(const httplib::Request& req, httplib::Response& res)
+{
+    std::cout<< " json内容是 " << req.body<<std::endl;
+    try {
+        json body = json::parse(req.body);
+        Dish dish;
+        // 1. 食堂ID（int类型，对应canteen_id字段）
+        dish.setCanteenId(getIntSafe(body, "canteen_id"));
+        // 2. 菜品名称（string类型，对应name字段）
+        dish.setName(getStringSafe(body, "name"));
+        // 3. 菜品类型（荤/素，对应type字段）
+        dish.setType(getStringSafe(body, "type"));
+        // 4. 菜品价格（decimal类型，用getDoubleSafe读取）
+        dish.setPrice(body["price"].get<double>());
+        // 5. 菜品热量（int类型，对应calories字段）
+        dish.setCalories(getIntSafe(body, "calories"));
+        // 6. 营养信息（string类型，对应nutrition_info字段）
+        dish.setNutritionInfo(getStringSafe(body, "nutrition_info"));
+
+       DishService service;
+
+        if (service.insertDish(dish)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "创建菜品失败"), "application/json");
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "创建菜品失败: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleDisableDish(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        json body = json::parse(req.body);
+        int dish_id = getIntSafe(body, "dish_id");
+
+        DishService service;
+
+        if (service.disableDishByDishId(dish_id)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "删除菜品失败"), "application/json");
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "删除菜品失败: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }

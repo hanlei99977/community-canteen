@@ -17,15 +17,21 @@ private:
     static void handleRegister(const httplib::Request& req, httplib::Response& res);
     //食堂相关
     static void handleCanteens(const httplib::Request& req, httplib::Response& res);
+        // 餐单
     static void handleMenu(const httplib::Request& req, httplib::Response& res);
     static void handleGetCanteenMenus(const httplib::Request& req, httplib::Response& res);
-    static void handleGetDishes(const httplib::Request& req, httplib::Response& res);
     static void handleCreateMenu(const httplib::Request& req, httplib::Response& res);
     static void handleDeleteMenu(const httplib::Request& req, httplib::Response& res);
+        // 菜品
+    static void handleGetDishes(const httplib::Request& req, httplib::Response& res);
+    static void handleCreateDish(const httplib::Request& req, httplib::Response& res);
+    static void handleDisableDish(const httplib::Request& req, httplib::Response& res);
+
     //订单相关
     static void handlePlaceOrder(const httplib::Request& req, httplib::Response& res);
     static void handleGetOrders(const httplib::Request& req, httplib::Response& res);
     static void handleOrderDetails(const httplib::Request& req, httplib::Response& res);
+
     static void handleRating(const httplib::Request& req, httplib::Response& res);
     static void handleReport(const httplib::Request& req, httplib::Response& res);
     //个人中心相关

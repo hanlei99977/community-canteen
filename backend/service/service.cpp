@@ -3,6 +3,22 @@
 #include <map>
 #include "../../MySQL/ConnectionPool.h"
 
+// 下单操作加锁
+std::mutex OrderService::userOrderMapMutex;
+std::unordered_map<int, std::shared_ptr<std::mutex>> OrderService::userOrderMutexes;
+
+std::shared_ptr<std::mutex> OrderService::getUserOrderMutex(int user_id) {
+    std::lock_guard<std::mutex> lock(userOrderMapMutex);
+    auto it = userOrderMutexes.find(user_id);
+    if (it != userOrderMutexes.end()) {
+        return it->second;
+    }
+
+    auto mutex_ptr = std::make_shared<std::mutex>();
+    userOrderMutexes[user_id] = mutex_ptr;
+    return mutex_ptr;
+}
+
 /**********************************************
  * UserService
  *********************************************/
@@ -179,13 +195,14 @@ bool OrderService::placeOrder(int user_id,
                               int canteen_id,
                               const std::vector<OrderItem>& items) {
 
+    auto user_mutex = getUserOrderMutex(user_id);
+    std::lock_guard<std::mutex> user_lock(*user_mutex);
+
     DBConnectionGuard guard;
     auto* conn = guard.get();
 
     try{
         TransactionGuard tx(conn);
-        // ⭐ 并发保护（简单版）
-        std::lock_guard<std::mutex> lock(orderMutex);
         
         if (items.empty()) return false;
 

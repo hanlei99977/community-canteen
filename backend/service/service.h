@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 #include <mutex>
+#include <unordered_map>
 #include "../dao/dao.h"
 
 // ================================
@@ -59,7 +60,9 @@ public:
     std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
 
 private:
-    std::mutex orderMutex; // ⭐ 防止并发重复下单
+    static std::mutex userOrderMapMutex;
+    static std::unordered_map<int, std::shared_ptr<std::mutex>> userOrderMutexes;
+    static std::shared_ptr<std::mutex> getUserOrderMutex(int user_id);
 };
 
 // ================================

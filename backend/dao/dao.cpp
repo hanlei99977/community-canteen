@@ -435,7 +435,43 @@ bool DinerDAO::updateDiner(sql::Connection *conn, const DinerCenterVO& diner) {
     } catch (...) { return false; }
 }
 
+std::vector<DinerInformation> DinerDAO::getDinerList()
+{
+    std::vector<DinerInformation> list;
 
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT u.user_id, u.username, u.age, u.phone, u.status, r.region_id, r.region_name, d.disease_history, d.taste_preference "
+                "FROM users u "
+                "JOIN diner d ON u.user_id = d.user_id "
+                "LEFT JOIN region r ON d.region_id = r.region_id "
+            )
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            DinerInformation dinerInfo;
+            dinerInfo.setUserId(res->getInt("user_id"));
+            dinerInfo.setUsername(res->getString("username"));
+            dinerInfo.setAge(res->getInt("age"));
+            dinerInfo.setPhone(res->getString("phone"));
+            dinerInfo.setRegionId(res->getInt("region_id"));
+            dinerInfo.setRegionName(res->getString("region_name"));
+            dinerInfo.setStatus(res->getInt("status"));
+            dinerInfo.setDiseaseHistory(res->getString("disease_history"));
+            dinerInfo.setTastePreference(res->getString("taste_preference"));
+
+            list.push_back(dinerInfo);
+        }
+    } catch (...) {}
+
+    return list;
+}
 /***************************************************************************************
  * FamilyDao
 ***************************************************************************************/

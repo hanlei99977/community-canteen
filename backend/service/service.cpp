@@ -145,6 +145,15 @@ std::vector<AdminInformation> AdminService::getAdminList()
     return admin.getAdminList();
 }
 
+// ================================
+// 用餐者服务
+// ================================
+std::vector<DinerInformation> DinerService::getDinerList()
+{
+    DinerDAO diner;
+    return diner.getDinerList();
+}
+
 int CanteenService::getCanteenIdByUserId(int user_id) {
     CanteenDAO dao;
     return dao.getCanteenIdByUserId(user_id);

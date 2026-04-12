@@ -75,6 +75,7 @@ void Controller::registerUserRoutes(httplib::Server& server) {
     server.Post("/register", handleRegister);
     //管理员管理
     server.Get("/adminList", handleAdminList);
+    server.Get("/dinerList", handleDinerList);
     server.Post("/updateStatus", handleUpdateStatus);
 }
 
@@ -754,6 +755,36 @@ void Controller::handleAdminList(const httplib::Request& req, httplib::Response&
                 {"level_name", adminInfo.getLevelName()},
                 {"region_id", adminInfo.getRegionId()},
                 {"region_name", adminInfo.getRegionName()}
+            });
+        }
+        res.set_content(Response::success(arr), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+
+    }
+}
+
+void Controller::handleDinerList(const httplib::Request& req, httplib::Response& res)
+{
+    try{
+        std::cout << "用餐者列表请求" << std::endl;
+
+        DinerService service;
+        auto dinerList = service.getDinerList();
+
+        json arr = json::array();
+
+        for (const auto& dinerInfo : dinerList) {
+            arr.push_back({
+                {"user_id", dinerInfo.getUserId()},
+                {"username", dinerInfo.getUsername()},
+                {"age", dinerInfo.getAge()},
+                {"phone", dinerInfo.getPhone()},
+                {"status", dinerInfo.getStatus()},
+                {"region_id", dinerInfo.getRegionId()},
+                {"region_name", dinerInfo.getRegionName()},
+                {"disease_history", dinerInfo.getDiseaseHistory()},
+                {"taste_preference", dinerInfo.getTastePreference()}
             });
         }
         res.set_content(Response::success(arr), "application/json");

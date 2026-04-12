@@ -26,6 +26,15 @@ public:
     std::vector<AdminInformation> getAdminList();
 };
 
+
+// ================================
+// 用餐者服务
+// ================================
+class DinerService{
+public:
+    std::vector<DinerInformation> getDinerList();
+};
+
 // ================================
 // 区域服务
 // ================================

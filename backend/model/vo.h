@@ -174,3 +174,46 @@ public:
     std::string getRegionName() const { return region_name; }
     void setRegionName(const std::string& name) { region_name = name; }
 };
+
+// 用餐者管理
+class DinerInformation
+{
+private:
+    int user_id;
+    std::string username;
+    int age;
+    std::string phone;
+    int region_id;
+    std::string region_name;
+    int status;
+    std::string disease_history;
+    std::string taste_preference;
+
+public:
+    // GETTER & SETTER 完全统一风格
+    int getUserId() const { return user_id; }
+    void setUserId(int id) { user_id = id; }
+
+    std::string getUsername() const { return username; }
+    void setUsername(const std::string& name) { username = name; }
+
+    int getAge() const { return age; }
+    void setAge(int a) { age = a; }
+
+    std::string getPhone() const { return phone; }
+    void setPhone(const std::string& p) { phone = p; }
+
+    int getRegionId() const { return region_id; }
+    void setRegionId(int id) { region_id = id; }
+    std::string getRegionName() const { return region_name; }
+    void setRegionName(const std::string& addr) { region_name = addr; }
+
+    int getStatus() const { return status; }
+    void setStatus(int s) { status = s; }
+
+    std::string getDiseaseHistory() const { return disease_history; }
+    void setDiseaseHistory(const std::string& d) { disease_history = d; }
+
+    std::string getTastePreference() const { return taste_preference; }
+    void setTastePreference(const std::string& t) { taste_preference = t; }
+};

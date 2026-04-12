@@ -8,6 +8,7 @@ import Home from '../views/common/Home.vue'
 import UserCenter from '../views/common/UserCenter.vue'
 // admin
 import AdminManage from '../views/admin/AdminManage.vue'
+import DinerManage from '../views/admin/DinerManage.vue'
 // manager
 import MenuManage from '../views/manager/MenuManage.vue'
 import DishManage from '../views/manager/DishManage.vue'
@@ -31,7 +32,8 @@ const routes = [
       { path: '/userCenter', component: UserCenter},
       { path: '/menuManage', component: MenuManage},
       { path: '/dishManage', component: DishManage},
-      { path: '/adminManage', component: AdminManage}
+      { path: '/adminManage', component: AdminManage},
+      { path: '/dinerManage', component: DinerManage}
     ]
   }
 ]

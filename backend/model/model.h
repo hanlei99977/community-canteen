@@ -72,7 +72,6 @@ private:
     std::string password;
     std::string phone;
     std::string id_card;
-    std::string address;
     std::string register_time;
     int status;
 
@@ -94,9 +93,6 @@ public:
 
     std::string getIdCard() const { return id_card; }
     void setIdCard(const std::string& idc) { id_card = idc; }
-
-    std::string getAddress() const { return address; }
-    void setAddress(const std::string& addr) { address = addr; }
 
     std::string getRegisterTime() const { return register_time; }
     void setRegisterTime(const std::string& t) { register_time = t; }
@@ -132,6 +128,7 @@ class Diner {
 private:
     int user_id;
     int family_id;
+    int region_id;
     std::string disease_history;
     std::string taste_preference;
 
@@ -141,6 +138,9 @@ public:
 
     int getFamilyId() const { return family_id; }
     void setFamilyId(int id) { family_id = id; }
+
+    int getRegionId() const { return region_id; }
+    void setRegionId(int id) { region_id = id;} 
 
     std::string getDiseaseHistory() const { return disease_history; }
     void setDiseaseHistory(const std::string& d) { disease_history = d; }

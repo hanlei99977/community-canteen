@@ -201,6 +201,12 @@ bool DishService::disableDishByDishId(int dish_id) {
     DishDAO dao;
     return dao.disableDishByDishId(dish_id);
 }
+
+bool DishService::enableDishByDishId(int dish_id) {
+    DishDAO dao;
+    return dao.enableDishByDishId(dish_id);
+}
+
 /**********************************************
  * OrderService
  *********************************************/

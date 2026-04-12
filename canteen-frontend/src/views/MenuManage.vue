@@ -13,8 +13,7 @@
       <el-table-column prop="date" label="日期" width="120"/>
       <el-table-column prop="meal_type" label="餐别" width="100"/>
 
-      <el-table-column label="餐单菜品">
-        <template #default="scope">
+      <el-table-column label="餐单菜品">        <template #default="scope">
           <span v-if="scope.row.dishes && scope.row.dishes.length">
             <span v-for="d in scope.row.dishes" :key="d.dish_id">
               {{ d.name }}（{{ d.price }}元）、
@@ -55,10 +54,14 @@
         </el-form-item>
 
         <!-- ⭐ 所有菜品（关键点） -->
+          <span v-if="availableDishList.length === 0">
+            当前没有可用菜品，请先添加或上架
+          </span>
+
         <el-form-item label="菜品">
           <el-checkbox-group v-model="form.dish_ids">
             <el-checkbox
-              v-for="dish in dishList"
+              v-for="dish in availableDishList"
               :key="dish.dish_id"
               :label="Number(dish.dish_id)"
             >
@@ -80,12 +83,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 // 用户
 const getUser = () => JSON.parse(localStorage.getItem("user"))
+
+const availableDishList = computed(() =>
+  dishList.value.filter(d => Number(d.status) === 1)
+)
 
 // ================= 数据 =================
 const menuList = ref([])

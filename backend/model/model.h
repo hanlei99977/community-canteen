@@ -225,6 +225,7 @@ private:
     double price;
     int calories;
     std::string nutrition_info;
+    int status;
 
 public:
     int getId() const { return dish_id; }
@@ -247,6 +248,9 @@ public:
 
     std::string getNutritionInfo() const { return nutrition_info; }
     void setNutritionInfo(const std::string& n) { nutrition_info = n; }
+
+    int getStatus() const { return status; }
+    void setStatus(const int s) { status = s; }
 };
 
 // ================================

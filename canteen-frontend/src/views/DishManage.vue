@@ -7,23 +7,47 @@
       <el-button type="primary" @click="openDialog">新增菜品</el-button>
     </div>
 
-    <!-- 菜品表 -->
-    <el-table :data="dishList" border>
+    <!-- Tab -->
+    <el-tabs v-model="activeTab">
+
+      <el-tab-pane label="在售菜品" name="on"/>
+      <el-tab-pane label="已下架菜品" name="off"/>
+
+    </el-tabs>
+
+    <!-- 表格 -->
+    <el-table
+      :data="activeTab === 'on' ? onDishList : offDishList"
+      border
+    >
 
       <el-table-column prop="name" label="菜名"/>
       <el-table-column prop="type" label="类型"/>
       <el-table-column prop="price" label="价格"/>
       <el-table-column prop="calories" label="热量"/>
       <el-table-column prop="nutrition_info" label="营养信息"/>
+
       <el-table-column label="操作" width="150">
         <template #default="scope">
+
           <el-button
-            type="danger"
+            v-if="activeTab === 'on'"
+            type="warning"
             size="small"
-            @click="deleteDish(scope.row.dish_id)"
+            @click="disableDish(scope.row.dish_id)"
           >
             下架
           </el-button>
+
+          <el-button
+            v-else
+            type="success"
+            size="small"
+            @click="enableDish(scope.row.dish_id)"
+          >
+            上架
+          </el-button>
+
         </template>
       </el-table-column>
 
@@ -70,18 +94,28 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-// 用户
 const getUser = () => JSON.parse(localStorage.getItem("user"))
 
-// 数据
-const dishList = ref([])
+const activeTab = ref("on")
+
+// ⭐ 所有数据
+const allDishList = ref([])
+
+// ⭐ 分组
+const onDishList = computed(() =>
+  allDishList.value.filter(d => d.status === 1)
+)
+
+const offDishList = computed(() =>
+  allDishList.value.filter(d => d.status === 0)
+)
+
 const dialogVisible = ref(false)
 
-// 表单
 const form = ref({
   canteen_id: '',
   name: '',
@@ -91,7 +125,7 @@ const form = ref({
   nutrition_info: ''
 })
 
-// ================= 获取菜品 =================
+// ================= 获取全部菜品 =================
 const getDishes = async () => {
   const user = getUser()
 
@@ -99,7 +133,45 @@ const getDishes = async () => {
     params: { canteen_id: user.canteen_id }
   })
 
-  dishList.value = res.data.data
+  allDishList.value = res.data.data
+  console.log(res.data.data)
+}
+
+// ================= 新增 =================
+const submit = async () => {
+
+  if (!form.value.name || !form.value.type || !form.value.price) {
+    ElMessage.warning("请填写完整信息")
+    return
+  }
+
+  form.value.price = Number(form.value.price)
+  form.value.calories = parseInt(form.value.calories)
+
+  const res = await axios.post(
+    'http://192.168.56.100:8080/dishCreate',
+    form.value
+  )
+
+  if (res.data.code === 0) {
+    ElMessage.success("新增成功")
+    dialogVisible.value = false
+    getDishes()
+  }
+}
+
+// ================= 下架 =================
+const disableDish = async (dish_id) => {
+  await axios.post('http://192.168.56.100:8080/dishDisable', { dish_id })
+  ElMessage.success("已下架")
+  getDishes()
+}
+
+// ================= 上架 =================
+const enableDish = async (dish_id) => {
+  await axios.post('http://192.168.56.100:8080/dishEnable', { dish_id })
+  ElMessage.success("已上架")
+  getDishes()
 }
 
 // ================= 打开弹窗 =================
@@ -118,44 +190,6 @@ const openDialog = () => {
   }
 }
 
-// ================= 新增 =================
-const submit = async () => {
-
-  if (!form.value.name || !form.value.type || !form.value.price) {
-    ElMessage.warning("请填写完整信息")
-    return
-  }
-
-  form.value.price = Number(form.value.price)
-  form.value.calories = parseInt(form.value.calories)
-  
-  const res = await axios.post(
-    'http://192.168.56.100:8080/dishCreate',
-    form.value,
-  )
-
-  if (res.data.code === 0) {
-    ElMessage.success("新增成功")
-    dialogVisible.value = false
-    getDishes()
-  } else {
-    ElMessage.error(res.data.msg || "新增失败")
-  }
-}
-
-// ================= 下架 =================
-const deleteDish = async (dish_id) => {
-
-  await axios.post(
-    'http://192.168.56.100:8080/dishDisable',
-    { dish_id }
-  )
-
-  ElMessage.success("下架成功")
-  getDishes()
-}
-
-// 初始化
 onMounted(() => {
   getDishes()
 })

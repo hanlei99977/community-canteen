@@ -500,7 +500,7 @@ std::vector<Dish> DishDAO::getDishesByCanteen(int canteen_id)
         auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("SELECT * FROM dish WHERE canteen_id=? AND status = 1")
+            conn->prepareStatement("SELECT * FROM dish WHERE canteen_id=? ")
         );
 
         stmt->setInt(1, canteen_id);
@@ -514,6 +514,7 @@ std::vector<Dish> DishDAO::getDishesByCanteen(int canteen_id)
             d.setPrice(res->getDouble("price"));
             d.setCalories(res->getInt("calories"));
             d.setNutritionInfo(res->getString("nutrition_info"));
+            d.setStatus(res->getInt("status"));
             list.push_back(d);
         }
     } catch (const std::exception& e) {
@@ -571,7 +572,31 @@ bool DishDAO::disableDishByDishId(const int dish_id){
 
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "删除菜品失败: " << e.what() << std::endl;
+        std::cerr << "下架菜品失败: " << e.what() << std::endl;
+        return false;
+    }
+
+}
+
+bool DishDAO::enableDishByDishId(const int dish_id){
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE dish SET status = 1 WHERE dish_id = ? "
+            )
+        );
+        stmt->setInt(1, dish_id);
+
+        if (stmt->executeUpdate() == 0) {
+            return false;
+        }
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "上架菜品失败: " << e.what() << std::endl;
         return false;
     }
 

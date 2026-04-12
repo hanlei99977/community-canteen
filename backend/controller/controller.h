@@ -26,7 +26,8 @@ private:
     static void handleGetDishes(const httplib::Request& req, httplib::Response& res);
     static void handleCreateDish(const httplib::Request& req, httplib::Response& res);
     static void handleDisableDish(const httplib::Request& req, httplib::Response& res);
-
+    static void handleEnableDish(const httplib::Request& req, httplib::Response& res);
+    
     //订单相关
     static void handlePlaceOrder(const httplib::Request& req, httplib::Response& res);
     static void handleGetOrders(const httplib::Request& req, httplib::Response& res);

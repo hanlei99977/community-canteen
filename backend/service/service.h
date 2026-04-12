@@ -15,6 +15,7 @@ public:
     std::shared_ptr<DinerCenterVO> getDinerCenterByUserId(int user_id);
     bool updateDinerCenter(const DinerCenterVO& diner);
     std::string getUserRole(int user_id);
+    bool updateStatus(const User& user);
 };
 
 // ================================

@@ -130,6 +130,12 @@ std::string UserService::getUserRole(int user_id) {
     return dao.getUserRole(user_id);
 }   
 
+bool UserService::updateStatus(const User& user)
+{
+    UserDAO dao;
+    return dao.updateStatus(user);
+}
+
 // ================================
 // 管理员服务
 // ================================

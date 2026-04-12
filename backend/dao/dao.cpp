@@ -260,6 +260,30 @@ std::string UserDAO::getUserRole(int user_id)
     return "unknown";
 }
 
+bool UserDAO::updateStatus(const User& user)
+{
+    try {
+        DBConnectionGuard guard;
+        auto conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE users SET status = ? WHERE user_id = ? "
+            )
+        );
+
+        stmt->setInt(1, user.getStatus());
+        stmt->setInt(2, user.getId());
+
+        if (stmt->executeUpdate() == 0) {
+            std::cout<<"没有对user表进行更新"<<std::endl; 
+        }
+
+        return true;
+    } catch (...) { return false; }
+}
+
+
 std::shared_ptr<Admin> AdminDAO::getAdminByUserId(int user_id) {
     try {
         DBConnectionGuard guard;

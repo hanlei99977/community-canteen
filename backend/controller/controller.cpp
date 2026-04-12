@@ -75,7 +75,7 @@ void Controller::registerUserRoutes(httplib::Server& server) {
     server.Post("/register", handleRegister);
     //管理员管理
     server.Get("/adminList", handleAdminList);
-    
+    server.Post("/updateStatus", handleUpdateStatus);
 }
 
 // 订单相关路由
@@ -760,5 +760,27 @@ void Controller::handleAdminList(const httplib::Request& req, httplib::Response&
     } catch (...) {
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
 
+    }
+}
+
+void Controller::handleUpdateStatus(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        json body = json::parse(req.body);
+
+        User user;
+        user.setId(getIntSafe(body, "user_id"));
+        user.setStatus(getIntSafe(body, "status"));
+
+        UserService service;
+
+        if (service.updateStatus(user)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "用户状态更新失败"), "application/json");
+        }
+
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }

@@ -2,40 +2,52 @@
   <div>
 
     <!-- 标题 -->
-    <h2 style="margin-bottom:20px;">管理员管理</h2>
+    <div style="display:flex;justify-content: space-between;align-items: center;margin-bottom: 20px;">
+      <h2>管理员管理</h2>
+    </div>
 
-    <!-- 管理员列表 -->
-    <el-table :data="adminList" border style="width: 100%">
+    <!-- Tab -->
+    <el-tabs v-model="activeTab">
+      <el-tab-pane label="正常管理员" name="on" />
+      <el-tab-pane label="已禁用管理员" name="off" />
+    </el-tabs>
+
+    <!-- 表格 -->
+    <el-table
+      :data="activeTab === 'on' ? onAdminList : offAdminList"
+      border
+    >
 
       <el-table-column prop="user_id" label="ID" width="80" />
-
       <el-table-column prop="username" label="姓名" />
-
       <el-table-column prop="phone" label="电话" />
-
       <el-table-column prop="level_name" label="等级" />
-
       <el-table-column prop="region_name" label="管理区域" />
-
-      <!-- 状态 -->
-      <el-table-column label="状态">
-        <template #default="scope">
-          <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
-            {{ scope.row.status === 1 ? '正常' : '已禁用' }}
-          </el-tag>
-        </template>
-      </el-table-column>
 
       <!-- 操作 -->
       <el-table-column label="操作" width="150">
         <template #default="scope">
+
+          <!-- 正常 → 禁用 -->
           <el-button
+            v-if="activeTab === 'on'"
+            type="danger"
             size="small"
-            :type="scope.row.status === 1 ? 'danger' : 'success'"
-            @click="handleStatus(scope.row)"
+            @click="disableAdmin(scope.row.user_id, scope.row.level_name)"
           >
-            {{ scope.row.status === 1 ? '禁用' : '解除禁用' }}
+            禁用
           </el-button>
+
+          <!-- 禁用 → 启用 -->
+          <el-button
+            v-else
+            type="success"
+            size="small"
+            @click="enableAdmin(scope.row.user_id)"
+          >
+            启用
+          </el-button>
+
         </template>
       </el-table-column>
 
@@ -45,50 +57,76 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-const adminList = ref([])
+// 当前Tab
+const activeTab = ref("on")
 
-// 获取管理员列表
-const getAdminList = async () => {
+// 所有管理员
+const allAdminList = ref([])
+
+// ================= 分组 =================
+const onAdminList = computed(() =>
+  allAdminList.value.filter(a => a.status === 1)
+)
+
+const offAdminList = computed(() =>
+  allAdminList.value.filter(a => a.status === 0)
+)
+
+// ================= 获取管理员 =================
+const getAdmins = async () => {
   try {
     const res = await axios.get('http://192.168.56.100:8080/adminList')
-    adminList.value = res.data.data ||[]
+    allAdminList.value = res.data.data || []
   } catch (err) {
-    ElMessage.error('获取管理员列表失败')
+    ElMessage.error("获取管理员失败")
   }
 }
 
-// 修改状态
-const handleStatus = (row) => {
-  const newStatus = row.status === 1 ? 0 : 1
+// ================= 禁用 =================
+const disableAdmin = (user_id, level_name) => {
 
-  ElMessageBox.confirm(
-    `确定要${newStatus === 0 ? '禁用' : '解除禁用'}该管理员吗？`,
-    '提示',
-    {
-      type: 'warning'
-    }
-  ).then(async () => {
-    try {
-      await axios.post('/user/updateStatus', {
-        user_id: row.user_id,
-        status: newStatus
-      })
+  // 系统管理员保护
+  if (level_name === '系统管理员') {
+    ElMessage.warning("系统管理员不能被禁用")
+    return
+  }
 
-      row.status = newStatus
-      ElMessage.success('操作成功')
+  ElMessageBox.confirm("确定要禁用该管理员吗？", "提示", {
+    type: "warning"
+  }).then(async () => {
 
-    } catch (err) {
-      ElMessage.error('操作失败')
-    }
+    await axios.post('http://192.168.56.100:8080/updateStatus', {
+      user_id,
+      status: 0
+    })
+
+    ElMessage.success("已禁用")
+    getAdmins()
+  })
+}
+
+// ================= 启用 =================
+const enableAdmin = (user_id) => {
+  ElMessageBox.confirm("确定要启用该管理员吗？", "提示", {
+    type: "success"
+  }).then(async () => {
+
+    await axios.post('http://192.168.56.100:8080/updateStatus', {
+      user_id,
+      status: 1
+    })
+
+    ElMessage.success("已启用")
+    getAdmins()
   })
 }
 
 onMounted(() => {
-  getAdminList()
+  getAdmins()
 })
 </script>
 

@@ -130,6 +130,15 @@ std::string UserService::getUserRole(int user_id) {
     return dao.getUserRole(user_id);
 }   
 
+// ================================
+// 管理员服务
+// ================================
+std::vector<AdminInformation> AdminService::getAdminList()
+{
+    AdminDAO admin;
+    return admin.getAdminList();
+}
+
 int CanteenService::getCanteenIdByUserId(int user_id) {
     CanteenDAO dao;
     return dao.getCanteenIdByUserId(user_id);

@@ -34,6 +34,7 @@ class AdminDAO {
 public:
     bool insertAdmin(sql::Connection *conn, int user_id);
     std::shared_ptr<Admin> getAdminByUserId(int user_id);
+    std::vector<AdminInformation> getAdminList();
 };
 
 // ================================

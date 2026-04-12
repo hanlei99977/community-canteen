@@ -2,7 +2,9 @@
 #pragma once
 #include <string>
 #include <vector>
-
+/********************************************************
+* 用于接收数据
+********************************************************/
 class MenuCreateDTO {
     int canteen_id;
     std::string date;

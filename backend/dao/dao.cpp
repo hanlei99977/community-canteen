@@ -285,6 +285,45 @@ std::shared_ptr<Admin> AdminDAO::getAdminByUserId(int user_id) {
     return nullptr;
 }
 
+std::vector<AdminInformation> AdminDAO::getAdminList()
+{
+    std::vector<AdminInformation> list;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT u.user_id, username, age, phone, status, a.level_id, l.level_name, r.region_id, r.region_name " 
+                    "FROM users u "
+                    "JOIN admin a ON u.user_id = a.user_id "
+                    "JOIN level l ON a.level_id = l.level_id "
+                    "JOIN region r ON r.region_id  = a.region_id " 
+            )
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            AdminInformation adminInfo;
+            adminInfo.setUserId(res->getInt("user_id"));
+            adminInfo.setUsername(res->getString("username"));
+            adminInfo.setAge(res->getInt("age"));
+            adminInfo.setPhone(res->getString("phone"));
+            adminInfo.setStatus(res->getInt("status"));
+            adminInfo.setLevelId(res->getInt("level_id"));
+            adminInfo.setLevelName(res->getString("level_name"));
+            adminInfo.setRegionId(res->getInt("region_id"));
+            adminInfo.setRegionName(res->getString("region_name"));
+
+            list.push_back(adminInfo);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
 std::shared_ptr<Diner> DinerDAO::getDinerByUserId(int user_id)
 {
     try {

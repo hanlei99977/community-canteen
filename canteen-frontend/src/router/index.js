@@ -6,13 +6,11 @@ import Login from '../views/common/Login.vue'
 import Register from '../views/common/Register.vue'
 import Home from '../views/common/Home.vue'
 import UserCenter from '../views/common/UserCenter.vue'
-
 // admin
-
+import AdminManage from '../views/admin/AdminManage.vue'
 // manager
 import MenuManage from '../views/manager/MenuManage.vue'
 import DishManage from '../views/manager/DishManage.vue'
-
 // diner
 import CanteenList from '../views/diner/CanteenList.vue'
 import Menu from '../views/diner/Menu.vue'
@@ -32,7 +30,8 @@ const routes = [
       { path: '/orders', component: Orders},
       { path: '/userCenter', component: UserCenter},
       { path: '/menuManage', component: MenuManage},
-      { path: '/dishManage', component: DishManage}
+      { path: '/dishManage', component: DishManage},
+      { path: '/adminManage', component: AdminManage}
     ]
   }
 ]

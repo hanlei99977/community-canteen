@@ -40,4 +40,6 @@ private:
     static void handleUserCenterUpdate(const httplib::Request& req, httplib::Response& res);
     static void handleFamilyList(const httplib::Request& req, httplib::Response& res);
     static void handleRegionList(const httplib::Request& req, httplib::Response& res);
+    //管理员
+    static void handleAdminList(const httplib::Request& req, httplib::Response& res);
 };

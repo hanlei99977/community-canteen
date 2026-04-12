@@ -2,7 +2,9 @@
 #include <string>
 #include <vector>
 #include "model.h"
-
+/********************************************************
+* 用于发送数据
+********************************************************/
 //订单列表页VO
 class OrderVO {
 private:
@@ -124,4 +126,51 @@ public:
     void addDish(const Dish& dish) {
         dishes.push_back(dish);
     }
+};
+
+
+//管理员管理
+class AdminInformation
+{
+private:
+    // 1. 基础用户信息 (对应 users 表)
+    int user_id;
+    std::string username;
+    int age;
+    std::string phone;
+    int status;
+    // 2. 管理员专属信息 (对应 admin 表)
+    int level_id;       // 关联级别表ID
+    std::string level_name; // 级别名称 (对应 level 表)
+    int region_id;
+    std::string region_name;
+
+public:
+    // --- Getter 和 Setter 方法 ---
+    int getUserId() const { return user_id; }
+    void setUserId(int id) { user_id = id; }
+
+    std::string getUsername() const { return username; }
+    void setUsername(const std::string& name) { username = name; }
+
+    int getAge() const { return age; }
+    void setAge(int a) { age = a; }
+
+    std::string getPhone() const { return phone; }
+    void setPhone(const std::string& p) { phone = p; }
+
+    int getStatus() const { return status; }
+    void setStatus(int s) { status = s; }
+
+    int getLevelId() const { return level_id; }
+    void setLevelId(int lid) { level_id = lid; }
+
+    std::string getLevelName() const { return level_name; }
+    void setLevelName(const std::string& ln) { level_name = ln; }
+
+    int getRegionId() const { return region_id; }
+    void setRegionId(int id) { region_id = id; }
+
+    std::string getRegionName() const { return region_name; }
+    void setRegionName(const std::string& name) { region_name = name; }
 };

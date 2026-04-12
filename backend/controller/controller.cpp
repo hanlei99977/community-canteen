@@ -70,8 +70,12 @@ void Controller::initRoutes(httplib::Server& server) {
 
 // 用户相关路由
 void Controller::registerUserRoutes(httplib::Server& server) {
+    //登录注册
     server.Post("/login", handleLogin);
     server.Post("/register", handleRegister);
+    //管理员管理
+    server.Get("/adminList", handleAdminList);
+    
 }
 
 // 订单相关路由
@@ -719,6 +723,37 @@ void Controller::handleRegionList(const httplib::Request& req, httplib::Response
                 {"region_name", r.getName()},
                 {"region_level", r.getLevel()},
                 {"parent_id", r.getParentId()}
+            });
+        }
+        res.set_content(Response::success(arr), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+
+    }
+}
+
+
+void Controller::handleAdminList(const httplib::Request& req, httplib::Response& res)
+{
+    try{
+        std::cout << "管理员列表请求" << std::endl;
+
+        AdminService service;
+        auto adminList = service.getAdminList();
+
+        json arr = json::array();
+
+        for (const auto& adminInfo : adminList) {
+            arr.push_back({
+                {"user_id", adminInfo.getUserId()},
+                {"username", adminInfo.getUsername()},
+                {"age", adminInfo.getAge()},
+                {"phone", adminInfo.getPhone()},
+                {"status", adminInfo.getStatus()},
+                {"level_id", adminInfo.getLevelId()},
+                {"level_name", adminInfo.getLevelName()},
+                {"region_id", adminInfo.getRegionId()},
+                {"region_name", adminInfo.getRegionName()}
             });
         }
         res.set_content(Response::success(arr), "application/json");

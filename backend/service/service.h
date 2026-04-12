@@ -18,6 +18,14 @@ public:
 };
 
 // ================================
+// 管理员服务
+// ================================
+class AdminService{
+public:
+    std::vector<AdminInformation> getAdminList();
+};
+
+// ================================
 // 区域服务
 // ================================
 class RegionService {

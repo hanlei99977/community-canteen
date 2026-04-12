@@ -52,7 +52,6 @@ CREATE TABLE users (
     password VARCHAR(50) NOT NULL,
     phone VARCHAR(11),  -- 联系电话
     id_card VARCHAR(18),  -- 身份证号码
-    address VARCHAR(100),  -- 地址
     register_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     status INT DEFAULT 1 -- 1: 正常, 0: 禁用
 );
@@ -71,8 +70,10 @@ CREATE TABLE admin(
 CREATE TABLE diner(
     user_id int primary key,
     family_id int,
+    region_id INT,
     disease_history varchar(100),  -- 疾病史
     taste_preference varchar(100),  -- 口味偏好
+    FOREIGN KEY (region_id) REFERENCES region(region_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (family_id) REFERENCES family(family_id)
 );

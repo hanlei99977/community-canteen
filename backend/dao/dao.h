@@ -6,6 +6,15 @@
 #include "../model/dto.h"
 #include "../../MySQL/ConnectionPool.h"
 
+
+// ================================
+// 区域
+// ================================
+class RegionDAO {
+public:
+    std::vector<Region> getRegionList();
+};
+
 // ================================
 // 用户
 // ================================

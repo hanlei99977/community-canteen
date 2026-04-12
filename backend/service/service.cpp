@@ -134,6 +134,17 @@ int CanteenService::getCanteenIdByUserId(int user_id) {
     CanteenDAO dao;
     return dao.getCanteenIdByUserId(user_id);
 }
+
+
+/**********************************************
+ *RegionService
+ *********************************************/
+std::vector<Region> RegionService::getRegionList()
+{
+    RegionDAO dao;
+    return dao.getRegionList();
+}
+
 /**********************************************
  * FamilyService
  *********************************************/

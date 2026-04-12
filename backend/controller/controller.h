@@ -39,4 +39,5 @@ private:
     static void handleUserCenter(const httplib::Request& req, httplib::Response& res);
     static void handleUserCenterUpdate(const httplib::Request& req, httplib::Response& res);
     static void handleFamilyList(const httplib::Request& req, httplib::Response& res);
+    static void handleRegionList(const httplib::Request& req, httplib::Response& res);
 };

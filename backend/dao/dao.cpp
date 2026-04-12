@@ -1,6 +1,41 @@
 #include "dao.h"
 #include <cppconn/prepared_statement.h>
 
+
+/***************************************************************************************
+ * RegionDao
+ ***************************************************************************************/
+
+std::vector<Region> RegionDAO::getRegionList() {
+    std::vector<Region> list;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT r.region_id, r.region_name, r.region_level, r.parent_id FROM region r "
+            )
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            Region r;
+            r.setId(res->getInt("region_id"));
+            r.setName(res->getString("region_name"));
+            r.setLevel(res->getString("region_level"));
+            r.setParentId(res->getInt("parent_id"));
+
+            list.push_back(r);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
+
 /***************************************************************************************
  * UserDao
  ***************************************************************************************/
@@ -9,8 +44,8 @@ int UserDAO::insertUser(sql::Connection *conn, const User& user)
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "INSERT INTO users(username, password, age, phone, id_card, address, register_time, status) "
-                "VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)"
+                "INSERT INTO users(username, password, age, phone, id_card, register_time, status) "
+                "VALUES (?, ?, ?, ?, ?, NOW(), ?)"
             )
         );
 
@@ -19,8 +54,7 @@ int UserDAO::insertUser(sql::Connection *conn, const User& user)
         stmt->setInt(3, user.getAge());
         stmt->setString(4, user.getPhone());
         stmt->setString(5, user.getIdCard());
-        stmt->setString(6, user.getAddress());
-        stmt->setInt(7, user.getStatus());
+        stmt->setInt(6, user.getStatus());
 
         if (stmt->executeUpdate() == 0) {
             conn->rollback();
@@ -123,7 +157,6 @@ std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(const std::string& u
             u->setAge(res->getInt("age"));
             u->setPhone(res->getString("phone"));
             u->setIdCard(res->getString("id_card"));
-            u->setAddress(res->getString("address"));
             u->setRegisterTime(res->getString("register_time"));
             u->setStatus(res->getInt("status"));
             return u;
@@ -153,7 +186,6 @@ std::shared_ptr<User> UserDAO::getUserById(int user_id)
             u->setAge(res->getInt("age"));
             u->setPhone(res->getString("phone"));
             u->setIdCard(res->getString("id_card"));
-            u->setAddress(res->getString("address"));
             u->setRegisterTime(res->getString("register_time"));
             u->setStatus(res->getInt("status"));
             return u;
@@ -166,7 +198,7 @@ bool UserDAO::updateUser(sql::Connection *conn, const DinerCenterVO& user) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "UPDATE users SET age=?, phone=?, id_card=?, address=? "
+                "UPDATE users SET age=?, phone=?, id_card=? "
                 "WHERE user_id=?"
             )
         );
@@ -174,8 +206,7 @@ bool UserDAO::updateUser(sql::Connection *conn, const DinerCenterVO& user) {
         stmt->setInt(1, user.getAge());
         stmt->setString(2, user.getPhone());
         stmt->setString(3, user.getIdCard());
-        stmt->setString(4, user.getAddress());
-        stmt->setInt(5, user.getUserId());
+        stmt->setInt(4, user.getUserId());
         if (stmt->executeUpdate() == 0) {
             std::cout<<"没有对 users 表进行更新"<<std::endl; 
         }
@@ -289,8 +320,9 @@ std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(int user_id)
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "SELECT u.username, u.age, u.phone, u.id_card, u.address,d.family_id, f.family_name, d.disease_history, d.taste_preference "
+                "SELECT u.username, u.age, u.phone, u.id_card, r.region_id, r.region_name, d.family_id, f.family_name, d.disease_history, d.taste_preference "
                 "FROM users u JOIN diner d ON u.user_id = d.user_id "
+                "JOIN region r ON r.region_id = d.region_id "
                 "LEFT JOIN family f ON d.family_id = f.family_id "
                 "WHERE u.user_id=?"
             )
@@ -306,7 +338,8 @@ std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(int user_id)
             vo->setAge(res->getInt("age"));
             vo->setPhone(res->getString("phone"));
             vo->setIdCard(res->getString("id_card"));
-            vo->setAddress(res->getString("address"));
+            vo->setRegionId(res->getInt("region_id"));
+            vo->setRegionName(res->getString("region_name"));
             vo->setFamilyId(res->getInt("family_id"));
             vo->setFamilyName(res->getString("family_name"));
             vo->setDiseaseHistory(res->getString("disease_history"));
@@ -321,7 +354,7 @@ bool DinerDAO::updateDiner(sql::Connection *conn, const DinerCenterVO& diner) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "UPDATE diner SET family_id=?, disease_history=?, taste_preference=? "
+                "UPDATE diner SET family_id=?, disease_history=?, taste_preference=?, region_id=?  "
                 "WHERE user_id=?"
             )
         );
@@ -329,7 +362,8 @@ bool DinerDAO::updateDiner(sql::Connection *conn, const DinerCenterVO& diner) {
         stmt->setInt(1, diner.getFamilyId());
         stmt->setString(2, diner.getDiseaseHistory());
         stmt->setString(3, diner.getTastePreference());
-        stmt->setInt(4, diner.getUserId());
+        stmt->setInt(4, diner.getRegionId());
+        stmt->setInt(5, diner.getUserId());
         if (stmt->executeUpdate() == 0) {
             std::cout<<"没有对diner表进行更新"<<std::endl; 
         }

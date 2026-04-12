@@ -104,6 +104,7 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Get("/userCenter", handleUserCenter);
     server.Post("/userCenterUpdate", handleUserCenterUpdate);
     server.Get("/familyList", handleFamilyList);
+    server.Get("/regionList", handleRegionList);
 }
 
 
@@ -609,7 +610,8 @@ void Controller::handleUserCenter(const httplib::Request& req, httplib::Response
                 {"age", user->getAge()},
                 {"phone", user->getPhone()},
                 {"idCard", user->getIdCard()},
-                {"address", user->getAddress()},
+                {"regionId", user->getRegionId()},
+                {"regionName", user->getRegionName()},
                 {"familyId", user->getFamilyId()},
                 {"familyName", user->getFamilyName()},
                 {"diseaseHistory", user->getDiseaseHistory()},
@@ -640,10 +642,10 @@ void Controller::handleUserCenterUpdate(const httplib::Request& req, httplib::Re
         user.setUserId(getIntSafe(body, "user_id"));
         user.setAge(getIntSafe(body, "age"));
         user.setPhone(getStringSafe(body, "phone"));
-        user.setAddress(getStringSafe(body, "address"));
         user.setIdCard(getStringSafe(body, "id_card"));
         user.setDiseaseHistory(getStringSafe(body, "disease_history"));
         user.setTastePreference(getStringSafe(body, "taste_preference"));
+        user.setRegionId(getIntSafe(body, "region_id"));
         user.setFamilyId(getIntSafe(body, "family_id"));
 
         std::cout<<"个人信息解析成功"<<std::endl;
@@ -692,6 +694,32 @@ void Controller::handleFamilyList(const httplib::Request& req, httplib::Response
                 {"family_name", f.getName()}
             });
             std::cout << "家庭列表项：family_id=" << f.getId() << ", family_name=" << f.getName() << std::endl;
+        }
+        res.set_content(Response::success(arr), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+
+    }
+}
+
+
+void Controller::handleRegionList(const httplib::Request& req, httplib::Response& res)
+{
+    try{
+        std::cout << "区域列表请求" << std::endl;
+
+        RegionService service;
+        auto regionList = service.getRegionList();
+
+        json arr = json::array();
+
+        for (const auto& r : regionList) {
+            arr.push_back({
+                {"region_id", r.getId()},
+                {"region_name", r.getName()},
+                {"region_level", r.getLevel()},
+                {"parent_id", r.getParentId()}
+            });
         }
         res.set_content(Response::success(arr), "application/json");
     } catch (...) {

@@ -59,7 +59,8 @@ private:
     int age;
     std::string phone;
     std::string id_card;
-    std::string address;
+    int regionId;
+    std::string regionName;
     int familyId;
     std::string familyName;
     std::string diseaseHistory;
@@ -79,9 +80,12 @@ public:
 
     std::string getIdCard() const { return id_card; }
     void setIdCard(const std::string& id) { id_card = id; }
+    
+    int getRegionId() const { return regionId; }
+    void setRegionId(int id) { regionId = id; }
 
-    std::string getAddress() const { return address; }
-    void setAddress(const std::string& addr) { address = addr; }
+    std::string getRegionName() const { return regionName; }
+    void setRegionName(const std::string& addr) { regionName = addr; }
 
     int getFamilyId() const { return familyId; }
     void setFamilyId(int id) { familyId = id; }

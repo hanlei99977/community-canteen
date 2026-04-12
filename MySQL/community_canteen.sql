@@ -20,7 +20,7 @@ USE community_canteen;
 CREATE TABLE region (
     region_id INT AUTO_INCREMENT PRIMARY KEY,
     region_name VARCHAR(50) NOT NULL,
-    region_level ENUM('市级','区级','社区级') NOT NULL, 
+    region_level ENUM('市级','区级') NOT NULL, 
     parent_id INT NULL,  -- 上级地区ID，NULL表示顶级地区
     FOREIGN KEY (parent_id) REFERENCES region(region_id)
 );
@@ -245,22 +245,3 @@ CREATE INDEX idx_orders_canteen ON orders(canteen_id);
 CREATE INDEX idx_dish_canteen ON dish(canteen_id);
 CREATE INDEX idx_menu_canteen ON daily_menu(canteen_id);
 CREATE INDEX idx_report_canteen ON report(canteen_id);
-
-
--- ================================
---  插入基本的数据
--- ================================
-INSERT INTO level(level_id, level_name) VALUES
-(1,'系统管理员'),
-(2,'市级管理员'),
-(3,'区级管理员');
-
-
-INSERT INTO family(family_id, family_name) VALUES
-(1,'未设置家庭');
-
-INSERT INTO users(username, age, password, phone, address)
-VALUES ('admin', 35, 'admin123', '13800000000', '系统');
-
-INSERT INTO admin(user_id, level_id, region_id)
-VALUES (LAST_INSERT_ID(), 1, NULL);

@@ -9,146 +9,146 @@ SET FOREIGN_KEY_CHECKS = 0;
 START TRANSACTION;
 
 -- ===============================
--- 地区初始化
+-- 1. 地区初始化（市 + 区）
 -- ===============================
-INSERT INTO region(region_name, region_level, parent_id) VALUES
-('沈阳市','市级',NULL),
+
+-- 市级
+INSERT INTO region(region_name,region_level,parent_id) VALUES
+('沈阳市','市级',NULL),   -- id = 1
+('大连市','市级',NULL);   -- id = 2
+
+-- 沈阳市区
+INSERT INTO region(region_name,region_level,parent_id) VALUES
 ('和平区','区级',1),
+('沈河区','区级',1),
 ('大东区','区级',1),
-('幸福社区','社区级',2),
-('和谐社区','社区级',2),
-('阳光社区','社区级',3);
+('皇姑区','区级',1),
+('铁西区','区级',1),
+('苏家屯区','区级',1),
+('浑南区','区级',1),
+('沈北新区','区级',1),
+('于洪区','区级',1),
+('辽中区','区级',1);
+
+-- 大连市区
+INSERT INTO region(region_name,region_level,parent_id) VALUES
+('中山区','区级',2),
+('西岗区','区级',2),
+('沙河口区','区级',2),
+('甘井子区','区级',2),
+('旅顺口区','区级',2),
+('金州区','区级',2),
+('普兰店区','区级',2);
 
 -- ===============================
--- 家庭初始化
+-- 2. 管理员级别
 -- ===============================
-INSERT INTO family(family_name) VALUES
-('张三家庭'),
-('李四家庭'),
-('王五家庭');
+INSERT INTO level(level_id,level_name) VALUES
+(1,'系统管理员'),
+(2,'市级管理员'),
+(3,'区级管理员');
 
 -- ===============================
--- 用户初始化
+-- 3. 家庭初始化
 -- ===============================
-INSERT INTO users(username, age, password, phone, address) VALUES
-('sys_admin',35,'admin123','13800000000','沈阳市'),
-('city_admin',40,'city123','13800000001','沈阳市'),
-('district_admin',38,'district123','13800000002','和平区'),
-
-('zhangsan',70,'zhangsan123','13800000003','幸福社区'),
-('lisi',65,'lisi123','13800000004','和谐社区'),
-('wangwu',80,'wangwu123','13800000005','阳光社区'),
-
-('canteen_mgr1',30,'canteen123','13800000006','幸福社区'),
-('canteen_mgr2',32,'canteen123','13800000007','和谐社区'),
-('canteen_mgr3',28,'canteen123','13800000008','阳光社区');
+INSERT INTO family(family_id,family_name) VALUES
+(1,'未设置家庭');
 
 -- ===============================
--- 管理员初始化
+-- 4. 用户初始化
 -- ===============================
-INSERT INTO admin(user_id, level_id, region_id) VALUES
-(2,2,1),      -- 市级管理员
-(3,3,2);      -- 区级管理员
+
+-- 系统管理员
+INSERT INTO users(username,age,password,phone) VALUES
+('admin',35,'admin123','13800000000');
+
+-- 市级管理员（沈阳）
+INSERT INTO users(username,age,password,phone) VALUES
+('sy_admin',40,'123456','13800000001');
+
+-- 区级管理员（和平区）
+INSERT INTO users(username,age,password,phone) VALUES
+('hp_admin',38,'123456','13800000002');
+
+-- 用餐者（和平区）
+INSERT INTO users(username,age,password,phone) VALUES
+('zhangsan',70,'123456','13800000003'),
+('lisi',65,'123456','13800000004');
 
 -- ===============================
--- 用餐者初始化
+-- 5. 管理员初始化
 -- ===============================
-INSERT INTO diner(user_id, family_id, disease_history, taste_preference) VALUES
-(4,1,'高血压','清淡'),
-(5,2,'糖尿病','低糖'),
-(6,3,'无','正常口味');
+
+-- 系统管理员（无区域）
+INSERT INTO admin(user_id,level_id,region_id) VALUES
+(1,1,NULL);
+
+-- 市级管理员（沈阳市）
+INSERT INTO admin(user_id,level_id,region_id) VALUES
+(2,2,1);
+
+-- 区级管理员（和平区）
+INSERT INTO admin(user_id,level_id,region_id) VALUES
+(3,3,3);
 
 -- ===============================
--- 管理员申请初始化（示例）
+-- 6. 用餐者初始化
 -- ===============================
-INSERT INTO admin_apply(user_id, level_id, region_id, status) VALUES
-(7,3,2,0),   -- 待审核
-(8,3,2,1),   -- 已通过
-(9,3,3,2);   -- 已拒绝
+
+INSERT INTO diner(user_id,family_id,region_id,disease_history,taste_preference) VALUES
+(4,1,3,'高血压','清淡'),
+(5,1,3,'糖尿病','低糖');
 
 -- ===============================
--- 食堂初始化
+-- 7. 食堂初始化
 -- ===============================
-INSERT INTO canteen(code, name, address, region_id, manager_id) VALUES
-('XFC001','幸福食堂','幸福社区活动中心',4,2),
-('HXC001','和谐食堂','和谐社区服务中心',5,3),
-('YGC001','阳光食堂','阳光社区广场',6,3);
+
+-- 和平区食堂
+INSERT INTO canteen(code,name,address,region_id,status) VALUES
+('HP001','和平区第一食堂','和平区中心街道',3,1),
+('HP002','和平区第二食堂','和平区南市场',3,1);
 
 -- ===============================
--- 食堂管理员（普通用户管理食堂）
--- ===============================
-INSERT INTO canteen_manager(user_id, canteen_id) VALUES
-(7,1),
-(8,2),
-(9,3);
-
--- ===============================
--- 菜品初始化
+-- 8. 菜品初始化
 -- ===============================
 INSERT INTO dish(canteen_id,name,type,price,calories,nutrition_info) VALUES
 (1,'红烧肉','荤',12.00,450,'高蛋白'),
 (1,'清炒白菜','素',5.00,120,'高纤维'),
-(2,'宫保鸡丁','荤',11.00,380,'蛋白质'),
-(2,'鱼香肉丝','荤',11.50,360,'蛋白质'),
-(3,'清蒸鱼','荤',14.00,390,'低脂高蛋白'),
-(3,'炒青菜','素',5.50,110,'膳食纤维');
+(2,'西红柿炒蛋','素',6.00,200,'维生素');
 
 -- ===============================
--- 餐单初始化
+-- 9. 餐单初始化
 -- ===============================
 INSERT INTO daily_menu(canteen_id,date,meal_type) VALUES
-(1,'2026-04-01','午餐'),
-(2,'2026-04-01','午餐'),
-(3,'2026-04-01','晚餐');
+(1,CURDATE(),'午餐'),
+(2,CURDATE(),'午餐');
 
 -- ===============================
--- 餐单菜品
+-- 10. 餐单菜品
 -- ===============================
 INSERT INTO menu_dish(menu_id,dish_id) VALUES
-(1,1),(1,2),
-(2,3),(2,4),
-(3,5),(3,6);
+(1,1),
+(1,2),
+(2,3);
 
 -- ===============================
--- 订单初始化
+-- 11. 订单初始化
 -- ===============================
-INSERT INTO orders(user_id, order_for_user_id, canteen_id, total_price, status) VALUES
-(4,4,1,17.00,'已完成'),
-(5,5,2,11.50,'已完成'),
-(6,6,3,14.00,'已完成');
+INSERT INTO orders(user_id,order_for_user_id,canteen_id,total_price,status) VALUES
+(4,4,1,17.00,'已完成');
 
 -- ===============================
--- 订单详情
+-- 12. 订单详情
 -- ===============================
 INSERT INTO order_item(order_id,dish_id,quantity) VALUES
-(1,1,1),(1,2,1),
-(2,4,1),
-(3,5,1);
+(1,1,1),
+(1,2,1);
 
 -- ===============================
--- 评价
+-- 13. 公告
 -- ===============================
-INSERT INTO rating(user_id,canteen_id,order_id,score,comment) VALUES
-(4,1,1,5,'很好吃'),
-(5,2,2,4,'不错'),
-(6,3,3,5,'非常满意');
-
--- ===============================
--- 进货账单
--- ===============================
-INSERT INTO purchase_bill(canteen_id,amount,purchase_date,remark) VALUES
-(1,500.00,'2026-04-01','日常采购'),
-(2,450.00,'2026-04-01','日常采购'),
-(3,520.00,'2026-04-01','日常采购');
-
--- ===============================
--- 投诉
--- ===============================
-INSERT INTO report(user_id,canteen_id,type,content,status) VALUES
-(4,1,1,'菜品不新鲜',0),
-(5,2,2,'服务态度不好',1),
-(6,3,3,'环境一般',0);
+INSERT INTO announcement(title,content,publisher_id) VALUES
+('系统上线','社区食堂系统正式运行',1);
 
 COMMIT;
-
 SET FOREIGN_KEY_CHECKS = 1;

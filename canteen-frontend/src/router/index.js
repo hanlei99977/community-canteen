@@ -1,15 +1,22 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import Login from '../views/Login.vue'
-import Register from '../views/Register.vue'
-import Home from '../views/Home.vue'
-import CanteenList from '../views/CanteenList.vue'
-import Menu from '../views/Menu.vue'
 import Layout from '../layout/Layout.vue'
-import Orders from '../views/Orders.vue'
-import UserCenter from '../views/UserCenter.vue'
-import MenuManage from '../views/MenuManage.vue'
-import DishManage from '../views/DishManage.vue'
+// common
+import Login from '../views/common/Login.vue'
+import Register from '../views/common/Register.vue'
+import Home from '../views/common/Home.vue'
+import UserCenter from '../views/common/UserCenter.vue'
+
+// admin
+
+// manager
+import MenuManage from '../views/manager/MenuManage.vue'
+import DishManage from '../views/manager/DishManage.vue'
+
+// diner
+import CanteenList from '../views/diner/CanteenList.vue'
+import Menu from '../views/diner/Menu.vue'
+import Orders from '../views/diner/Orders.vue'
 
 const routes = [
   { path: '/login', component: Login },

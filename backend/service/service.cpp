@@ -231,6 +231,98 @@ bool AdminService::reviewAdminApply(int apply_id, int reviewer_id, int status)
 }
 
 // ================================
+// 食堂管理者服务
+// ================================
+bool ManagerService::submitManagerApply(const User& user, const std::string& canteen_name)
+{
+    if (user.getUsername().empty() || user.getPassword().empty() || canteen_name.empty()) {
+        return false;
+    }
+
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+
+    try {
+        TransactionGuard tx(conn);
+        UserDAO userDAO;
+        CanteenManagerApplyDAO applyDAO;
+
+        User applyUser = user;
+        applyUser.setStatus(0); // 申请中不可登录
+
+        int user_id = userDAO.insertUser(conn, applyUser);
+        if (user_id == -1) {
+            return false;
+        }
+
+        if (!applyDAO.insertApply(conn, user_id, canteen_name)) {
+            return false;
+        }
+
+        tx.commit();
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+std::vector<CanteenManagerApplyVO> ManagerService::getManagerApplyList()
+{
+    CanteenManagerApplyDAO dao;
+    return dao.getApplyList();
+}
+
+bool ManagerService::reviewManagerApply(int apply_id, int reviewer_id, int status)
+{
+    if (apply_id <= 0 || reviewer_id <= 0) {
+        return false;
+    }
+    if (status != 1 && status != 2) {
+        return false;
+    }
+
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+
+    try {
+        TransactionGuard tx(conn);
+        CanteenManagerApplyDAO applyDAO;
+        auto apply = applyDAO.getApplyById(conn, apply_id);
+        if (!apply || apply->getStatus() != 0) {
+            return false;
+        }
+
+        if (status == 1) {
+            CanteenDAO canteenDAO;
+            ManagerDAO managerDAO;
+            UserDAO userDAO;
+
+            int canteen_id = canteenDAO.insertCanteen(conn, apply->getCanteenName());
+            if (canteen_id == -1) {
+                return false;
+            }
+
+            if (!managerDAO.insertManager(conn, apply->getUserId(), canteen_id)) {
+                return false;
+            }
+
+            if (!userDAO.updateStatus(conn, apply->getUserId(), 1)) {
+                return false;
+            }
+        }
+
+        if (!applyDAO.reviewApply(conn, apply_id, reviewer_id, status)) {
+            return false;
+        }
+
+        tx.commit();
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+// ================================
 // 用餐者服务
 // ================================
 std::vector<DinerInformation> DinerService::getDinerList()

@@ -29,6 +29,16 @@ public:
     bool reviewAdminApply(int apply_id, int reviewer_id, int status);
 };
 
+// ================================
+// 食堂管理者服务
+// ================================
+class ManagerService {
+public:
+    bool submitManagerApply(const User& user, const std::string& canteen_name);
+    std::vector<CanteenManagerApplyVO> getManagerApplyList();
+    bool reviewManagerApply(int apply_id, int reviewer_id, int status);
+};
+
 
 // ================================
 // 用餐者服务

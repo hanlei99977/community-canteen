@@ -45,6 +45,8 @@ private:
     static void handleAdminList(const httplib::Request& req, httplib::Response& res);
     static void handleAdminApplyList(const httplib::Request& req, httplib::Response& res);
     static void handleAdminApplyReview(const httplib::Request& req, httplib::Response& res);
+    static void handleManagerApplyList(const httplib::Request& req, httplib::Response& res);
+    static void handleManagerApplyReview(const httplib::Request& req, httplib::Response& res);
     static void handleDinerList(const httplib::Request& req, httplib::Response& res);
     static void handleUpdateStatus(const httplib::Request& req, httplib::Response& res);
     

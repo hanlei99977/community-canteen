@@ -133,6 +133,26 @@ bool ManagerDAO::insertManager(sql::Connection *conn, int user_id)
     } catch (...) { return false; }
 }
 
+bool ManagerDAO::insertManager(sql::Connection *conn, int user_id, int canteen_id)
+{
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO canteen_manager(user_id, canteen_id) "
+                "VALUES (?, ?)"
+            )
+        );
+
+        stmt->setInt(1, user_id);
+        stmt->setInt(2, canteen_id);
+        if (stmt->executeUpdate() == 0) {
+            return false;
+        }
+
+        return true;
+    } catch (...) { return false; }
+}
+
 std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(const std::string& username, const std::string& password)
 {
     try {
@@ -483,6 +503,103 @@ bool AdminApplyDAO::reviewApply(sql::Connection *conn, int apply_id, int reviewe
     } catch (...) { return false; }
 }
 
+bool CanteenManagerApplyDAO::insertApply(sql::Connection *conn, int user_id, const std::string& canteen_name)
+{
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO canteen_manager_apply(user_id, canteen_name, status, apply_time) "
+                "VALUES (?, ?, 0, NOW())"
+            )
+        );
+
+        stmt->setInt(1, user_id);
+        stmt->setString(2, canteen_name);
+        return stmt->executeUpdate() > 0;
+    } catch (...) { return false; }
+}
+
+std::vector<CanteenManagerApplyVO> CanteenManagerApplyDAO::getApplyList()
+{
+    std::vector<CanteenManagerApplyVO> list;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT ca.apply_id, ca.user_id, u.username, u.age, u.phone, ca.canteen_name, ca.status, "
+                "ca.apply_time, ca.review_time, ca.reviewer_id, ru.username AS reviewer_name "
+                "FROM canteen_manager_apply ca "
+                "JOIN users u ON ca.user_id = u.user_id "
+                "LEFT JOIN users ru ON ca.reviewer_id = ru.user_id "
+                "ORDER BY ca.apply_id DESC"
+            )
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            CanteenManagerApplyVO vo;
+            vo.setApplyId(res->getInt("apply_id"));
+            vo.setUserId(res->getInt("user_id"));
+            vo.setUsername(res->getString("username"));
+            vo.setAge(res->getInt("age"));
+            vo.setPhone(res->getString("phone"));
+            vo.setCanteenName(res->getString("canteen_name"));
+            vo.setStatus(res->getInt("status"));
+            vo.setApplyTime(res->getString("apply_time"));
+            vo.setReviewTime(res->isNull("review_time") ? "" : res->getString("review_time"));
+            vo.setReviewerId(res->isNull("reviewer_id") ? 0 : res->getInt("reviewer_id"));
+            vo.setReviewerName(res->isNull("reviewer_name") ? "" : res->getString("reviewer_name"));
+
+            list.push_back(vo);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
+std::shared_ptr<CanteenManagerApplyVO> CanteenManagerApplyDAO::getApplyById(sql::Connection *conn, int apply_id)
+{
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT apply_id, user_id, canteen_name, status "
+                "FROM canteen_manager_apply WHERE apply_id = ?"
+            )
+        );
+        stmt->setInt(1, apply_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            auto vo = std::make_shared<CanteenManagerApplyVO>();
+            vo->setApplyId(res->getInt("apply_id"));
+            vo->setUserId(res->getInt("user_id"));
+            vo->setCanteenName(res->getString("canteen_name"));
+            vo->setStatus(res->getInt("status"));
+            return vo;
+        }
+    } catch (...) {}
+    return nullptr;
+}
+
+bool CanteenManagerApplyDAO::reviewApply(sql::Connection *conn, int apply_id, int reviewer_id, int status)
+{
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE canteen_manager_apply SET status = ?, reviewer_id = ?, review_time = NOW() "
+                "WHERE apply_id = ? AND status = 0"
+            )
+        );
+        stmt->setInt(1, status);
+        stmt->setInt(2, reviewer_id);
+        stmt->setInt(3, apply_id);
+
+        return stmt->executeUpdate() > 0;
+    } catch (...) { return false; }
+}
+
 std::shared_ptr<Diner> DinerDAO::getDinerByUserId(int user_id)
 {
     try {
@@ -786,6 +903,30 @@ int CanteenDAO::getCanteenIdByUserId(int user_id) {
         }
     } catch (...) {}
 
+    return -1;
+}
+
+int CanteenDAO::insertCanteen(sql::Connection *conn, const std::string& canteen_name)
+{
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO canteen(name, status) VALUES (?, 1)"
+            )
+        );
+        stmt->setString(1, canteen_name);
+        if (stmt->executeUpdate() == 0) {
+            return -1;
+        }
+
+        std::unique_ptr<sql::Statement> cstmt(conn->createStatement());
+        std::unique_ptr<sql::ResultSet> rs(
+            cstmt->executeQuery("SELECT LAST_INSERT_ID()")
+        );
+        if (rs->next()) {
+            return rs->getInt(1);
+        }
+    } catch (...) {}
     return -1;
 }
 

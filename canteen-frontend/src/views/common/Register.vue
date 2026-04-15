@@ -50,6 +50,12 @@
           </el-form-item>
         </template>
 
+        <template v-if="form.role === 'manager'">
+          <el-form-item label="食堂名称">
+            <el-input v-model="form.canteen_name" placeholder="请输入食堂名称" />
+          </el-form-item>
+        </template>
+
         <el-form-item>
           <el-button type="primary" @click="handleRegister">
             注册
@@ -81,7 +87,8 @@ const form = reactive({
   phone: '',
   role:'diner',
   level_id: 2,
-  region_id: null
+  region_id: null,
+  canteen_name: ''
 })
 const regionOptions = ref([])
 
@@ -97,6 +104,10 @@ onMounted(async () => {
 const handleRegister = async () => {
   if (form.role === 'admin' && !form.region_id) {
     ElMessage.warning('请选择管理区域')
+    return
+  }
+  if (form.role === 'manager' && !form.canteen_name) {
+    ElMessage.warning('请输入食堂名称')
     return
   }
 

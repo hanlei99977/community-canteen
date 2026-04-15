@@ -295,3 +295,54 @@ public:
     std::string getReviewerName() const { return reviewer_name; }
     void setReviewerName(const std::string& name) { reviewer_name = name; }
 };
+
+// 食堂管理者申请审核列表 VO
+class CanteenManagerApplyVO
+{
+private:
+    int apply_id;
+    int user_id;
+    std::string username;
+    int age;
+    std::string phone;
+    std::string canteen_name;
+    int status;
+    std::string apply_time;
+    std::string review_time;
+    int reviewer_id;
+    std::string reviewer_name;
+
+public:
+    int getApplyId() const { return apply_id; }
+    void setApplyId(int id) { apply_id = id; }
+
+    int getUserId() const { return user_id; }
+    void setUserId(int id) { user_id = id; }
+
+    std::string getUsername() const { return username; }
+    void setUsername(const std::string& name) { username = name; }
+
+    int getAge() const { return age; }
+    void setAge(int a) { age = a; }
+
+    std::string getPhone() const { return phone; }
+    void setPhone(const std::string& p) { phone = p; }
+
+    std::string getCanteenName() const { return canteen_name; }
+    void setCanteenName(const std::string& name) { canteen_name = name; }
+
+    int getStatus() const { return status; }
+    void setStatus(int s) { status = s; }
+
+    std::string getApplyTime() const { return apply_time; }
+    void setApplyTime(const std::string& t) { apply_time = t; }
+
+    std::string getReviewTime() const { return review_time; }
+    void setReviewTime(const std::string& t) { review_time = t; }
+
+    int getReviewerId() const { return reviewer_id; }
+    void setReviewerId(int id) { reviewer_id = id; }
+
+    std::string getReviewerName() const { return reviewer_name; }
+    void setReviewerName(const std::string& name) { reviewer_name = name; }
+};

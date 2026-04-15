@@ -56,6 +56,19 @@
           </el-form-item>
         </template>
 
+        <template v-if="form.role === 'diner'">
+          <el-form-item label="所在区域">
+            <el-select v-model="form.region_id" placeholder="请选择所在区域" style="width: 100%">
+              <el-option
+                v-for="region in regionOptions"
+                :key="region.region_id"
+                :label="region.region_name"
+                :value="region.region_id"
+              />
+            </el-select>
+          </el-form-item>
+        </template>
+
         <el-form-item>
           <el-button type="primary" @click="handleRegister">
             注册
@@ -102,6 +115,10 @@ onMounted(async () => {
 })
 
 const handleRegister = async () => {
+  if (form.role === 'diner' && !form.region_id) {
+    ElMessage.warning('请选择所在区域')
+    return
+  }
   if (form.role === 'admin' && !form.region_id) {
     ElMessage.warning('请选择管理区域')
     return

@@ -91,7 +91,9 @@ class OrderService {
 public:
     bool placeOrder(int user_id,
                     int canteen_id,
+                    int order_for_user_id,
                     const std::vector<OrderItem>& items);
+    std::vector<FamilyMemberVO> getOrderTargetsByUser(int user_id);
     std::vector<OrderVO> getOrdersByUser(int user_id);
     std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
 

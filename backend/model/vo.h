@@ -217,3 +217,18 @@ public:
     std::string getTastePreference() const { return taste_preference; }
     void setTastePreference(const std::string& t) { taste_preference = t; }
 };
+
+// 家庭成员（下单对象）VO
+class FamilyMemberVO
+{
+private:
+    int user_id;
+    std::string username;
+
+public:
+    int getUserId() const { return user_id; }
+    void setUserId(int id) { user_id = id; }
+
+    std::string getUsername() const { return username; }
+    void setUsername(const std::string& name) { username = name; }
+};

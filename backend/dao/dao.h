@@ -46,6 +46,7 @@ public:
     bool insertDiner(sql::Connection *conn, int user_id);
     std::shared_ptr<Diner> getDinerByUserId(int user_id);
     std::shared_ptr<DinerCenterVO> getDinerCenterByUserId(int user_id);
+    std::vector<FamilyMemberVO> getFamilyMembersByUserId(int user_id);
     bool updateDiner(sql::Connection *conn, const DinerCenterVO& diner);
     std::vector<DinerInformation> getDinerList();
 };

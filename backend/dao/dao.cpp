@@ -413,6 +413,39 @@ std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(int user_id)
     return nullptr;
 }
 
+std::vector<FamilyMemberVO> DinerDAO::getFamilyMembersByUserId(int user_id)
+{
+    std::vector<FamilyMemberVO> list;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT u.user_id, u.username "
+                "FROM users u "
+                "JOIN diner d ON d.user_id = u.user_id "
+                "WHERE d.family_id = (SELECT family_id FROM diner WHERE user_id = ?) "
+                "AND d.family_id IS NOT NULL "
+                "ORDER BY u.user_id ASC"
+            )
+        );
+
+        stmt->setInt(1, user_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            FamilyMemberVO member;
+            member.setUserId(res->getInt("user_id"));
+            member.setUsername(res->getString("username"));
+            list.push_back(member);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
 bool DinerDAO::updateDiner(sql::Connection *conn, const DinerCenterVO& diner) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(

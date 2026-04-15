@@ -247,6 +247,7 @@ bool DishService::enableDishByDishId(int dish_id) {
  *********************************************/
 bool OrderService::placeOrder(int user_id,
                               int canteen_id,
+                              int order_for_user_id,
                               const std::vector<OrderItem>& items) {
 
     auto user_mutex = getUserOrderMutex(user_id);
@@ -275,10 +276,23 @@ bool OrderService::placeOrder(int user_id,
             }
         }
 
+        DinerDAO dinerDAO;
+        auto familyMembers = dinerDAO.getFamilyMembersByUserId(user_id);
+        bool canOrderForTarget = false;
+        for (const auto& member : familyMembers) {
+            if (member.getUserId() == order_for_user_id) {
+                canOrderForTarget = true;
+                break;
+            }
+        }
+        if (!canOrderForTarget) {
+            return false;
+        }
+
         // 2️⃣ 构造订单
         Order order;
         order.setUserId(user_id);
-        order.setOrderForUserId(user_id);
+        order.setOrderForUserId(order_for_user_id);
         order.setCanteenId(canteen_id);
         order.setTotalPrice(total);
         order.setStatus("pending");
@@ -300,6 +314,12 @@ bool OrderService::placeOrder(int user_id,
     }catch (...) {
             return false;
         }
+}
+
+std::vector<FamilyMemberVO> OrderService::getOrderTargetsByUser(int user_id)
+{
+    DinerDAO dao;
+    return dao.getFamilyMembersByUserId(user_id);
 }
 
 std::vector<OrderVO> OrderService::getOrdersByUser(int user_id)

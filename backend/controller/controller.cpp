@@ -82,6 +82,7 @@ void Controller::registerUserRoutes(httplib::Server& server) {
 // 订单相关路由
 void Controller::registerOrderRoutes(httplib::Server& server) {
     server.Post("/placeOrder", handlePlaceOrder);
+    server.Get("/orderTargets", handleOrderTargets);
     server.Get("/getOrders", handleGetOrders);
     server.Get("/order_details", handleOrderDetails);
     server.Post("/rating", handleRating);
@@ -459,10 +460,14 @@ void Controller::handlePlaceOrder(const httplib::Request& req, httplib::Response
 
         int user_id     = 0;
         int canteen_id  = 0;
+        int order_for_user_id = 0;
         user_id = getIntSafe(body, "user_id");
         canteen_id = getIntSafe(body, "canteen_id");
+        order_for_user_id = getIntSafe(body, "order_for_user_id", user_id);
         
-        std::cout << "下单参数：user_id=" << user_id << ", canteen_id=" << canteen_id << std::endl;
+        std::cout << "下单参数：user_id=" << user_id
+                  << ", order_for_user_id=" << order_for_user_id
+                  << ", canteen_id=" << canteen_id << std::endl;
         std::vector<OrderItem> items;
 
         for (auto& item : body["items"]) {
@@ -474,7 +479,7 @@ void Controller::handlePlaceOrder(const httplib::Request& req, httplib::Response
 
         OrderService service;
 
-        if (service.placeOrder(user_id, canteen_id, items)) {
+        if (service.placeOrder(user_id, canteen_id, order_for_user_id, items)) {
             res.set_content(Response::success(), "application/json");
         } else {
             res.set_content(Response::error(500, "下单失败"), "application/json");
@@ -482,6 +487,29 @@ void Controller::handlePlaceOrder(const httplib::Request& req, httplib::Response
 
     } catch (...) {
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleOrderTargets(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        std::cout << "下单对象请求参数：user_id=" << user_id << std::endl;
+
+        OrderService service;
+        auto targets = service.getOrderTargetsByUser(user_id);
+        json arr = json::array();
+
+        for (const auto& t : targets) {
+            arr.push_back({
+                {"user_id", t.getUserId()},
+                {"username", t.getUsername()}
+            });
+        }
+
+        res.set_content(Response::success(arr), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
 

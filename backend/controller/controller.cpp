@@ -81,6 +81,13 @@ void Controller::registerUserRoutes(httplib::Server& server) {
     server.Post("/managerApplyReview", handleManagerApplyReview);
     server.Get("/dinerList", handleDinerList);
     server.Post("/updateStatus", handleUpdateStatus);
+    // 公告
+    server.Get("/announcementList", handleAnnouncementList);
+    server.Post("/announcementPublish", handleAnnouncementPublish);
+    server.Post("/announcementDelete", handleAnnouncementDelete);
+    // 投诉处理
+    server.Get("/reportList", handleReportList);
+    server.Post("/reportHandle", handleReportHandle);
 }
 
 // 订单相关路由
@@ -197,6 +204,13 @@ void Controller::handleRegister(const httplib::Request& req, httplib::Response& 
             return;
         }
 
+        UserService userService;
+        if (userService.isUsernameTaken(user.getUsername())) {
+            res.status = 409;
+            res.set_content(Response::error(409, "用户名已存在，请更换"), "application/json");
+            return;
+        }
+
         if (role == "admin") {
             int level_id = getIntSafe(body, "level_id");
             int region_id = getIntSafe(body, "region_id");
@@ -222,8 +236,14 @@ void Controller::handleRegister(const httplib::Request& req, httplib::Response& 
             return;
         }
 
-        UserService service;
-        if (service.registerUser(user, 1)) {
+        int region_id = getIntSafe(body, "region_id");
+        if (region_id <= 0) {
+            res.status = 400;
+            res.set_content(Response::error(400, "用餐者注册必须选择所在区域"), "application/json");
+            return;
+        }
+
+        if (userService.registerUser(user, 1, region_id)) {
             std::cout << "用户 " << user.getUsername() << " 注册成功" << std::endl;
             res.set_content(Response::success(), "application/json");
         } else {
@@ -239,14 +259,42 @@ void Controller::handleRegister(const httplib::Request& req, httplib::Response& 
 void Controller::handleCanteens(const httplib::Request& req, httplib::Response& res)
 {
     CanteenService service;
+    RatingService ratingService;
     auto list = service.getAllCanteens();
 
     json arr = json::array();
 
     for (const auto& c : list) {
+        auto ratings = ratingService.getRatings(c.getId());
+        auto details = ratingService.getCanteenRatingDetails(c.getId());
+
+        double sum_score = 0.0;
+        for (const auto& r : ratings) {
+            sum_score += r.getScore();
+        }
+        int rating_count = static_cast<int>(ratings.size());
+        double avg_score = rating_count > 0 ? sum_score / rating_count : 0.0;
+
+        json reviews = json::array();
+        for (const auto& item : details) {
+            reviews.push_back({
+                {"order_id", item.getOrderId()},
+                {"user_id", item.getUserId()},
+                {"username", item.getUsername()},
+                {"score", item.getScore()},
+                {"comment", item.getComment()},
+                {"time", item.getTime()},
+                {"dishes", item.getDishes()}
+            });
+        }
+
         arr.push_back({
             {"id", c.getId()},
-            {"name", c.getName()}
+            {"name", c.getName()},
+            {"rating_count", rating_count},
+            {"avg_score", avg_score},
+            {"rating_text", rating_count < 20 ? "评价过少" : std::to_string(avg_score)},
+            {"reviews", reviews}
         });
     }
 
@@ -555,6 +603,7 @@ void Controller::handleGetOrders(const httplib::Request& req, httplib::Response&
         for (const auto& o : orders) {
             arr.push_back({
                 {"order_id", o.getOrderId()},
+                {"canteen_id", o.getCanteenId()},
                 {"order_for_user_name", o.getOrderForUserName()},
                 {"canteen_name", o.getCanteenName()},
                 {"total_price", o.getTotalPrice()},
@@ -969,6 +1018,117 @@ void Controller::handleUpdateStatus(const httplib::Request& req, httplib::Respon
             res.set_content(Response::error(500, "用户状态更新失败"), "application/json");
         }
 
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleAnnouncementList(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        AnnouncementService service;
+        auto list = service.getAnnouncementList();
+
+        json arr = json::array();
+        for (const auto& a : list) {
+            arr.push_back({
+                {"announce_id", a.getId()},
+                {"title", a.getTitle()},
+                {"content", a.getContent()},
+                {"publish_time", a.getPublishTime()},
+                {"publisher_id", a.getPublisherId()},
+                {"publisher_name", a.getPublisherName()}
+            });
+        }
+
+        res.set_content(Response::success(arr), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(500, "获取公告失败"), "application/json");
+    }
+}
+
+void Controller::handleAnnouncementPublish(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        json body = json::parse(req.body);
+        Announcement announcement;
+        announcement.setTitle(getStringSafe(body, "title"));
+        announcement.setContent(getStringSafe(body, "content"));
+        announcement.setPublisherId(getIntSafe(body, "publisher_id"));
+
+        AnnouncementService service;
+        if (service.publishAnnouncement(announcement)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "发布公告失败"), "application/json");
+        }
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleAnnouncementDelete(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        json body = json::parse(req.body);
+        int announce_id = getIntSafe(body, "announce_id");
+        int publisher_id = getIntSafe(body, "publisher_id");
+
+        AnnouncementService service;
+        if (service.deleteAnnouncement(announce_id, publisher_id)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(403, "只能删除自己发布的公告"), "application/json");
+        }
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleReportList(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        ReportService service;
+        auto list = service.getAllReports();
+
+        json arr = json::array();
+        for (const auto& r : list) {
+            arr.push_back({
+                {"report_id", r.getReportId()},
+                {"user_id", r.getUserId()},
+                {"username", r.getUsername()},
+                {"canteen_id", r.getCanteenId()},
+                {"canteen_name", r.getCanteenName()},
+                {"type", r.getType()},
+                {"content", r.getContent()},
+                {"status", r.getStatus()},
+                {"create_time", r.getCreateTime()},
+                {"handle_time", r.getHandleTime()},
+                {"handler_id", r.getHandlerId()},
+                {"handler_name", r.getHandlerName()}
+            });
+        }
+
+        res.set_content(Response::success(arr), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(500, "获取投诉列表失败"), "application/json");
+    }
+}
+
+void Controller::handleReportHandle(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        json body = json::parse(req.body);
+        int report_id = getIntSafe(body, "report_id");
+        int status = getIntSafe(body, "status");
+        int handler_id = getIntSafe(body, "handler_id");
+
+        ReportService service;
+        if (service.handleReport(report_id, status, handler_id)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "投诉处理失败"), "application/json");
+        }
     } catch (...) {
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }

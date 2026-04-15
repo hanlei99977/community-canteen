@@ -22,7 +22,7 @@ std::shared_ptr<std::mutex> OrderService::getUserOrderMutex(int user_id) {
 /**********************************************
  * UserService
  *********************************************/
-bool UserService::registerUser(const User& user ,int role) {
+bool UserService::registerUser(const User& user, int role, int region_id) {
     UserDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
@@ -43,8 +43,11 @@ bool UserService::registerUser(const User& user ,int role) {
 
         switch (role) {
             case 1: // diner
+                if (region_id <= 0) {
+                    return false;
+                }
                 DinerDAO dinerDAO;
-                res = dinerDAO.insertDiner(conn, user_id);
+                res = dinerDAO.insertDiner(conn, user_id, region_id);
                 break;
             case 2: // admin
                 AdminDAO adminDAO;
@@ -67,6 +70,14 @@ bool UserService::registerUser(const User& user ,int role) {
     catch (...) {
         return false;
     }
+}
+
+bool UserService::isUsernameTaken(const std::string& username) {
+    if (username.empty()) {
+        return false;
+    }
+    UserDAO dao;
+    return dao.existsByUsername(username);
 }
 
 std::shared_ptr<User> UserService::login(
@@ -529,6 +540,11 @@ std::vector<Rating> RatingService::getRatings(int canteen_id) {
     return dao.getRatingsByCanteen(canteen_id);
 }
 
+std::vector<CanteenRatingVO> RatingService::getCanteenRatingDetails(int canteen_id) {
+    RatingDAO dao;
+    return dao.getCanteenRatingDetails(canteen_id);
+}
+
 /**********************************************
  * ReportService
  *********************************************/
@@ -543,4 +559,45 @@ bool ReportService::submitReport(const Report& report) {
 std::vector<Report> ReportService::getReports(int canteen_id) {
     ReportDAO dao;
     return dao.getReportsByCanteen(canteen_id);
+}
+
+std::vector<ReportVO> ReportService::getAllReports() {
+    ReportDAO dao;
+    return dao.getAllReports();
+}
+
+bool ReportService::handleReport(int report_id, int status, int handler_id) {
+    if (report_id <= 0 || handler_id <= 0) {
+        return false;
+    }
+    if (status != 1 && status != 2) {
+        return false;
+    }
+    ReportDAO dao;
+    return dao.updateReportStatus(report_id, status, handler_id);
+}
+
+/**********************************************
+ * AnnouncementService
+ *********************************************/
+bool AnnouncementService::publishAnnouncement(const Announcement& announcement) {
+    if (announcement.getTitle().empty() || announcement.getContent().empty() || announcement.getPublisherId() <= 0) {
+        return false;
+    }
+
+    AnnouncementDAO dao;
+    return dao.insertAnnouncement(announcement);
+}
+
+std::vector<AnnouncementVO> AnnouncementService::getAnnouncementList() {
+    AnnouncementDAO dao;
+    return dao.getAnnouncementList();
+}
+
+bool AnnouncementService::deleteAnnouncement(int announce_id, int publisher_id) {
+    if (announce_id <= 0 || publisher_id <= 0) {
+        return false;
+    }
+    AnnouncementDAO dao;
+    return dao.deleteAnnouncement(announce_id, publisher_id);
 }

@@ -9,6 +9,7 @@
 class OrderVO {
 private:
     int order_id;
+    int canteen_id;
     std::string order_for_user_name;
     std::string canteen_name;
     std::string create_time;
@@ -16,6 +17,9 @@ private:
 public:
     int getOrderId() const { return order_id; }
     void setOrderId(int id) { order_id = id; }
+
+    int getCanteenId() const { return canteen_id; }
+    void setCanteenId(int id) { canteen_id = id; }
 
     std::string getOrderForUserName() const { return order_for_user_name; }
     void setOrderForUserName(const std::string& name) { order_for_user_name = name; }
@@ -29,6 +33,122 @@ public:
     double getTotalPrice() const { return total_price; }
     void setTotalPrice(double price) { total_price = price; }
 
+};
+
+// 食堂评价明细 VO（含该评价订单菜品）
+class CanteenRatingVO {
+private:
+    int order_id;
+    int user_id;
+    std::string username;
+    int score;
+    std::string comment;
+    std::string time;
+    std::vector<std::string> dishes;
+public:
+    int getOrderId() const { return order_id; }
+    void setOrderId(int id) { order_id = id; }
+
+    int getUserId() const { return user_id; }
+    void setUserId(int id) { user_id = id; }
+
+    std::string getUsername() const { return username; }
+    void setUsername(const std::string& name) { username = name; }
+
+    int getScore() const { return score; }
+    void setScore(int s) { score = s; }
+
+    std::string getComment() const { return comment; }
+    void setComment(const std::string& c) { comment = c; }
+
+    std::string getTime() const { return time; }
+    void setTime(const std::string& t) { time = t; }
+
+    std::vector<std::string> getDishes() const { return dishes; }
+    void setDishes(const std::vector<std::string>& ds) { dishes = ds; }
+    void addDish(const std::string& dish) { dishes.push_back(dish); }
+};
+
+// 投诉/举报管理 VO
+class ReportVO {
+private:
+    int report_id;
+    int user_id;
+    std::string username;
+    int canteen_id;
+    std::string canteen_name;
+    int type;
+    std::string content;
+    int status;
+    std::string create_time;
+    std::string handle_time;
+    int handler_id;
+    std::string handler_name;
+public:
+    int getReportId() const { return report_id; }
+    void setReportId(int id) { report_id = id; }
+
+    int getUserId() const { return user_id; }
+    void setUserId(int id) { user_id = id; }
+
+    std::string getUsername() const { return username; }
+    void setUsername(const std::string& n) { username = n; }
+
+    int getCanteenId() const { return canteen_id; }
+    void setCanteenId(int id) { canteen_id = id; }
+
+    std::string getCanteenName() const { return canteen_name; }
+    void setCanteenName(const std::string& n) { canteen_name = n; }
+
+    int getType() const { return type; }
+    void setType(int t) { type = t; }
+
+    std::string getContent() const { return content; }
+    void setContent(const std::string& c) { content = c; }
+
+    int getStatus() const { return status; }
+    void setStatus(int s) { status = s; }
+
+    std::string getCreateTime() const { return create_time; }
+    void setCreateTime(const std::string& t) { create_time = t; }
+
+    std::string getHandleTime() const { return handle_time; }
+    void setHandleTime(const std::string& t) { handle_time = t; }
+
+    int getHandlerId() const { return handler_id; }
+    void setHandlerId(int id) { handler_id = id; }
+
+    std::string getHandlerName() const { return handler_name; }
+    void setHandlerName(const std::string& n) { handler_name = n; }
+};
+
+// 公告列表 VO
+class AnnouncementVO {
+private:
+    int announce_id;
+    std::string title;
+    std::string content;
+    std::string publish_time;
+    int publisher_id;
+    std::string publisher_name;
+public:
+    int getId() const { return announce_id; }
+    void setId(int id) { announce_id = id; }
+
+    std::string getTitle() const { return title; }
+    void setTitle(const std::string& t) { title = t; }
+
+    std::string getContent() const { return content; }
+    void setContent(const std::string& c) { content = c; }
+
+    std::string getPublishTime() const { return publish_time; }
+    void setPublishTime(const std::string& t) { publish_time = t; }
+
+    int getPublisherId() const { return publisher_id; }
+    void setPublisherId(int id) { publisher_id = id; }
+
+    std::string getPublisherName() const { return publisher_name; }
+    void setPublisherName(const std::string& n) { publisher_name = n; }
 };
 
 //订单详情页VO

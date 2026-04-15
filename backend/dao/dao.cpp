@@ -75,17 +75,36 @@ int UserDAO::insertUser(sql::Connection *conn, const User& user)
     } catch (...) { return -1; }
 }
 
-bool DinerDAO::insertDiner(sql::Connection *conn, int user_id)
+bool UserDAO::existsByUsername(const std::string& username)
+{
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT 1 FROM users WHERE username = ? LIMIT 1")
+        );
+        stmt->setString(1, username);
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        return res->next();
+    } catch (...) {
+        return false;
+    }
+}
+
+bool DinerDAO::insertDiner(sql::Connection *conn, int user_id, int region_id)
 {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "INSERT INTO diner(user_id) "
-                "VALUES (?)"
+                "INSERT INTO diner(user_id, region_id) "
+                "VALUES (?, ?)"
             )
         );
 
         stmt->setInt(1, user_id);
+        stmt->setInt(2, region_id);
         if (stmt->executeUpdate() == 0) {
             conn->rollback();
             return false;
@@ -1279,6 +1298,7 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
         conn->prepareStatement(R"(
              SELECT 
                 o.order_id AS order_id,
+                o.canteen_id AS canteen_id,
                 u.username AS order_for_user_name,
                 c.name AS canteen_name,
                 o.total_price,
@@ -1297,6 +1317,7 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
         while (res->next()) {
             OrderVO o;
             o.setOrderId(res->getInt("order_id"));
+            o.setCanteenId(res->getInt("canteen_id"));
             o.setOrderForUserName(res->getString("order_for_user_name"));
             o.setCanteenName(res->getString("canteen_name"));
             o.setTotalPrice(std::stod(res->getString("total_price").c_str()));
@@ -1388,7 +1409,9 @@ bool RatingDAO::insertRating(const Rating& rating) {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "INSERT INTO rating(user_id, canteen_id, order_id, score, comment, time) "
-                "VALUES (?, ?, ?, ?, ?, NOW())"
+                "SELECT ?, ?, ?, ?, ?, NOW() "
+                "FROM orders o "
+                "WHERE o.order_id = ? AND o.user_id = ? AND o.canteen_id = ?"
             )
         );
 
@@ -1397,6 +1420,9 @@ bool RatingDAO::insertRating(const Rating& rating) {
         stmt->setInt(3, rating.getOrderId());
         stmt->setInt(4, rating.getScore());
         stmt->setString(5, rating.getComment());
+        stmt->setInt(6, rating.getOrderId());
+        stmt->setInt(7, rating.getUserId());
+        stmt->setInt(8, rating.getCanteenId());
 
         return stmt->executeUpdate() > 0;
     } catch (...) { return false; }
@@ -1428,6 +1454,66 @@ bool RatingDAO::insertRating(const Rating& rating) {
             r.setComment(res->getString("comment"));
             r.setTime(res->getString("time"));
             list.push_back(r);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
+std::vector<CanteenRatingVO> RatingDAO::getCanteenRatingDetails(int canteen_id)
+{
+    std::vector<CanteenRatingVO> list;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(R"(
+                SELECT
+                    r.order_id,
+                    r.user_id,
+                    u.username,
+                    r.score,
+                    r.comment,
+                    r.time,
+                    d.name AS dish_name
+                FROM rating r
+                JOIN users u ON u.user_id = r.user_id
+                LEFT JOIN order_item oi ON oi.order_id = r.order_id
+                LEFT JOIN dish d ON d.dish_id = oi.dish_id
+                WHERE r.canteen_id = ?
+                ORDER BY r.time DESC, r.order_id DESC, d.dish_id ASC
+            )")
+        );
+
+        stmt->setInt(1, canteen_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        std::map<std::pair<int, int>, CanteenRatingVO> grouped;
+
+        while (res->next()) {
+            int order_id = res->getInt("order_id");
+            int user_id = res->getInt("user_id");
+            std::pair<int, int> key = {order_id, user_id};
+
+            if (grouped.find(key) == grouped.end()) {
+                CanteenRatingVO vo;
+                vo.setOrderId(order_id);
+                vo.setUserId(user_id);
+                vo.setUsername(res->getString("username"));
+                vo.setScore(res->getInt("score"));
+                vo.setComment(res->getString("comment"));
+                vo.setTime(res->getString("time"));
+                grouped[key] = vo;
+            }
+
+            if (!res->isNull("dish_name")) {
+                grouped[key].addDish(res->getString("dish_name"));
+            }
+        }
+
+        for (auto& [_, vo] : grouped) {
+            list.push_back(vo);
         }
     } catch (...) {}
 
@@ -1488,4 +1574,154 @@ std::vector<Report> ReportDAO::getReportsByCanteen(int canteen_id)
     } catch (...) {}
 
     return list;
+}
+
+std::vector<ReportVO> ReportDAO::getAllReports()
+{
+    std::vector<ReportVO> list;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(R"(
+                SELECT
+                    r.report_id,
+                    r.user_id,
+                    u.username,
+                    r.canteen_id,
+                    c.name AS canteen_name,
+                    r.type,
+                    r.content,
+                    r.status,
+                    r.create_time,
+                    r.handle_time,
+                    r.handler_id,
+                    hu.username AS handler_name
+                FROM report r
+                JOIN users u ON u.user_id = r.user_id
+                JOIN canteen c ON c.canteen_id = r.canteen_id
+                LEFT JOIN users hu ON hu.user_id = r.handler_id
+                ORDER BY r.create_time DESC, r.report_id DESC
+            )")
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            ReportVO vo;
+            vo.setReportId(res->getInt("report_id"));
+            vo.setUserId(res->getInt("user_id"));
+            vo.setUsername(res->getString("username"));
+            vo.setCanteenId(res->getInt("canteen_id"));
+            vo.setCanteenName(res->getString("canteen_name"));
+            vo.setType(res->getInt("type"));
+            vo.setContent(res->getString("content"));
+            vo.setStatus(res->getInt("status"));
+            vo.setCreateTime(res->getString("create_time"));
+            if (!res->isNull("handle_time")) {
+                vo.setHandleTime(res->getString("handle_time"));
+            }
+            if (!res->isNull("handler_id")) {
+                vo.setHandlerId(res->getInt("handler_id"));
+            }
+            if (!res->isNull("handler_name")) {
+                vo.setHandlerName(res->getString("handler_name"));
+            }
+            list.push_back(vo);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
+bool ReportDAO::updateReportStatus(int report_id, int status, int handler_id)
+{
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE report SET status = ?, handler_id = ?, handle_time = NOW() "
+                "WHERE report_id = ? AND status = 0"
+            )
+        );
+
+        stmt->setInt(1, status);
+        stmt->setInt(2, handler_id);
+        stmt->setInt(3, report_id);
+        return stmt->executeUpdate() > 0;
+    } catch (...) { return false; }
+}
+
+/***************************************************************************************
+ * AnnouncementDao
+***************************************************************************************/
+bool AnnouncementDAO::insertAnnouncement(const Announcement& announcement) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO announcement(title, content, publisher_id, publish_time) "
+                "VALUES (?, ?, ?, NOW())"
+            )
+        );
+
+        stmt->setString(1, announcement.getTitle());
+        stmt->setString(2, announcement.getContent());
+        stmt->setInt(3, announcement.getPublisherId());
+
+        return stmt->executeUpdate() > 0;
+    } catch (...) { return false; }
+}
+
+std::vector<AnnouncementVO> AnnouncementDAO::getAnnouncementList() {
+    std::vector<AnnouncementVO> list;
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT a.announce_id, a.title, a.content, a.publish_time, a.publisher_id, u.username "
+                "FROM announcement a "
+                "JOIN users u ON u.user_id = a.publisher_id "
+                "ORDER BY a.publish_time DESC, a.announce_id DESC"
+            )
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            AnnouncementVO vo;
+            vo.setId(res->getInt("announce_id"));
+            vo.setTitle(res->getString("title"));
+            vo.setContent(res->getString("content"));
+            vo.setPublishTime(res->getString("publish_time"));
+            vo.setPublisherId(res->getInt("publisher_id"));
+            vo.setPublisherName(res->getString("username"));
+            list.push_back(vo);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
+bool AnnouncementDAO::deleteAnnouncement(int announce_id, int publisher_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "DELETE FROM announcement WHERE announce_id = ? AND publisher_id = ?"
+            )
+        );
+
+        stmt->setInt(1, announce_id);
+        stmt->setInt(2, publisher_id);
+        return stmt->executeUpdate() > 0;
+    } catch (...) { return false; }
 }

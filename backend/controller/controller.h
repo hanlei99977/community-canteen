@@ -30,6 +30,7 @@ private:
     
     //订单相关
     static void handlePlaceOrder(const httplib::Request& req, httplib::Response& res);
+    static void handleOrderTargets(const httplib::Request& req, httplib::Response& res);
     static void handleGetOrders(const httplib::Request& req, httplib::Response& res);
     static void handleOrderDetails(const httplib::Request& req, httplib::Response& res);
 
@@ -42,6 +43,10 @@ private:
     static void handleRegionList(const httplib::Request& req, httplib::Response& res);
     //管理员
     static void handleAdminList(const httplib::Request& req, httplib::Response& res);
+    static void handleAdminApplyList(const httplib::Request& req, httplib::Response& res);
+    static void handleAdminApplyReview(const httplib::Request& req, httplib::Response& res);
+    static void handleManagerApplyList(const httplib::Request& req, httplib::Response& res);
+    static void handleManagerApplyReview(const httplib::Request& req, httplib::Response& res);
     static void handleDinerList(const httplib::Request& req, httplib::Response& res);
     static void handleUpdateStatus(const httplib::Request& req, httplib::Response& res);
     

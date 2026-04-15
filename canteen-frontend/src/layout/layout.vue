@@ -29,6 +29,10 @@
           管理员申请
         </el-menu-item>
 
+        <el-menu-item v-if="isSystemAdmin" index="/managerApply">
+          食堂管理者申请
+        </el-menu-item>
+
         <!-- ================== 系统管理员 + 普通管理员 ================== -->
         <el-menu-item v-if="isAdmin" index="/dinerManage">
           用餐者管理

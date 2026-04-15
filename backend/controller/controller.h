@@ -30,6 +30,7 @@ private:
     
     //订单相关
     static void handlePlaceOrder(const httplib::Request& req, httplib::Response& res);
+    static void handleOrderTargets(const httplib::Request& req, httplib::Response& res);
     static void handleGetOrders(const httplib::Request& req, httplib::Response& res);
     static void handleOrderDetails(const httplib::Request& req, httplib::Response& res);
 

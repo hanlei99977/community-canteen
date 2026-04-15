@@ -23,7 +23,10 @@ public:
 // ================================
 class AdminService{
 public:
+    bool submitAdminApply(const User& user, int level_id, int region_id);
     std::vector<AdminInformation> getAdminList();
+    std::vector<AdminApplyVO> getAdminApplyList();
+    bool reviewAdminApply(int apply_id, int reviewer_id, int status);
 };
 
 
@@ -91,7 +94,9 @@ class OrderService {
 public:
     bool placeOrder(int user_id,
                     int canteen_id,
+                    int order_for_user_id,
                     const std::vector<OrderItem>& items);
+    std::vector<FamilyMemberVO> getOrderTargetsByUser(int user_id);
     std::vector<OrderVO> getOrdersByUser(int user_id);
     std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
 

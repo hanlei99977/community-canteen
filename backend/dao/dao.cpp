@@ -260,23 +260,51 @@ std::string UserDAO::getUserRole(int user_id)
     return "unknown";
 }
 
-bool UserDAO::updateStatus(const User& user)
+bool UserDAO::updateStatus(sql::Connection *conn, int user_id, int status)
 {
     try {
-        DBConnectionGuard guard;
-        auto conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "UPDATE users SET status = ? WHERE user_id = ? "
             )
         );
 
-        stmt->setInt(1, user.getStatus());
-        stmt->setInt(2, user.getId());
+        stmt->setInt(1, status);
+        stmt->setInt(2, user_id);
 
         if (stmt->executeUpdate() == 0) {
-            std::cout<<"没有对user表进行更新"<<std::endl; 
+            std::cout<<"没有对user表进行更新"<<std::endl;
+        }
+
+        return true;
+    } catch (...) { return false; }
+}
+
+bool UserDAO::updateStatus(const User& user)
+{
+    try {
+        DBConnectionGuard guard;
+        auto conn = guard.get();
+
+        return updateStatus(conn, user.getId(), user.getStatus());
+    } catch (...) { return false; }
+}
+
+bool AdminDAO::insertAdmin(sql::Connection *conn, int user_id, int level_id, int region_id)
+{
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO admin(user_id, level_id, region_id) "
+                "VALUES (?, ?, ?)"
+            )
+        );
+
+        stmt->setInt(1, user_id);
+        stmt->setInt(2, level_id);
+        stmt->setInt(3, region_id);
+        if (stmt->executeUpdate() == 0) {
+            return false;
         }
 
         return true;
@@ -348,6 +376,113 @@ std::vector<AdminInformation> AdminDAO::getAdminList()
     return list;
 }
 
+bool AdminApplyDAO::insertApply(sql::Connection *conn, int user_id, int level_id, int region_id)
+{
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO admin_apply(user_id, level_id, region_id, status, apply_time) "
+                "VALUES (?, ?, ?, 0, NOW())"
+            )
+        );
+
+        stmt->setInt(1, user_id);
+        stmt->setInt(2, level_id);
+        stmt->setInt(3, region_id);
+
+        return stmt->executeUpdate() > 0;
+    } catch (...) { return false; }
+}
+
+std::vector<AdminApplyVO> AdminApplyDAO::getApplyList()
+{
+    std::vector<AdminApplyVO> list;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT aa.apply_id, aa.user_id, u.username, u.age, u.phone, aa.level_id, l.level_name, "
+                "aa.region_id, r.region_name, aa.status, aa.apply_time, aa.review_time, aa.reviewer_id, "
+                "ru.username AS reviewer_name "
+                "FROM admin_apply aa "
+                "JOIN users u ON aa.user_id = u.user_id "
+                "LEFT JOIN level l ON aa.level_id = l.level_id "
+                "LEFT JOIN region r ON aa.region_id = r.region_id "
+                "LEFT JOIN users ru ON aa.reviewer_id = ru.user_id "
+                "ORDER BY aa.apply_id DESC"
+            )
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            AdminApplyVO vo;
+            vo.setApplyId(res->getInt("apply_id"));
+            vo.setUserId(res->getInt("user_id"));
+            vo.setUsername(res->getString("username"));
+            vo.setAge(res->getInt("age"));
+            vo.setPhone(res->getString("phone"));
+            vo.setLevelId(res->getInt("level_id"));
+            vo.setLevelName(res->getString("level_name"));
+            vo.setRegionId(res->getInt("region_id"));
+            vo.setRegionName(res->getString("region_name"));
+            vo.setStatus(res->getInt("status"));
+            vo.setApplyTime(res->getString("apply_time"));
+            vo.setReviewTime(res->isNull("review_time") ? "" : res->getString("review_time"));
+            vo.setReviewerId(res->isNull("reviewer_id") ? 0 : res->getInt("reviewer_id"));
+            vo.setReviewerName(res->isNull("reviewer_name") ? "" : res->getString("reviewer_name"));
+
+            list.push_back(vo);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
+std::shared_ptr<AdminApplyVO> AdminApplyDAO::getApplyById(sql::Connection *conn, int apply_id)
+{
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT aa.apply_id, aa.user_id, aa.level_id, aa.region_id, aa.status "
+                "FROM admin_apply aa WHERE aa.apply_id = ?"
+            )
+        );
+        stmt->setInt(1, apply_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            auto vo = std::make_shared<AdminApplyVO>();
+            vo->setApplyId(res->getInt("apply_id"));
+            vo->setUserId(res->getInt("user_id"));
+            vo->setLevelId(res->getInt("level_id"));
+            vo->setRegionId(res->getInt("region_id"));
+            vo->setStatus(res->getInt("status"));
+            return vo;
+        }
+    } catch (...) {}
+
+    return nullptr;
+}
+
+bool AdminApplyDAO::reviewApply(sql::Connection *conn, int apply_id, int reviewer_id, int status)
+{
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE admin_apply SET status = ?, reviewer_id = ?, review_time = NOW() "
+                "WHERE apply_id = ? AND status = 0"
+            )
+        );
+        stmt->setInt(1, status);
+        stmt->setInt(2, reviewer_id);
+        stmt->setInt(3, apply_id);
+
+        return stmt->executeUpdate() > 0;
+    } catch (...) { return false; }
+}
+
 std::shared_ptr<Diner> DinerDAO::getDinerByUserId(int user_id)
 {
     try {
@@ -411,6 +546,39 @@ std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(int user_id)
         }
     } catch (...) {}
     return nullptr;
+}
+
+std::vector<FamilyMemberVO> DinerDAO::getFamilyMembersByUserId(int user_id)
+{
+    std::vector<FamilyMemberVO> list;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT u.user_id, u.username "
+                "FROM users u "
+                "JOIN diner d ON d.user_id = u.user_id "
+                "WHERE d.family_id = (SELECT family_id FROM diner WHERE user_id = ?) "
+                "AND d.family_id IS NOT NULL "
+                "ORDER BY u.user_id ASC"
+            )
+        );
+
+        stmt->setInt(1, user_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            FamilyMemberVO member;
+            member.setUserId(res->getInt("user_id"));
+            member.setUsername(res->getString("username"));
+            list.push_back(member);
+        }
+    } catch (...) {}
+
+    return list;
 }
 
 bool DinerDAO::updateDiner(sql::Connection *conn, const DinerCenterVO& diner) {

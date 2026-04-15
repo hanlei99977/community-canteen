@@ -21,6 +21,7 @@ public:
 class UserDAO {
 public:
     int insertUser(sql::Connection *conn, const User& user);
+    bool existsByUsername(const std::string& username);
     std::shared_ptr<User> getUserByUsernameAndPassword(const std::string&, const std::string&);
     std::shared_ptr<User> getUserById(int user_id);
     bool updateUser(sql::Connection *conn, const DinerCenterVO& user);
@@ -56,7 +57,7 @@ public:
 // ================================
 class DinerDAO {
 public:
-    bool insertDiner(sql::Connection *conn, int user_id);
+    bool insertDiner(sql::Connection *conn, int user_id, int region_id);
     std::shared_ptr<Diner> getDinerByUserId(int user_id);
     std::shared_ptr<DinerCenterVO> getDinerCenterByUserId(int user_id);
     std::vector<FamilyMemberVO> getFamilyMembersByUserId(int user_id);
@@ -152,6 +153,7 @@ class RatingDAO {
 public:
     bool insertRating(const Rating& rating);
     std::vector<Rating> getRatingsByCanteen(int canteen_id);
+    std::vector<CanteenRatingVO> getCanteenRatingDetails(int canteen_id);
 };
 
 // ================================
@@ -161,4 +163,16 @@ class ReportDAO {
 public:
     bool insertReport(const Report& report);
     std::vector<Report> getReportsByCanteen(int canteen_id);
+    std::vector<ReportVO> getAllReports();
+    bool updateReportStatus(int report_id, int status, int handler_id);
+};
+
+// ================================
+// 公告
+// ================================
+class AnnouncementDAO {
+public:
+    bool insertAnnouncement(const Announcement& announcement);
+    std::vector<AnnouncementVO> getAnnouncementList();
+    bool deleteAnnouncement(int announce_id, int publisher_id);
 };

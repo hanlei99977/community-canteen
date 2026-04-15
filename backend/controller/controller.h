@@ -49,5 +49,12 @@ private:
     static void handleManagerApplyReview(const httplib::Request& req, httplib::Response& res);
     static void handleDinerList(const httplib::Request& req, httplib::Response& res);
     static void handleUpdateStatus(const httplib::Request& req, httplib::Response& res);
+    //公告
+    static void handleAnnouncementList(const httplib::Request& req, httplib::Response& res);
+    static void handleAnnouncementPublish(const httplib::Request& req, httplib::Response& res);
+    static void handleAnnouncementDelete(const httplib::Request& req, httplib::Response& res);
+    // 投诉处理
+    static void handleReportList(const httplib::Request& req, httplib::Response& res);
+    static void handleReportHandle(const httplib::Request& req, httplib::Response& res);
     
 };

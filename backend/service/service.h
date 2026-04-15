@@ -10,7 +10,8 @@
 // ================================
 class UserService {
 public:
-    bool registerUser(const User& user, int role=1);
+    bool registerUser(const User& user, int role=1, int region_id=0);
+    bool isUsernameTaken(const std::string& username);
     std::shared_ptr<User> login(std::string& username, std::string& password);
     std::shared_ptr<DinerCenterVO> getDinerCenterByUserId(int user_id);
     bool updateDinerCenter(const DinerCenterVO& diner);
@@ -123,6 +124,7 @@ class RatingService {
 public:
     bool submitRating(const Rating& rating);
     std::vector<Rating> getRatings(int canteen_id);
+    std::vector<CanteenRatingVO> getCanteenRatingDetails(int canteen_id);
 };
 
 // ================================
@@ -132,4 +134,16 @@ class ReportService {
 public:
     bool submitReport(const Report& report);
     std::vector<Report> getReports(int canteen_id);
+    std::vector<ReportVO> getAllReports();
+    bool handleReport(int report_id, int status, int handler_id);
+};
+
+// ================================
+// 公告服务
+// ================================
+class AnnouncementService {
+public:
+    bool publishAnnouncement(const Announcement& announcement);
+    std::vector<AnnouncementVO> getAnnouncementList();
+    bool deleteAnnouncement(int announce_id, int publisher_id);
 };

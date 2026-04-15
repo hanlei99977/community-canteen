@@ -11,6 +11,8 @@ import AdminManage from '../views/admin/AdminManage.vue'
 import DinerManage from '../views/admin/DinerManage.vue'
 import AdminApply from '../views/admin/AdminApply.vue'
 import ManagerApply from '../views/admin/ManagerApply.vue'
+import Announcement from '../views/admin/Announcement.vue'
+import ReportManage from '../views/admin/ReportManage.vue'
 // manager
 import MenuManage from '../views/manager/MenuManage.vue'
 import DishManage from '../views/manager/DishManage.vue'
@@ -37,7 +39,9 @@ const routes = [
       { path: '/adminManage', component: AdminManage},
       { path: '/adminApply', component: AdminApply},
       { path: '/managerApply', component: ManagerApply},
-      { path: '/dinerManage', component: DinerManage}
+      { path: '/dinerManage', component: DinerManage},
+      { path: '/announcement', component: Announcement},
+      { path: '/reportManage', component: ReportManage}
     ]
   }
 ]

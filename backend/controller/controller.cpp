@@ -75,6 +75,8 @@ void Controller::registerUserRoutes(httplib::Server& server) {
     server.Post("/register", handleRegister);
     //管理员管理
     server.Get("/adminList", handleAdminList);
+    server.Get("/adminApplyList", handleAdminApplyList);
+    server.Post("/adminApplyReview", handleAdminApplyReview);
     server.Get("/dinerList", handleDinerList);
     server.Post("/updateStatus", handleUpdateStatus);
 }
@@ -193,10 +195,22 @@ void Controller::handleRegister(const httplib::Request& req, httplib::Response& 
             return;
         }
 
-        UserService service;
+        if (role == "admin") {
+            int level_id = getIntSafe(body, "level_id");
+            int region_id = getIntSafe(body, "region_id");
+            AdminService service;
+            if (service.submitAdminApply(user, level_id, region_id)) {
+                std::cout << "管理员申请 " << user.getUsername() << " 提交成功" << std::endl;
+                res.set_content(Response::success(json::object(), "管理员申请已提交，等待系统管理员审核"), "application/json");
+            } else {
+                res.set_content(Response::error(500, "管理员申请提交失败"), "application/json");
+            }
+            return;
+        }
 
-        if (service.registerUser(user, role == "admin" ? 2 : role == "manager" ? 3 : 1)) {
-             std::cout << "用户 " << user.getUsername() << " 注册成功" << std::endl;
+        UserService service;
+        if (service.registerUser(user, role == "manager" ? 3 : 1)) {
+            std::cout << "用户 " << user.getUsername() << " 注册成功" << std::endl;
             res.set_content(Response::success(), "application/json");
         } else {
             res.set_content(Response::error(500, "注册失败"), "application/json");
@@ -819,6 +833,59 @@ void Controller::handleDinerList(const httplib::Request& req, httplib::Response&
     } catch (...) {
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
 
+    }
+}
+
+void Controller::handleAdminApplyList(const httplib::Request& req, httplib::Response& res)
+{
+    try{
+        std::cout << "管理员申请列表请求" << std::endl;
+
+        AdminService service;
+        auto applyList = service.getAdminApplyList();
+
+        json arr = json::array();
+        for (const auto& applyInfo : applyList) {
+            arr.push_back({
+                {"apply_id", applyInfo.getApplyId()},
+                {"user_id", applyInfo.getUserId()},
+                {"username", applyInfo.getUsername()},
+                {"age", applyInfo.getAge()},
+                {"phone", applyInfo.getPhone()},
+                {"level_id", applyInfo.getLevelId()},
+                {"level_name", applyInfo.getLevelName()},
+                {"region_id", applyInfo.getRegionId()},
+                {"region_name", applyInfo.getRegionName()},
+                {"status", applyInfo.getStatus()},
+                {"apply_time", applyInfo.getApplyTime()},
+                {"review_time", applyInfo.getReviewTime()},
+                {"reviewer_id", applyInfo.getReviewerId()},
+                {"reviewer_name", applyInfo.getReviewerName()}
+            });
+        }
+        res.set_content(Response::success(arr), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+
+    }
+}
+
+void Controller::handleAdminApplyReview(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        json body = json::parse(req.body);
+        int apply_id = getIntSafe(body, "apply_id");
+        int reviewer_id = getIntSafe(body, "reviewer_id");
+        int status = getIntSafe(body, "status");
+
+        AdminService service;
+        if (service.reviewAdminApply(apply_id, reviewer_id, status)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "审核失败"), "application/json");
+        }
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
 

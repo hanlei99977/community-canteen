@@ -25,6 +25,7 @@ public:
     std::shared_ptr<User> getUserById(int user_id);
     bool updateUser(sql::Connection *conn, const DinerCenterVO& user);
     std::string getUserRole(int user_id);
+    bool updateStatus(sql::Connection *conn, int user_id, int status);
     bool updateStatus(const User& user);
 };
 
@@ -34,8 +35,20 @@ public:
 class AdminDAO {
 public:
     bool insertAdmin(sql::Connection *conn, int user_id);
+    bool insertAdmin(sql::Connection *conn, int user_id, int level_id, int region_id);
     std::shared_ptr<Admin> getAdminByUserId(int user_id);
     std::vector<AdminInformation> getAdminList();
+};
+
+// ================================
+// 管理员申请
+// ================================
+class AdminApplyDAO {
+public:
+    bool insertApply(sql::Connection *conn, int user_id, int level_id, int region_id);
+    std::vector<AdminApplyVO> getApplyList();
+    std::shared_ptr<AdminApplyVO> getApplyById(sql::Connection *conn, int apply_id);
+    bool reviewApply(sql::Connection *conn, int apply_id, int reviewer_id, int status);
 };
 
 // ================================

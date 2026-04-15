@@ -23,7 +23,10 @@ public:
 // ================================
 class AdminService{
 public:
+    bool submitAdminApply(const User& user, int level_id, int region_id);
     std::vector<AdminInformation> getAdminList();
+    std::vector<AdminApplyVO> getAdminApplyList();
+    bool reviewAdminApply(int apply_id, int reviewer_id, int status);
 };
 
 

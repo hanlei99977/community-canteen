@@ -43,6 +43,8 @@ private:
     static void handleRegionList(const httplib::Request& req, httplib::Response& res);
     //管理员
     static void handleAdminList(const httplib::Request& req, httplib::Response& res);
+    static void handleAdminApplyList(const httplib::Request& req, httplib::Response& res);
+    static void handleAdminApplyReview(const httplib::Request& req, httplib::Response& res);
     static void handleDinerList(const httplib::Request& req, httplib::Response& res);
     static void handleUpdateStatus(const httplib::Request& req, httplib::Response& res);
     

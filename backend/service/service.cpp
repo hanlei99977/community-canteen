@@ -139,10 +139,95 @@ bool UserService::updateStatus(const User& user)
 // ================================
 // 管理员服务
 // ================================
+bool AdminService::submitAdminApply(const User& user, int level_id, int region_id)
+{
+    if (user.getUsername().empty() || user.getPassword().empty()) {
+        return false;
+    }
+    if (level_id <= 0 || region_id <= 0) {
+        return false;
+    }
+
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+
+    try {
+        TransactionGuard tx(conn);
+        UserDAO userDAO;
+        AdminApplyDAO applyDAO;
+
+        User applyUser = user;
+        applyUser.setStatus(0); // 申请中不可登录
+
+        int user_id = userDAO.insertUser(conn, applyUser);
+        if (user_id == -1) {
+            return false;
+        }
+
+        if (!applyDAO.insertApply(conn, user_id, level_id, region_id)) {
+            return false;
+        }
+
+        tx.commit();
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
 std::vector<AdminInformation> AdminService::getAdminList()
 {
     AdminDAO admin;
     return admin.getAdminList();
+}
+
+std::vector<AdminApplyVO> AdminService::getAdminApplyList()
+{
+    AdminApplyDAO dao;
+    return dao.getApplyList();
+}
+
+bool AdminService::reviewAdminApply(int apply_id, int reviewer_id, int status)
+{
+    if (apply_id <= 0 || reviewer_id <= 0) {
+        return false;
+    }
+    if (status != 1 && status != 2) {
+        return false;
+    }
+
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+
+    try {
+        TransactionGuard tx(conn);
+
+        AdminApplyDAO applyDAO;
+        auto apply = applyDAO.getApplyById(conn, apply_id);
+        if (!apply || apply->getStatus() != 0) {
+            return false;
+        }
+
+        if (status == 1) {
+            AdminDAO adminDAO;
+            UserDAO userDAO;
+            if (!adminDAO.insertAdmin(conn, apply->getUserId(), apply->getLevelId(), apply->getRegionId())) {
+                return false;
+            }
+            if (!userDAO.updateStatus(conn, apply->getUserId(), 1)) {
+                return false;
+            }
+        }
+
+        if (!applyDAO.reviewApply(conn, apply_id, reviewer_id, status)) {
+            return false;
+        }
+
+        tx.commit();
+        return true;
+    } catch (...) {
+        return false;
+    }
 }
 
 // ================================

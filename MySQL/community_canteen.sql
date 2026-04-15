@@ -69,7 +69,7 @@ CREATE TABLE admin(
 -- 用餐者表
 CREATE TABLE diner(
     user_id int primary key,
-    family_id int,
+    family_id int DEFAULT 1,
     region_id INT,
     disease_history varchar(100),  -- 疾病史
     taste_preference varchar(100),  -- 口味偏好

@@ -128,9 +128,7 @@ CREATE TABLE canteen (
     name VARCHAR(50),
     address VARCHAR(100),
     region_id INT,  -- 所属地区ID
-    manager_id INT,  -- 食堂管理员（用户ID）
     status INT DEFAULT 1,
-    FOREIGN KEY (manager_id) REFERENCES admin(user_id),
     FOREIGN KEY (region_id) REFERENCES region(region_id)
 );
 

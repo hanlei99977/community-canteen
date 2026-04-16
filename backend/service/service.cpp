@@ -244,9 +244,9 @@ bool AdminService::reviewAdminApply(int apply_id, int reviewer_id, int status)
 // ================================
 // 食堂管理者服务
 // ================================
-bool ManagerService::submitManagerApply(const User& user, const std::string& canteen_name)
+bool ManagerService::submitManagerApply(const User& user, const std::string& canteen_name, int region_id)
 {
-    if (user.getUsername().empty() || user.getPassword().empty() || canteen_name.empty()) {
+    if (user.getUsername().empty() || user.getPassword().empty() || canteen_name.empty() || region_id <= 0) {
         return false;
     }
 
@@ -266,7 +266,7 @@ bool ManagerService::submitManagerApply(const User& user, const std::string& can
             return false;
         }
 
-        if (!applyDAO.insertApply(conn, user_id, canteen_name)) {
+        if (!applyDAO.insertApply(conn, user_id, canteen_name, region_id)) {
             return false;
         }
 
@@ -308,7 +308,7 @@ bool ManagerService::reviewManagerApply(int apply_id, int reviewer_id, int statu
             ManagerDAO managerDAO;
             UserDAO userDAO;
 
-            int canteen_id = canteenDAO.insertCanteen(conn, apply->getCanteenName());
+            int canteen_id = canteenDAO.insertCanteen(conn, apply->getCanteenName(), apply->getRegionId());
             if (canteen_id == -1) {
                 return false;
             }

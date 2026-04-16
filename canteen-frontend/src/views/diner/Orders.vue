@@ -27,19 +27,32 @@
       <el-table-column label="操作" width="240">
         <template #default="scope">
           <el-button @click="handleExpand(scope.row)">查看详情</el-button>
-          <el-button type="success" @click="openRatingDialog(scope.row)">评价</el-button>
+          <el-button
+            v-if="!scope.row.has_rating"
+            type="success"
+            @click="openRatingDialog(scope.row)"
+          >
+            评价
+          </el-button>
+          <el-button
+            v-else
+            type="info"
+            @click="viewMyRating(scope.row)"
+          >
+            查看评价
+          </el-button>
         </template>
       </el-table-column>
 
     </el-table>
 
-    <el-dialog v-model="ratingDialogVisible" title="订单评价" width="520px">
+    <el-dialog v-model="ratingDialogVisible" :title="ratingDialogTitle" width="520px">
       <el-form label-width="90px">
         <el-form-item label="订单ID">
           <span>{{ currentOrder?.order_id }}</span>
         </el-form-item>
         <el-form-item label="评分">
-          <el-rate v-model="ratingForm.score" :max="5" show-score />
+          <el-rate v-model="ratingForm.score" :max="5" show-score :disabled="ratingReadonly" />
         </el-form-item>
         <el-form-item label="评价内容">
           <el-input
@@ -48,14 +61,18 @@
             :rows="4"
             maxlength="300"
             show-word-limit
+            :disabled="ratingReadonly"
             placeholder="请输入评价内容"
           />
+        </el-form-item>
+        <el-form-item v-if="ratingReadonly" label="评价时间">
+          <span>{{ currentOrder?.rating_time || '-' }}</span>
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="ratingDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitRating">提交评价</el-button>
+        <el-button @click="ratingDialogVisible = false">{{ ratingReadonly ? '关闭' : '取消' }}</el-button>
+        <el-button v-if="!ratingReadonly" type="primary" @click="submitRating">提交评价</el-button>
       </template>
     </el-dialog>
 
@@ -63,13 +80,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 const orders = ref([])
 const tableRef = ref()
 const ratingDialogVisible = ref(false)
+const ratingReadonly = ref(false)
 const currentOrder = ref(null)
 const ratingForm = reactive({
   score: 0,
@@ -140,10 +158,21 @@ const loadDetails = async (order) => {
 
 const openRatingDialog = (order) => {
   currentOrder.value = order
+  ratingReadonly.value = false
   ratingForm.score = 0
   ratingForm.comment = ''
   ratingDialogVisible.value = true
 }
+
+const viewMyRating = (order) => {
+  currentOrder.value = order
+  ratingReadonly.value = true
+  ratingForm.score = Number(order.rating_score || 0)
+  ratingForm.comment = order.rating_comment || ''
+  ratingDialogVisible.value = true
+}
+
+const ratingDialogTitle = computed(() => (ratingReadonly.value ? '我的评价记录' : '订单评价'))
 
 const submitRating = async () => {
   if (!currentOrder.value) {
@@ -166,6 +195,10 @@ const submitRating = async () => {
 
     if (res.data.code === 0) {
       ElMessage.success('评价成功')
+      currentOrder.value.has_rating = true
+      currentOrder.value.rating_score = ratingForm.score
+      currentOrder.value.rating_comment = ratingForm.comment || ''
+      currentOrder.value.rating_time = new Date().toLocaleString()
       ratingDialogVisible.value = false
     } else {
       ElMessage.error(res.data.message || '评价失败')

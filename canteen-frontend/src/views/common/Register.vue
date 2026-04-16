@@ -54,6 +54,16 @@
           <el-form-item label="食堂名称">
             <el-input v-model="form.canteen_name" placeholder="请输入食堂名称" />
           </el-form-item>
+          <el-form-item label="食堂区域">
+            <el-select v-model="form.region_id" placeholder="请选择食堂所在区域" style="width: 100%">
+              <el-option
+                v-for="region in regionOptions"
+                :key="region.region_id"
+                :label="region.region_name"
+                :value="region.region_id"
+              />
+            </el-select>
+          </el-form-item>
         </template>
 
         <template v-if="form.role === 'diner'">
@@ -125,6 +135,10 @@ const handleRegister = async () => {
   }
   if (form.role === 'manager' && !form.canteen_name) {
     ElMessage.warning('请输入食堂名称')
+    return
+  }
+  if (form.role === 'manager' && !form.region_id) {
+    ElMessage.warning('请选择食堂所在区域')
     return
   }
 

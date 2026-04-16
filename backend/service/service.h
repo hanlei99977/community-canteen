@@ -35,7 +35,7 @@ public:
 // ================================
 class ManagerService {
 public:
-    bool submitManagerApply(const User& user, const std::string& canteen_name);
+    bool submitManagerApply(const User& user, const std::string& canteen_name, int region_id);
     std::vector<CanteenManagerApplyVO> getManagerApplyList();
     bool reviewManagerApply(int apply_id, int reviewer_id, int status);
 };

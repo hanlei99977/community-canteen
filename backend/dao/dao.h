@@ -79,7 +79,7 @@ public:
 // ================================
 class CanteenManagerApplyDAO {
 public:
-    bool insertApply(sql::Connection *conn, int user_id, const std::string& canteen_name);
+    bool insertApply(sql::Connection *conn, int user_id, const std::string& canteen_name, int region_id);
     std::vector<CanteenManagerApplyVO> getApplyList();
     std::shared_ptr<CanteenManagerApplyVO> getApplyById(sql::Connection *conn, int apply_id);
     bool reviewApply(sql::Connection *conn, int apply_id, int reviewer_id, int status);
@@ -103,7 +103,7 @@ public:
     std::vector<Canteen> getAllCanteens();
     std::shared_ptr<Canteen> getCanteenById(int id);
     int getCanteenIdByUserId(int user_id);
-    int insertCanteen(sql::Connection *conn, const std::string& canteen_name);
+    int insertCanteen(sql::Connection *conn, const std::string& canteen_name, int region_id);
 };
 
 // ================================

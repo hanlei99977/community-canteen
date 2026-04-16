@@ -14,6 +14,10 @@ private:
     std::string canteen_name;
     std::string create_time;
     double total_price;
+    bool has_rating = false;
+    int rating_score = 0;
+    std::string rating_comment;
+    std::string rating_time;
 public:
     int getOrderId() const { return order_id; }
     void setOrderId(int id) { order_id = id; }
@@ -33,6 +37,17 @@ public:
     double getTotalPrice() const { return total_price; }
     void setTotalPrice(double price) { total_price = price; }
 
+    bool getHasRating() const { return has_rating; }
+    void setHasRating(bool value) { has_rating = value; }
+
+    int getRatingScore() const { return rating_score; }
+    void setRatingScore(int score) { rating_score = score; }
+
+    std::string getRatingComment() const { return rating_comment; }
+    void setRatingComment(const std::string& comment) { rating_comment = comment; }
+
+    std::string getRatingTime() const { return rating_time; }
+    void setRatingTime(const std::string& time) { rating_time = time; }
 };
 
 // 食堂评价明细 VO（含该评价订单菜品）
@@ -426,6 +441,8 @@ private:
     int age;
     std::string phone;
     std::string canteen_name;
+    int region_id;
+    std::string region_name;
     int status;
     std::string apply_time;
     std::string review_time;
@@ -450,6 +467,12 @@ public:
 
     std::string getCanteenName() const { return canteen_name; }
     void setCanteenName(const std::string& name) { canteen_name = name; }
+
+    int getRegionId() const { return region_id; }
+    void setRegionId(int id) { region_id = id; }
+
+    std::string getRegionName() const { return region_name; }
+    void setRegionName(const std::string& name) { region_name = name; }
 
     int getStatus() const { return status; }
     void setStatus(int s) { status = s; }

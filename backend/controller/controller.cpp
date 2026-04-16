@@ -226,8 +226,14 @@ void Controller::handleRegister(const httplib::Request& req, httplib::Response& 
 
         if (role == "manager") {
             std::string canteen_name = getStringSafe(body, "canteen_name");
+            int region_id = getIntSafe(body, "region_id");
+            if (region_id <= 0) {
+                res.status = 400;
+                res.set_content(Response::error(400, "食堂管理者注册必须选择食堂所在区域"), "application/json");
+                return;
+            }
             ManagerService service;
-            if (service.submitManagerApply(user, canteen_name)) {
+            if (service.submitManagerApply(user, canteen_name, region_id)) {
                 std::cout << "食堂管理者申请 " << user.getUsername() << " 提交成功" << std::endl;
                 res.set_content(Response::success(json::object(), "食堂管理者申请已提交，等待系统管理员审核"), "application/json");
             } else {
@@ -607,7 +613,11 @@ void Controller::handleGetOrders(const httplib::Request& req, httplib::Response&
                 {"order_for_user_name", o.getOrderForUserName()},
                 {"canteen_name", o.getCanteenName()},
                 {"total_price", o.getTotalPrice()},
-                {"create_time", o.getCreateTime()}
+                {"create_time", o.getCreateTime()},
+                {"has_rating", o.getHasRating()},
+                {"rating_score", o.getRatingScore()},
+                {"rating_comment", o.getRatingComment()},
+                {"rating_time", o.getRatingTime()}
             });
             std::cout << "订单：order_id=" << o.getOrderId() << ", canteen_name=" << o.getCanteenName()
                         << ", total_price=" << o.getTotalPrice() << ", create_time=" << o.getCreateTime() << std::endl;
@@ -969,6 +979,8 @@ void Controller::handleManagerApplyList(const httplib::Request& req, httplib::Re
                 {"age", applyInfo.getAge()},
                 {"phone", applyInfo.getPhone()},
                 {"canteen_name", applyInfo.getCanteenName()},
+                {"region_id", applyInfo.getRegionId()},
+                {"region_name", applyInfo.getRegionName()},
                 {"status", applyInfo.getStatus()},
                 {"apply_time", applyInfo.getApplyTime()},
                 {"review_time", applyInfo.getReviewTime()},

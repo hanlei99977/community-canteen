@@ -97,12 +97,14 @@ CREATE TABLE canteen_manager_apply (
     apply_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     canteen_name VARCHAR(50) NOT NULL,
+    region_id INT NOT NULL,
     status INT DEFAULT 0,  -- 0待审核 1通过 2拒绝
     apply_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     review_time DATETIME,
     reviewer_id INT,       -- 审核人（系统管理员）
 
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (region_id) REFERENCES region(region_id)
 );
 
 -- 公告表

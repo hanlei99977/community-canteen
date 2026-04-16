@@ -522,18 +522,19 @@ bool AdminApplyDAO::reviewApply(sql::Connection *conn, int apply_id, int reviewe
     } catch (...) { return false; }
 }
 
-bool CanteenManagerApplyDAO::insertApply(sql::Connection *conn, int user_id, const std::string& canteen_name)
+bool CanteenManagerApplyDAO::insertApply(sql::Connection *conn, int user_id, const std::string& canteen_name, int region_id)
 {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "INSERT INTO canteen_manager_apply(user_id, canteen_name, status, apply_time) "
-                "VALUES (?, ?, 0, NOW())"
+                "INSERT INTO canteen_manager_apply(user_id, canteen_name, region_id, status, apply_time) "
+                "VALUES (?, ?, ?, 0, NOW())"
             )
         );
 
         stmt->setInt(1, user_id);
         stmt->setString(2, canteen_name);
+        stmt->setInt(3, region_id);
         return stmt->executeUpdate() > 0;
     } catch (...) { return false; }
 }
@@ -549,9 +550,10 @@ std::vector<CanteenManagerApplyVO> CanteenManagerApplyDAO::getApplyList()
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT ca.apply_id, ca.user_id, u.username, u.age, u.phone, ca.canteen_name, ca.status, "
-                "ca.apply_time, ca.review_time, ca.reviewer_id, ru.username AS reviewer_name "
+                "ca.region_id, rg.region_name, ca.apply_time, ca.review_time, ca.reviewer_id, ru.username AS reviewer_name "
                 "FROM canteen_manager_apply ca "
                 "JOIN users u ON ca.user_id = u.user_id "
+                "LEFT JOIN region rg ON ca.region_id = rg.region_id "
                 "LEFT JOIN users ru ON ca.reviewer_id = ru.user_id "
                 "ORDER BY ca.apply_id DESC"
             )
@@ -566,6 +568,8 @@ std::vector<CanteenManagerApplyVO> CanteenManagerApplyDAO::getApplyList()
             vo.setAge(res->getInt("age"));
             vo.setPhone(res->getString("phone"));
             vo.setCanteenName(res->getString("canteen_name"));
+            vo.setRegionId(res->getInt("region_id"));
+            vo.setRegionName(res->isNull("region_name") ? "" : res->getString("region_name"));
             vo.setStatus(res->getInt("status"));
             vo.setApplyTime(res->getString("apply_time"));
             vo.setReviewTime(res->isNull("review_time") ? "" : res->getString("review_time"));
@@ -585,6 +589,7 @@ std::shared_ptr<CanteenManagerApplyVO> CanteenManagerApplyDAO::getApplyById(sql:
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT apply_id, user_id, canteen_name, status "
+                ", region_id "
                 "FROM canteen_manager_apply WHERE apply_id = ?"
             )
         );
@@ -595,6 +600,7 @@ std::shared_ptr<CanteenManagerApplyVO> CanteenManagerApplyDAO::getApplyById(sql:
             vo->setApplyId(res->getInt("apply_id"));
             vo->setUserId(res->getInt("user_id"));
             vo->setCanteenName(res->getString("canteen_name"));
+            vo->setRegionId(res->getInt("region_id"));
             vo->setStatus(res->getInt("status"));
             return vo;
         }
@@ -697,13 +703,18 @@ std::vector<FamilyMemberVO> DinerDAO::getFamilyMembersByUserId(int user_id)
                 "SELECT u.user_id, u.username "
                 "FROM users u "
                 "JOIN diner d ON d.user_id = u.user_id "
-                "WHERE d.family_id = (SELECT family_id FROM diner WHERE user_id = ?) "
+                "WHERE d.user_id = ? "
+                "OR ("
+                "d.family_id = (SELECT family_id FROM diner WHERE user_id = ?) "
                 "AND d.family_id IS NOT NULL "
+                "AND d.family_id <> 1"
+                ") "
                 "ORDER BY u.user_id ASC"
             )
         );
 
         stmt->setInt(1, user_id);
+        stmt->setInt(2, user_id);
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
 
         while (res->next()) {
@@ -925,15 +936,16 @@ int CanteenDAO::getCanteenIdByUserId(int user_id) {
     return -1;
 }
 
-int CanteenDAO::insertCanteen(sql::Connection *conn, const std::string& canteen_name)
+int CanteenDAO::insertCanteen(sql::Connection *conn, const std::string& canteen_name, int region_id)
 {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "INSERT INTO canteen(name, status) VALUES (?, 1)"
+                "INSERT INTO canteen(name, region_id, status) VALUES (?, ?, 1)"
             )
         );
         stmt->setString(1, canteen_name);
+        stmt->setInt(2, region_id);
         if (stmt->executeUpdate() == 0) {
             return -1;
         }
@@ -1302,10 +1314,14 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
                 u.username AS order_for_user_name,
                 c.name AS canteen_name,
                 o.total_price,
-                o.order_time
+                o.order_time,
+                r.score AS rating_score,
+                r.comment AS rating_comment,
+                r.time AS rating_time
             FROM orders o
             JOIN canteen c ON o.canteen_id = c.canteen_id
             JOIN users u ON u.user_id  = o.order_for_user_id 
+            LEFT JOIN rating r ON r.order_id = o.order_id AND r.user_id = o.user_id
             WHERE o.user_id = ?
             ORDER BY o.order_id DESC
         )")
@@ -1322,6 +1338,12 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
             o.setCanteenName(res->getString("canteen_name"));
             o.setTotalPrice(std::stod(res->getString("total_price").c_str()));
             o.setCreateTime(res->getString("order_time"));
+            o.setHasRating(!res->isNull("rating_score"));
+            if (!res->isNull("rating_score")) {
+                o.setRatingScore(res->getInt("rating_score"));
+                o.setRatingComment(res->isNull("rating_comment") ? "" : res->getString("rating_comment"));
+                o.setRatingTime(res->isNull("rating_time") ? "" : res->getString("rating_time"));
+            }
 
             list.push_back(o);
         }
@@ -1411,7 +1433,8 @@ bool RatingDAO::insertRating(const Rating& rating) {
                 "INSERT INTO rating(user_id, canteen_id, order_id, score, comment, time) "
                 "SELECT ?, ?, ?, ?, ?, NOW() "
                 "FROM orders o "
-                "WHERE o.order_id = ? AND o.user_id = ? AND o.canteen_id = ?"
+                "WHERE o.order_id = ? AND o.user_id = ? AND o.canteen_id = ? "
+                "AND NOT EXISTS (SELECT 1 FROM rating r WHERE r.user_id = ? AND r.order_id = ?)"
             )
         );
 
@@ -1423,6 +1446,8 @@ bool RatingDAO::insertRating(const Rating& rating) {
         stmt->setInt(6, rating.getOrderId());
         stmt->setInt(7, rating.getUserId());
         stmt->setInt(8, rating.getCanteenId());
+        stmt->setInt(9, rating.getUserId());
+        stmt->setInt(10, rating.getOrderId());
 
         return stmt->executeUpdate() > 0;
     } catch (...) { return false; }

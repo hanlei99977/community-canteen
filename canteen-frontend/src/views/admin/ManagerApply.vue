@@ -8,6 +8,7 @@
       <el-table-column prop="age" label="年龄" width="80" />
       <el-table-column prop="phone" label="手机号" />
       <el-table-column prop="canteen_name" label="食堂名称" />
+      <el-table-column prop="region_name" label="食堂区域" />
       <el-table-column label="申请状态" width="120">
         <template #default="scope">
           <el-tag v-if="scope.row.status === 0" type="warning">未处理</el-tag>

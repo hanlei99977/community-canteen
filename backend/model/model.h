@@ -187,7 +187,6 @@ private:
     std::string name;
     std::string address;
     int region_id;
-    int manager_id;
     int status;
 
 public:
@@ -205,9 +204,6 @@ public:
 
     int getRegionId() const { return region_id; }
     void setRegionId(int id) { region_id = id; }
-
-    int getManagerId() const { return manager_id; }
-    void setManagerId(int id) { manager_id = id; }
 
     int getStatus() const { return status; }
     void setStatus(int s) { status = s; }

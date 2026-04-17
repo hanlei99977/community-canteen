@@ -123,6 +123,9 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Get("/familyList", handleFamilyList);
     server.Post("/createFamily", handleCreateFamily);
     server.Get("/regionList", handleRegionList);
+    // 食堂管理
+    server.Get("/myCanteen", handleMyCanteen);
+    server.Post("/updateCanteenAddress", handleUpdateCanteenAddress);
 }
 
 
@@ -1169,6 +1172,92 @@ void Controller::handleReportHandle(const httplib::Request& req, httplib::Respon
             res.set_content(Response::success(), "application/json");
         } else {
             res.set_content(Response::error(500, "投诉处理失败"), "application/json");
+        }
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+// 获取我的食堂信息
+void Controller::handleMyCanteen(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        // 从请求参数获取用户 ID
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        if (user_id <= 0) {
+            res.set_content(Response::error(401, "未登录"), "application/json");
+            return;
+        }
+
+        CanteenService canteenService;
+        // 获取食堂 ID
+        int canteen_id = canteenService.getCanteenIdByUserId(user_id);
+        if (canteen_id <= 0) {
+            res.set_content(Response::error(404, "未找到食堂信息"), "application/json");
+            return;
+        }
+
+        // 获取食堂详情
+        auto canteen = canteenService.getCanteenDetails(canteen_id);
+        if (!canteen) {
+            res.set_content(Response::error(404, "未找到食堂信息"), "application/json");
+            return;
+        }
+
+        // 获取食堂评分
+        RatingService ratingService;
+        auto ratings = ratingService.getRatings(canteen_id);
+        double average_rating = 0.0;
+        if (!ratings.empty()) {
+            int total_score = 0;
+            for (const auto& rating : ratings) {
+                total_score += rating.getScore();
+            }
+            average_rating = static_cast<double>(total_score) / ratings.size();
+        }
+
+        // 获取投诉数量
+        ReportService reportService;
+        auto reports = reportService.getReports(canteen_id);
+        int complaint_count = reports.size();
+
+        // 构建响应数据
+        json data = {
+            {"id", canteen->getId()},
+            {"name", canteen->getName()},
+            {"address", canteen->getAddress()},
+            {"regionId", canteen->getRegionId()},
+            {"regionName", ""}, // 需要从区域服务获取
+            {"rating", average_rating},
+            {"complaintCount", complaint_count}
+        };
+
+        res.set_content(Response::success(data), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(500, "获取食堂信息失败"), "application/json");
+    }
+}
+
+// 更新食堂地址
+void Controller::handleUpdateCanteenAddress(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        std::cout<< " json内容是 " << req.body<<std::endl;
+        
+        json body = json::parse(req.body);
+        int canteen_id = getIntSafe(body, "canteen_id");
+        std::string address = getStringSafe(body, "address");
+
+        if (canteen_id <= 0 || address.empty()) {
+            res.set_content(Response::error(400, "参数错误"), "application/json");
+            return;
+        }
+
+        CanteenService canteenService;
+        if (canteenService.updateCanteenAddress(canteen_id, address)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "更新地址失败"), "application/json");
         }
     } catch (...) {
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");

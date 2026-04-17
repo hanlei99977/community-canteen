@@ -937,6 +937,9 @@ std::shared_ptr<Canteen> CanteenDAO::getCanteenById(int id) {
             auto c = std::make_shared<Canteen>();
             c->setId(res->getInt("canteen_id"));
             c->setName(res->getString("name"));
+            c->setAddress(res->getString("address"));
+            c->setRegionId(res->getInt("region_id"));
+            c->setStatus(res->getInt("status"));
             return c;
         }
     } catch (...) {}
@@ -989,6 +992,28 @@ int CanteenDAO::insertCanteen(sql::Connection *conn, const std::string& canteen_
         }
     } catch (...) {}
     return -1;
+}
+
+bool CanteenDAO::updateCanteenAddress(int canteen_id, const std::string& address) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE canteen SET address = ? WHERE canteen_id = ?"
+            )
+        );
+        stmt->setString(1, address);
+        stmt->setInt(2, canteen_id);
+
+        int affected_rows = stmt->executeUpdate();
+        if (affected_rows == 0) {
+            return false;
+        }
+
+        return true;
+    } catch (...) { return false; }
 }
 
 /***************************************************************************************

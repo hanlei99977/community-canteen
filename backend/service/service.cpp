@@ -435,6 +435,22 @@ std::shared_ptr<Canteen> CanteenService::getCanteenById(int id) {
     return dao.getCanteenById(id);
 }
 
+bool CanteenService::updateCanteenAddress(int canteen_id, const std::string& address) {
+    if (canteen_id <= 0 || address.empty()) {
+        return false;
+    }
+    CanteenDAO dao;
+    return dao.updateCanteenAddress(canteen_id, address);
+}
+
+std::shared_ptr<Canteen> CanteenService::getCanteenDetails(int canteen_id) {
+    if (canteen_id <= 0) {
+        return nullptr;
+    }
+    CanteenDAO dao;
+    return dao.getCanteenById(canteen_id);
+}
+
 /**********************************************
  * MenuService
  *********************************************/

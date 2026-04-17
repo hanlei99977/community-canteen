@@ -58,4 +58,7 @@ private:
     static void handleReportList(const httplib::Request& req, httplib::Response& res);
     static void handleReportHandle(const httplib::Request& req, httplib::Response& res);
     
+    // 食堂管理
+    static void handleMyCanteen(const httplib::Request& req, httplib::Response& res);
+    static void handleUpdateCanteenAddress(const httplib::Request& req, httplib::Response& res);
 };

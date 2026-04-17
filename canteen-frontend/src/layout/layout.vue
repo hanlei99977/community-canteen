@@ -51,7 +51,7 @@
         </el-menu-item>
 
         <!-- ================== 食堂管理员 ================== -->
-        <el-menu-item v-if="isCanteenAdmin" index="/canteenManage">
+        <el-menu-item v-if="isCanteenAdmin" index="/myCanteen">
           我的食堂
         </el-menu-item>
 

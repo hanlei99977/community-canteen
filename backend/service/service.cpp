@@ -465,6 +465,22 @@ std::vector<CanteenManagerVO> CanteenService::getCanteensWithManagers() {
     return dao.getCanteensWithManagers();
 }
 
+std::vector<PurchaseBill> CanteenService::getPurchaseBills(int canteen_id) {
+    if (canteen_id <= 0) {
+        return std::vector<PurchaseBill>();
+    }
+    CanteenDAO dao;
+    return dao.getPurchaseBillsByCanteen(canteen_id);
+}
+
+int CanteenService::createPurchaseBill(const PurchaseBill& bill) {
+    if (bill.getCanteenId() <= 0 || bill.getAmount() <= 0 || bill.getPurchaseDate().empty() || bill.getRemark().empty()) {
+        return -1;
+    }
+    CanteenDAO dao;
+    return dao.createPurchaseBill(bill);    
+}
+
 /**********************************************
  * MenuService
  *********************************************/

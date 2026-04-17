@@ -108,6 +108,8 @@ public:
     bool updateCanteenAddress(int canteen_id, const std::string& address);
     bool updateCanteenStatus(int canteen_id, int status);
     std::vector<CanteenManagerVO> getCanteensWithManagers();
+    std::vector<PurchaseBill> getPurchaseBillsByCanteen(int canteen_id);
+    int createPurchaseBill(const PurchaseBill& bill);
 };
 
 // ================================

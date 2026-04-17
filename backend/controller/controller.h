@@ -63,4 +63,6 @@ private:
     static void handleUpdateCanteenAddress(const httplib::Request& req, httplib::Response& res);
     static void handleCanteenList(const httplib::Request& req, httplib::Response& res);
     static void handleUpdateCanteenStatus(const httplib::Request& req, httplib::Response& res);
+    static void handlePurchaseList(const httplib::Request& req, httplib::Response& res);
+    static void handleCreatePurchase(const httplib::Request& req, httplib::Response& res);
 };

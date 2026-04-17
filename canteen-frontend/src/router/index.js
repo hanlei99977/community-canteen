@@ -18,6 +18,7 @@ import CanteenManage from '../views/admin/CanteenManage.vue'
 import MenuManage from '../views/manager/MenuManage.vue'
 import DishManage from '../views/manager/DishManage.vue'
 import MyCanteen from '../views/manager/MyCanteen.vue'
+import Purchase from '../views/manager/Purchase.vue'
 // diner
 import CanteenList from '../views/diner/CanteenList.vue'
 import Menu from '../views/diner/Menu.vue'
@@ -39,6 +40,7 @@ const routes = [
       { path: '/myCanteen', component: MyCanteen},
       { path: '/menuManage', component: MenuManage},
       { path: '/dishManage', component: DishManage},
+      { path: '/purchase', component: Purchase},
       { path: '/adminManage', component: AdminManage},
       { path: '/adminApply', component: AdminApply},
       { path: '/managerApply', component: ManagerApply},

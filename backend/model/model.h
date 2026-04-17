@@ -396,13 +396,13 @@ public:
     void setCanteenId(int id) { canteen_id = id; }
 
     double getAmount() const { return amount; }
-    void setAmount(double a) { amount = a; }
+    void setAmount(double amt) { amount = amt; }
 
     std::string getPurchaseDate() const { return purchase_date; }
-    void setPurchaseDate(const std::string& d) { purchase_date = d; }
+    void setPurchaseDate(const std::string& date) { purchase_date = date; }
 
     std::string getRemark() const { return remark; }
-    void setRemark(const std::string& r) { remark = r; }
+    void setRemark(const std::string& rmk) { remark = rmk; }
 };
 
 // ================================

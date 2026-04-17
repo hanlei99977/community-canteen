@@ -80,6 +80,8 @@ public:
     bool updateCanteenStatus(int canteen_id, int status);
     std::shared_ptr<Canteen> getCanteenDetails(int canteen_id);
     std::vector<CanteenManagerVO> getCanteensWithManagers();
+    std::vector<PurchaseBill> getPurchaseBills(int canteen_id);
+    int createPurchaseBill(const PurchaseBill& bill);
 };
 
 // ================================

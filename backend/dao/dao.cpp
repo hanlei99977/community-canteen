@@ -1098,6 +1098,60 @@ std::vector<CanteenManagerVO> CanteenDAO::getCanteensWithManagers() {
     return canteens;
 }
 
+std::vector<PurchaseBill> CanteenDAO::getPurchaseBillsByCanteen(int canteen_id) {
+    std::vector<PurchaseBill> bills;
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT * FROM purchase_bill WHERE canteen_id = ? ORDER BY purchase_date DESC")
+        );
+        stmt->setInt(1, canteen_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            PurchaseBill bill;
+            bill.setId(res->getInt("bill_id"));
+            bill.setCanteenId(res->getInt("canteen_id"));
+            bill.setAmount(res->getDouble("amount"));
+            bill.setPurchaseDate(res->getString("purchase_date"));
+            bill.setRemark(res->getString("remark"));
+            bills.push_back(bill);
+        }
+    } catch (...) {
+        // 异常处理
+    }
+    return bills;
+}
+
+int CanteenDAO::createPurchaseBill(const PurchaseBill& bill) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("INSERT INTO purchase_bill (canteen_id, amount, purchase_date, remark) VALUES (?, ?, ?, ?)")
+        );
+        stmt->setInt(1, bill.getCanteenId());
+        stmt->setDouble(2, bill.getAmount());
+        stmt->setString(3, bill.getPurchaseDate());
+        stmt->setString(4, bill.getRemark());
+
+        stmt->executeUpdate();
+
+        // 获取生成的ID
+        auto idStmt = std::unique_ptr<sql::Statement>(conn->createStatement());
+        auto res = std::unique_ptr<sql::ResultSet>(idStmt->executeQuery("SELECT LAST_INSERT_ID()"));
+        if (res->next()) {
+            return res->getInt(1);
+        }
+    } catch (...) {
+        // 异常处理
+    }
+    return -1;
+}
+
 /***************************************************************************************
  * DishDao
  ***************************************************************************************/

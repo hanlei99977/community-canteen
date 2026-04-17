@@ -128,6 +128,8 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Post("/updateCanteenAddress", handleUpdateCanteenAddress);
     server.Get("/canteenList", handleCanteenList);
     server.Post("/updateCanteenStatus", handleUpdateCanteenStatus);
+    server.Get("/purchaseList", handlePurchaseList);
+    server.Post("/createPurchase", handleCreatePurchase);
 }
 
 
@@ -1316,6 +1318,67 @@ void Controller::handleUpdateCanteenStatus(const httplib::Request& req, httplib:
             res.set_content(Response::success(), "application/json");
         } else {
             res.set_content(Response::error(500, "更新状态失败"), "application/json");
+        }
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+// 获取采购记录
+void Controller::handlePurchaseList(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        if (canteen_id <= 0) {
+            res.set_content(Response::error(400, "参数错误"), "application/json");
+            return;
+        }
+
+        CanteenService canteenService;
+        auto bills = canteenService.getPurchaseBills(canteen_id);
+
+        json data = json::array();
+        for (const auto& bill : bills) {
+            json billJson = {
+                {"bill_id", bill.getId()},
+                {"canteen_id", bill.getCanteenId()},
+                {"amount", bill.getAmount()},
+                {"purchase_date", bill.getPurchaseDate()},
+                {"remark", bill.getRemark()}
+            };
+            data.push_back(billJson);
+        }
+
+        res.set_content(Response::success(data), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(500, "获取采购记录失败"), "application/json");
+    }
+}
+
+// 创建采购记录
+void Controller::handleCreatePurchase(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        std::cout<< " json内容是 " << req.body<<std::endl;
+        
+        json body = json::parse(req.body);
+        PurchaseBill bill;
+        bill.setCanteenId(getIntSafe(body, "canteen_id"));
+        bill.setAmount(body["amount"].get<double>());
+        bill.setPurchaseDate(getStringSafe(body, "purchase_date"));
+        bill.setRemark(getStringSafe(body, "remark"));
+
+        if (bill.getCanteenId() <= 0 || bill.getAmount() <= 0 || bill.getPurchaseDate().empty() || bill.getRemark().empty()) {
+            res.set_content(Response::error(400, "参数错误"), "application/json");
+            return;
+        }
+
+        CanteenService canteenService;
+        int bill_id = canteenService.createPurchaseBill(bill);
+        if (bill_id > 0) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "创建采购记录失败"), "application/json");
         }
     } catch (...) {
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");

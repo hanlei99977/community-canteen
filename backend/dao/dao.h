@@ -62,6 +62,7 @@ public:
     std::shared_ptr<DinerCenterVO> getDinerCenterByUserId(int user_id);
     std::vector<FamilyMemberVO> getFamilyMembersByUserId(int user_id);
     bool updateDiner(sql::Connection *conn, const DinerCenterVO& diner);
+    bool updateFamilyId(sql::Connection *conn, int user_id, int family_id);
     std::vector<DinerInformation> getDinerList();
 };
 
@@ -90,7 +91,7 @@ public:
 // ================================
 class FamilyDAO {
 public:
-    bool insertFamily(const Family& family);
+    int insertFamily(const Family& family);
     Family getFamilyByUserId(int user_id);
     std::vector<Family> getFamilyList();
 };

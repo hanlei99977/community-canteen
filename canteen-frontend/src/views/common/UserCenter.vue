@@ -42,15 +42,41 @@
 
         <!-- 家庭选择 -->
         <el-form-item label="所属家庭">
-          <el-select v-model="form.family_id" placeholder="请选择家庭">
-            <el-option
-              v-for="item in familyList"
-              :key="item.family_id"
-              :label="item.family_name + ' (ID:' + item.family_id + ')'"
-              :value="item.family_id"
-            />
-          </el-select>
+          <el-row :gutter="10">
+            <el-col :span="18">
+              <el-select v-model="form.family_id" placeholder="请选择家庭">
+                <el-option
+                  v-for="item in familyList"
+                  :key="item.family_id"
+                  :label="item.family_name + ' (ID:' + item.family_id + ')'"
+                  :value="item.family_id"
+                />
+              </el-select>
+            </el-col>
+            <el-col :span="6">
+              <el-button type="primary" @click="openCreateFamilyDialog">创建家庭</el-button>
+            </el-col>
+          </el-row>
         </el-form-item>
+
+        <!-- 创建家庭对话框 -->
+        <el-dialog
+          v-model="createFamilyDialogVisible"
+          title="创建家庭"
+          width="500px"
+        >
+          <el-form :model="createFamilyForm" label-width="100px">
+            <el-form-item label="家庭名称">
+              <el-input v-model="createFamilyForm.family_name" placeholder="请输入家庭名称" />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <span class="dialog-footer">
+              <el-button @click="createFamilyDialogVisible = false">取消</el-button>
+              <el-button type="primary" @click="createFamily">创建</el-button>
+            </span>
+          </template>
+        </el-dialog>
 
         <!-- 区域选择 -->
         <el-form-item label="所属区域">
@@ -100,6 +126,12 @@ const form = ref({
 const familyList = ref([])
 // 🔥 修复2：缺失 regionList 定义
 const regionList = ref([])
+
+// 创建家庭相关
+const createFamilyDialogVisible = ref(false)
+const createFamilyForm = ref({
+  family_name: ''
+})
 
 // 请求头自动携带 token（解决401）
 axios.interceptors.request.use(config => {
@@ -186,6 +218,50 @@ const updateUser = async () => {
   } catch (err) {
     // 🔥 修复5：异常捕获
     ElMessage.error('更新失败：' + (err.response?.data?.msg || '服务器异常'))
+    console.error(err)
+  }
+}
+
+// 打开创建家庭对话框
+const openCreateFamilyDialog = () => {
+  createFamilyForm.value.family_name = ''
+  createFamilyDialogVisible.value = true
+}
+
+// 创建家庭
+const createFamily = async () => {
+  try {
+    // 检查登录状态
+    const user = JSON.parse(localStorage.getItem('user'))
+    if (!user || !user.user_id) {
+      ElMessage.error('请先登录')
+      return
+    }
+
+    // 验证家庭名称
+    if (!createFamilyForm.value.family_name.trim()) {
+      ElMessage.error('请输入家庭名称')
+      return
+    }
+
+    // 发送创建家庭请求
+    const res = await axios.post('http://192.168.56.100:8080/createFamily', {
+      user_id: user.user_id,
+      family_name: createFamilyForm.value.family_name
+    })
+
+    if (res.data.code === 0) {
+      ElMessage.success('创建家庭成功')
+      createFamilyDialogVisible.value = false
+      // 重新获取家庭列表
+      getFamilyList()
+      // 重新获取用户信息
+      getUserInfo()
+    } else {
+      ElMessage.error('创建家庭失败：' + res.data.message)
+    }
+  } catch (err) {
+    ElMessage.error('创建家庭失败：' + (err.response?.data?.message || '服务器异常'))
     console.error(err)
   }
 }

@@ -750,6 +750,25 @@ bool DinerDAO::updateDiner(sql::Connection *conn, const DinerCenterVO& diner) {
     } catch (...) { return false; }
 }
 
+bool DinerDAO::updateFamilyId(sql::Connection *conn, int user_id, int family_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE diner SET family_id = ? WHERE user_id = ?"
+            )
+        );
+        stmt->setInt(1, family_id);
+        stmt->setInt(2, user_id);
+
+        int affected_rows = stmt->executeUpdate();
+        if (affected_rows == 0) {
+            return false;
+        }
+
+        return true;
+    } catch (...) { return false; }
+}
+
 std::vector<DinerInformation> DinerDAO::getDinerList()
 {
     std::vector<DinerInformation> list;
@@ -790,7 +809,7 @@ std::vector<DinerInformation> DinerDAO::getDinerList()
 /***************************************************************************************
  * FamilyDao
 ***************************************************************************************/
-bool FamilyDAO::insertFamily(const Family& family) {
+int FamilyDAO::insertFamily(const Family& family) {
     try {
         DBConnectionGuard guard;
         auto* conn = guard.get();
@@ -805,11 +824,22 @@ bool FamilyDAO::insertFamily(const Family& family) {
         stmt->setString(1, family.getName());
 
         if (stmt->executeUpdate() == 0) {
-            return false;
+            return -1;
         }
 
-        return true;
-    } catch (...) { return false; }
+        // 获取自增ID
+        std::unique_ptr<sql::Statement> cstmt(conn->createStatement());
+        std::unique_ptr<sql::ResultSet> rs(
+            cstmt->executeQuery("SELECT LAST_INSERT_ID()")
+        );
+
+        int family_id = -1;
+        if (rs->next()) {
+            family_id = rs->getInt(1);
+        }
+
+        return family_id;
+    } catch (...) { return -1; }
 }
 
 Family FamilyDAO::getFamilyByUserId(int user_id) {

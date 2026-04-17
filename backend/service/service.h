@@ -65,6 +65,7 @@ class FamilyService {
 public:
     Family getFamilyByUserId(int user_id);
     std::vector<Family> getFamilyList();
+    bool createFamily(int user_id, const std::string& family_name);
 };
 
 // ================================

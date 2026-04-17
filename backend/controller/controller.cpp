@@ -121,6 +121,7 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Get("/userCenter", handleUserCenter);
     server.Post("/userCenterUpdate", handleUserCenterUpdate);
     server.Get("/familyList", handleFamilyList);
+    server.Post("/createFamily", handleCreateFamily);
     server.Get("/regionList", handleRegionList);
 }
 
@@ -845,6 +846,34 @@ void Controller::handleRegionList(const httplib::Request& req, httplib::Response
     } catch (...) {
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
 
+    }
+}
+
+void Controller::handleCreateFamily(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        json body = json::parse(req.body);
+        int user_id = getIntSafe(body, "user_id");
+        std::string family_name = getStringSafe(body, "family_name");
+
+        std::cout << "创建家庭请求参数：user_id=" << user_id << ", family_name=" << family_name << std::endl;
+
+        if (user_id <= 0 || family_name.empty()) {
+            res.status = 400;
+            res.set_content(Response::error(400, "用户ID和家庭名称不能为空"), "application/json");
+            return;
+        }
+
+        FamilyService service;
+        if (service.createFamily(user_id, family_name)) {
+            res.set_content(Response::success(), "application/json");
+            std::cout << "用户 " << user_id << " 创建家庭 " << family_name << " 成功" << std::endl;
+        } else {
+            res.set_content(Response::error(500, "创建家庭失败"), "application/json");
+        }
+
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
 

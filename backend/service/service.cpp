@@ -370,6 +370,58 @@ std::vector<Family> FamilyService::getFamilyList() {
     return dao.getFamilyList();
 }
 
+bool FamilyService::createFamily(int user_id, const std::string& family_name) {
+    if (user_id <= 0 || family_name.empty()) {
+        std::cout << "参数错误：user_id=" << user_id << ", family_name=" << family_name << std::endl;
+        return false;
+    }
+
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+
+    try {
+        TransactionGuard tx(conn);
+
+        // 创建家庭
+        Family family;
+        family.setName(family_name);
+
+        FamilyDAO familyDAO;
+        int family_id = familyDAO.insertFamily(family);
+        if (family_id == -1) {
+            std::cout << "插入家庭失败" << std::endl;
+            return false;
+        }
+        std::cout << "插入家庭成功，family_id=" << family_id << std::endl;
+
+        // 更新用餐者的家庭ID
+        DinerDAO dinerDAO;
+        auto diner = dinerDAO.getDinerByUserId(user_id);
+        if (!diner) {
+            std::cout << "获取用餐者信息失败，user_id=" << user_id << std::endl;
+            return false;
+        }
+        std::cout << "获取用餐者信息成功，user_id=" << user_id << ", family_id=" << diner->getFamilyId() << std::endl;
+
+        // 调用DinerDAO的updateFamilyId方法更新家庭ID
+        if (!dinerDAO.updateFamilyId(conn, user_id, family_id)) {
+            std::cout << "更新用餐者家庭ID失败，user_id=" << user_id << std::endl;
+            return false;
+        }
+        std::cout << "更新用餐者家庭ID成功" << std::endl;
+
+        tx.commit();
+        std::cout << "创建家庭成功，user_id=" << user_id << ", family_name=" << family_name << std::endl;
+        return true;
+    } catch (const std::exception& e) {
+        std::cout << "创建家庭异常：" << e.what() << std::endl;
+        return false;
+    } catch (...) {
+        std::cout << "创建家庭未知异常" << std::endl;
+        return false;
+    }
+}
+
 /**********************************************
  * CanteenService
  *********************************************/

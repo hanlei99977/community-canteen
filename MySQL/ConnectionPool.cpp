@@ -12,7 +12,7 @@ ConnectionPool& ConnectionPool::getInstance()
 ConnectionPool::ConnectionPool()
 {
     driver = sql::mysql::get_mysql_driver_instance();
-    maxSize = 16;
+    maxSize = 8;
 
     initPool(maxSize);
 }
@@ -54,4 +54,15 @@ void ConnectionPool::releaseConnection(sql::Connection* conn)
     pool.push(conn);
 
     cv.notify_one();
+}
+
+//程序退出后销毁连接。
+ConnectionPool::~ConnectionPool()
+{
+    while(!pool.empty())
+    {
+        auto conn = pool.front();
+        pool.pop();
+        delete conn;
+    }
 }

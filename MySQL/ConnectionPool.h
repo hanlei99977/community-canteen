@@ -19,6 +19,8 @@ public:
 
     void releaseConnection(sql::Connection* conn);
 
+    ~ConnectionPool();
+
 private:
 
     ConnectionPool();

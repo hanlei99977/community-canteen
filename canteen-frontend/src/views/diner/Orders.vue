@@ -11,8 +11,10 @@
 
           <el-table :data="scope.row.items" border align="center">
             <el-table-column prop="dish_name" label="菜品" align="center" />
-            <el-table-column prop="price" label="价格" align="center" />
+            <el-table-column prop="unit_price" label="原价" align="center" />
+            <el-table-column prop="discount_price" label="优惠价" align="center" />
             <el-table-column prop="quantity" label="数量" align="center" />
+            <el-table-column prop="subtotal" label="小计" align="center" />
           </el-table>
 
         </template>
@@ -21,7 +23,10 @@
       <el-table-column prop="order_id" label="订单ID" />
       <el-table-column prop="order_for_user_name" label="为谁购买" />
       <el-table-column prop="canteen_name" label="食堂" />
-      <el-table-column prop="total_price" label="总价" />
+      <el-table-column prop="original_total" label="原价" />
+      <el-table-column prop="discount_rate" label="优惠率" />
+      <el-table-column prop="total_price" label="实付" />
+      <el-table-column prop="saved_amount" label="优惠" />
       <el-table-column prop="create_time" label="时间" />
 
       <el-table-column label="操作" width="240">

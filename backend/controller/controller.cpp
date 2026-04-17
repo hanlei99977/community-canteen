@@ -621,6 +621,9 @@ void Controller::handleGetOrders(const httplib::Request& req, httplib::Response&
                 {"order_for_user_name", o.getOrderForUserName()},
                 {"canteen_name", o.getCanteenName()},
                 {"total_price", o.getTotalPrice()},
+                {"discount_rate", o.getDiscountRate()},
+                {"original_total", o.getOriginalTotal()},
+                {"saved_amount", o.getSavedAmount()},
                 {"create_time", o.getCreateTime()},
                 {"has_rating", o.getHasRating()},
                 {"rating_score", o.getRatingScore()},
@@ -628,7 +631,9 @@ void Controller::handleGetOrders(const httplib::Request& req, httplib::Response&
                 {"rating_time", o.getRatingTime()}
             });
             std::cout << "订单：order_id=" << o.getOrderId() << ", canteen_name=" << o.getCanteenName()
-                        << ", total_price=" << o.getTotalPrice() << ", create_time=" << o.getCreateTime() << std::endl;
+                        << ", total_price=" << o.getTotalPrice() << ", discount_rate=" << o.getDiscountRate()
+                        << ", original_total=" << o.getOriginalTotal() << ", saved_amount=" << o.getSavedAmount()
+                        << ", create_time=" << o.getCreateTime() << std::endl;
         }
 
         res.set_content(Response::success(arr), "application/json");
@@ -651,13 +656,14 @@ void Controller::handleOrderDetails(const httplib::Request& req, httplib::Respon
         json arr = json::array();
 
         for (const auto& i : items) {
-            arr.push_back({
-                {"dish_name", i.getDishName()},
-                {"price", i.getPrice()},
-                {"quantity", i.getQuantity()}
-
-            });
-            std::cout << "订单详情项：dish_name=" << i.getDishName() << ", quantity=" << i.getQuantity() << ", price=" << i.getPrice() << std::endl;
+            json item_json;
+            item_json["dish_name"] = i.getDishName();
+            item_json["unit_price"] = i.getUnitPrice();
+            item_json["discount_price"] = i.getDiscountPrice();
+            item_json["quantity"] = i.getQuantity();
+            item_json["subtotal"] = i.getSubtotal();
+            arr.push_back(item_json);
+            std::cout << "订单详情项：dish_name=" << i.getDishName() << ", quantity=" << i.getQuantity() << ", unit_price=" << i.getUnitPrice() << ", discount_price=" << i.getDiscountPrice() << ", subtotal=" << i.getSubtotal() << std::endl;
         }
 
         res.set_content(Response::success(arr), "application/json");

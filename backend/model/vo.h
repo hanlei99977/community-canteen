@@ -14,6 +14,9 @@ private:
     std::string canteen_name;
     std::string create_time;
     double total_price;
+    double discount_rate;
+    double original_total;
+    double saved_amount;
     bool has_rating = false;
     int rating_score = 0;
     std::string rating_comment;
@@ -36,6 +39,15 @@ public:
 
     double getTotalPrice() const { return total_price; }
     void setTotalPrice(double price) { total_price = price; }
+
+    double getDiscountRate() const { return discount_rate; }
+    void setDiscountRate(double rate) { discount_rate = rate; }
+
+    double getOriginalTotal() const { return original_total; }
+    void setOriginalTotal(double total) { original_total = total; }
+
+    double getSavedAmount() const { return saved_amount; }
+    void setSavedAmount(double amount) { saved_amount = amount; }
 
     bool getHasRating() const { return has_rating; }
     void setHasRating(bool value) { has_rating = value; }
@@ -171,11 +183,13 @@ class OrderDetailVO {
 private:
     std::string dish_name;
     int quantity;
-    double price;
+    double unit_price;
+    double discount_price;
+    double subtotal;
 public:
     OrderDetailVO() = default;
-    OrderDetailVO(const std::string& dname, int qty, double p)
-        : dish_name(dname), quantity(qty), price(p) {}
+    OrderDetailVO(const std::string& dname, int qty, double unitPrice, double discountPrice, double sub)
+        : dish_name(dname), quantity(qty), unit_price(unitPrice), discount_price(discountPrice), subtotal(sub) {}
 
     std::string getDishName() const { return dish_name; }
     void setDishName(const std::string& name) { dish_name = name; }
@@ -183,8 +197,14 @@ public:
     int getQuantity() const { return quantity; }
     void setQuantity(int q) { quantity = q; }
 
-    double getPrice() const { return price; }
-    void setPrice(double p) { price = p; }
+    double getUnitPrice() const { return unit_price; }
+    void setUnitPrice(double price) { unit_price = price; }
+
+    double getDiscountPrice() const { return discount_price; }
+    void setDiscountPrice(double price) { discount_price = price; }
+
+    double getSubtotal() const { return subtotal; }
+    void setSubtotal(double total) { subtotal = total; }
 
 };
 

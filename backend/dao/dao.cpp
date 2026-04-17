@@ -1456,8 +1456,8 @@ bool MenuDAO::eraseMenu(const int menu_id){
         // 1️⃣ 插入订单
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "INSERT INTO `orders`(user_id, order_for_user_id, canteen_id, total_price, order_time, status) "
-                "VALUES (?, ?, ?, ?, NOW(), ?)"
+                "INSERT INTO `orders`(user_id, order_for_user_id, canteen_id, total_price, order_time, status, discount_rate, original_total, saved_amount) "
+                "VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?)"
             )
         );
 
@@ -1466,6 +1466,9 @@ bool MenuDAO::eraseMenu(const int menu_id){
         stmt->setInt(3, order.getCanteenId());
         stmt->setDouble(4, order.getTotalPrice());
         stmt->setString(5, order.getStatus());
+        stmt->setDouble(6, order.getDiscountRate());
+        stmt->setDouble(7, order.getOriginalTotal());
+        stmt->setDouble(8, order.getSavedAmount());
 
         if (stmt->executeUpdate() == 0) {
             return -1;
@@ -1507,6 +1510,9 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
                 u.username AS order_for_user_name,
                 c.name AS canteen_name,
                 o.total_price,
+                o.discount_rate,
+                o.original_total,
+                o.saved_amount,
                 o.order_time,
                 r.score AS rating_score,
                 r.comment AS rating_comment,
@@ -1530,6 +1536,9 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
             o.setOrderForUserName(res->getString("order_for_user_name"));
             o.setCanteenName(res->getString("canteen_name"));
             o.setTotalPrice(std::stod(res->getString("total_price").c_str()));
+            o.setDiscountRate(std::stod(res->getString("discount_rate").c_str()));
+            o.setOriginalTotal(std::stod(res->getString("original_total").c_str()));
+            o.setSavedAmount(std::stod(res->getString("saved_amount").c_str()));
             o.setCreateTime(res->getString("order_time"));
             o.setHasRating(!res->isNull("rating_score"));
             if (!res->isNull("rating_score")) {
@@ -1557,8 +1566,10 @@ std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByUser(int user_id,int orde
             conn->prepareStatement(R"(
                 SELECT 
                     d.name AS dish_name,
-                    d.price,
-                    oi.quantity
+                    oi.unit_price,
+                    oi.discount_price,
+                    oi.quantity,
+                    oi.subtotal
                 FROM orders o
                 JOIN order_item oi ON oi.order_id = o.order_id
                 JOIN dish d ON oi.dish_id = d.dish_id
@@ -1576,7 +1587,9 @@ std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByUser(int user_id,int orde
             OrderDetailVO vo(
                 res->getString("dish_name"),
                 res->getInt("quantity"),
-                std::stod(res->getString("price").c_str())
+                std::stod(res->getString("unit_price").c_str()),
+                std::stod(res->getString("discount_price").c_str()),
+                std::stod(res->getString("subtotal").c_str())
             );
 
             list.push_back(vo);
@@ -1597,13 +1610,16 @@ bool OrderItemDAO::insertOrderItems(sql::Connection *conn, int order_id, const s
         for (const auto& item : items) {
             auto stmt = std::unique_ptr<sql::PreparedStatement>(
                 conn->prepareStatement(
-                    "INSERT INTO order_item(order_id, dish_id, quantity) VALUES (?, ?, ?)"
+                    "INSERT INTO order_item(order_id, dish_id, quantity, unit_price, discount_price, subtotal) VALUES (?, ?, ?, ?, ?, ?)"
                 )
             );
 
             stmt->setInt(1, order_id);
             stmt->setInt(2, item.getDishId());
             stmt->setInt(3, item.getQuantity());
+            stmt->setDouble(4, item.getUnitPrice());
+            stmt->setDouble(5, item.getDiscountPrice());
+            stmt->setDouble(6, item.getSubtotal());
 
             if (stmt->executeUpdate() == 0) {
                 return false;

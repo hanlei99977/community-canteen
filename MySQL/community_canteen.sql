@@ -186,6 +186,11 @@ CREATE TABLE orders (
     total_price DECIMAL(6,2),
     order_time DATETIME DEFAULT CURRENT_TIMESTAMP, -- 下单时间
     status VARCHAR(20),
+
+    discount_rate DECIMAL(5,2) DEFAULT 1.00 COMMENT '订单折扣系数',
+    original_total DECIMAL(10,2) COMMENT '原总价',
+    saved_amount DECIMAL(10,2) COMMENT '优惠金额',
+
     FOREIGN KEY (user_id) REFERENCES diner(user_id),
     FOREIGN KEY (order_for_user_id) REFERENCES diner(user_id),
     FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
@@ -196,6 +201,11 @@ CREATE TABLE order_item (
     order_id INT,
     dish_id INT,
     quantity INT,  -- 点餐数量
+
+    unit_price DECIMAL(8,2) NOT NULL COMMENT '下单时原价',
+    discount_price DECIMAL(8,2) NOT NULL COMMENT '优惠后单价',
+    subtotal DECIMAL(8,2) NOT NULL COMMENT '该项小计',
+
     PRIMARY KEY (order_id, dish_id),
     FOREIGN KEY (order_id) REFERENCES orders(order_id),
     FOREIGN KEY (dish_id) REFERENCES dish(dish_id)
@@ -253,8 +263,89 @@ CREATE TABLE report (
 -- ================================
 --  索引优化
 -- ================================
-CREATE INDEX idx_orders_user ON orders(user_id);
-CREATE INDEX idx_orders_canteen ON orders(canteen_id);
+-- users
+CREATE UNIQUE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_phone ON users(phone);
+CREATE INDEX idx_users_status ON users(status);
+
+-- admin
+CREATE INDEX idx_admin_level ON admin(level_id);
+CREATE INDEX idx_admin_region ON admin(region_id);
+
+-- diner
+CREATE INDEX idx_diner_family ON diner(family_id);
+CREATE INDEX idx_diner_region ON diner(region_id);
+
+-- admin_apply
+CREATE INDEX idx_admin_apply_user ON admin_apply(user_id);
+CREATE INDEX idx_admin_apply_status ON admin_apply(status);
+CREATE INDEX idx_admin_apply_region ON admin_apply(region_id);
+
+-- canteen_manager_apply
+CREATE INDEX idx_cm_apply_user ON canteen_manager_apply(user_id);
+CREATE INDEX idx_cm_apply_status ON canteen_manager_apply(status);
+CREATE INDEX idx_cm_apply_region ON canteen_manager_apply(region_id);
+
+-- announcement
+CREATE INDEX idx_announcement_time ON announcement(publish_time);
+CREATE INDEX idx_announcement_publisher ON announcement(publisher_id);
+
+-- canteen
+CREATE UNIQUE INDEX idx_canteen_code ON canteen(code);
+CREATE INDEX idx_canteen_region ON canteen(region_id);
+CREATE INDEX idx_canteen_status ON canteen(status);
+CREATE INDEX idx_canteen_name ON canteen(name);
+
+-- canteen_manager
+CREATE UNIQUE INDEX idx_canteen_manager_user ON canteen_manager(user_id);
+CREATE INDEX idx_canteen_manager_canteen ON canteen_manager(canteen_id);
+
+-- dish
 CREATE INDEX idx_dish_canteen ON dish(canteen_id);
+CREATE INDEX idx_dish_status ON dish(status);
+CREATE INDEX idx_dish_name ON dish(name);
+CREATE INDEX idx_dish_type ON dish(type);
+
+-- daily_menu
 CREATE INDEX idx_menu_canteen ON daily_menu(canteen_id);
+CREATE INDEX idx_menu_date ON daily_menu(date);
+CREATE INDEX idx_menu_meal_type ON daily_menu(meal_type);
+CREATE UNIQUE INDEX idx_menu_unique 
+ON daily_menu(canteen_id,date,meal_type);
+
+-- menu_dish
+CREATE INDEX idx_menu_dish_dish ON menu_dish(dish_id);
+
+-- orders
+CREATE INDEX idx_orders_user ON orders(user_id);
+CREATE INDEX idx_orders_for_user ON orders(order_for_user_id);
+CREATE INDEX idx_orders_canteen ON orders(canteen_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_time ON orders(order_time);
+CREATE INDEX idx_orders_user_time ON orders(user_id,order_time);
+
+-- order_item
+CREATE INDEX idx_order_item_dish ON order_item(dish_id);
+
+-- rating
+CREATE INDEX idx_rating_canteen ON rating(canteen_id);
+CREATE INDEX idx_rating_score ON rating(score);
+CREATE INDEX idx_rating_time ON rating(time);
+
+-- purchase_bill
+CREATE INDEX idx_purchase_canteen ON purchase_bill(canteen_id);
+CREATE INDEX idx_purchase_date ON purchase_bill(purchase_date);
+CREATE INDEX idx_purchase_canteen_date 
+ON purchase_bill(canteen_id,purchase_date);
+
+-- report
+CREATE INDEX idx_report_user ON report(user_id);
 CREATE INDEX idx_report_canteen ON report(canteen_id);
+CREATE INDEX idx_report_status ON report(status);
+CREATE INDEX idx_report_type ON report(type);
+CREATE INDEX idx_report_time ON report(create_time);
+
+-- region
+CREATE INDEX idx_region_parent ON region(parent_id);
+CREATE INDEX idx_region_level ON region(region_level);
+CREATE INDEX idx_region_name ON region(region_name);

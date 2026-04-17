@@ -563,12 +563,22 @@ bool OrderService::placeOrder(int user_id,
         auto dishes = dishDAO.getDishesByCanteen(canteen_id);// 获取食堂菜品（可以优化成批量查询）
         std::cout << "获取到" << dishes.size() << "个菜品" << std::endl;
         // 1️⃣ 计算总价（业务逻辑）
+        std::vector<OrderItem> orderItems;
+        
         for (const auto& item : items) {
             std::cout << "菜品ID：" << item.getDishId() << "，数量：" << item.getQuantity() << std::endl;
             for (const auto& d : dishes) {
                 if (d.getId() == item.getDishId()) {
                     std::cout << "找到菜品：" << d.getName() << "，价格：" << d.getPrice() << std::endl;
                     total += d.getPrice() * item.getQuantity();
+                    
+                    // 构造订单项，设置新的字段
+                    OrderItem orderItem;
+                    orderItem.setOrderId(0); // 订单ID稍后设置
+                    orderItem.setDishId(item.getDishId());
+                    orderItem.setQuantity(item.getQuantity());
+                    orderItem.setUnitPrice(d.getPrice());
+                    orderItems.push_back(orderItem);
                 }
             }
         }
@@ -601,7 +611,18 @@ bool OrderService::placeOrder(int user_id,
 
         // 应用折扣
         double discountedTotal = total * discount;
+        double savedAmount = total - discountedTotal;
         std::cout << "折扣后总价：" << discountedTotal << std::endl;
+        std::cout << "优惠金额：" << savedAmount << std::endl;
+
+        // 设置订单项的折扣价格和小计
+        for (auto& orderItem : orderItems) {
+            double unitPrice = orderItem.getUnitPrice();
+            double discountPrice = unitPrice * discount;
+            double subtotal = discountPrice * orderItem.getQuantity();
+            orderItem.setDiscountPrice(discountPrice);
+            orderItem.setSubtotal(subtotal);
+        }
 
         DinerDAO dinerDAO;
         bool canOrderForTarget = false;
@@ -639,6 +660,9 @@ bool OrderService::placeOrder(int user_id,
         order.setCanteenId(canteen_id);
         order.setTotalPrice(discountedTotal);
         order.setStatus("pending");
+        order.setDiscountRate(discount);
+        order.setOriginalTotal(total);
+        order.setSavedAmount(savedAmount);
         std::cout << "订单构造完成" << std::endl;
 
         // 3️⃣ 创建订单（事务）
@@ -650,9 +674,14 @@ bool OrderService::placeOrder(int user_id,
         }
         std::cout << "创建订单成功，订单ID：" << order_id << std::endl;
 
+        // 设置订单项的订单ID
+        for (auto& orderItem : orderItems) {
+            orderItem.setOrderId(order_id);
+        }
+
         OrderItemDAO orderItemDAO;
         std::cout << "开始插入订单项" << std::endl;
-        if (!orderItemDAO.insertOrderItems(conn, order_id, items)) {
+        if (!orderItemDAO.insertOrderItems(conn, order_id, orderItems)) {
             std::cout << "插入订单项失败" << std::endl;
             return false;
         }

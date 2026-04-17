@@ -289,9 +289,7 @@ public:
     void setDishId(int id) { dish_id = id; }
 };
 
-// ================================
-// Order
-// ================================
+// ================================// Order// ================================
 class Order {
 private:
     int order_id;
@@ -301,6 +299,9 @@ private:
     double total_price;
     std::string order_time;
     std::string status;
+    double discount_rate;
+    double original_total;
+    double saved_amount;
 
 public:
     int getId() const { return order_id; }
@@ -323,16 +324,26 @@ public:
 
     std::string getStatus() const { return status; }
     void setStatus(const std::string& s) { status = s; }
+
+    double getDiscountRate() const { return discount_rate; }
+    void setDiscountRate(double rate) { discount_rate = rate; }
+
+    double getOriginalTotal() const { return original_total; }
+    void setOriginalTotal(double total) { original_total = total; }
+
+    double getSavedAmount() const { return saved_amount; }
+    void setSavedAmount(double amount) { saved_amount = amount; }
 };
 
-// ================================
-// OrderItem
-// ================================
+// ================================// OrderItem// ================================
 class OrderItem {
 private:
     int order_id;
     int dish_id;
     int quantity;
+    double unit_price;
+    double discount_price;
+    double subtotal;
 
 public:
     int getOrderId() const { return order_id; }
@@ -343,6 +354,15 @@ public:
 
     int getQuantity() const { return quantity; }
     void setQuantity(int q) { quantity = q; }
+
+    double getUnitPrice() const { return unit_price; }
+    void setUnitPrice(double price) { unit_price = price; }
+
+    double getDiscountPrice() const { return discount_price; }
+    void setDiscountPrice(double price) { discount_price = price; }
+
+    double getSubtotal() const { return subtotal; }
+    void setSubtotal(double total) { subtotal = total; }
 };
 
 // ================================

@@ -8,6 +8,7 @@
           v-model="selectedOrderForUserId"
           placeholder="请选择家庭成员"
           style="width: 240px"
+          @change="handleOrderForUserChange"
         >
           <el-option
             v-for="member in familyMembers"
@@ -17,12 +18,27 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item v-if="selectedUserAge">
+        <el-tag>{{ selectedUserAge }}岁 - {{ discountText }}</el-tag>
+      </el-form-item>
     </el-form>
 
     <el-table :data="dishes" style="width: 100%">
       <el-table-column prop="id" label="ID" width="100" />
       <el-table-column prop="name" label="菜品名称" />
-      <el-table-column prop="price" label="价格" />
+      <el-table-column label="价格" width="180">
+        <template #default="scope">
+          <div>
+            <span v-if="discount < 1" style="text-decoration: line-through; color: #999;">
+              ¥{{ scope.row.price.toFixed(2) }}
+            </span>
+            <span v-else>¥{{ scope.row.price.toFixed(2) }}</span>
+            <span v-if="discount < 1" style="margin-left: 10px; color: #f56c6c;">
+              ¥{{ (scope.row.price * discount).toFixed(2) }}
+            </span>
+          </div>
+        </template>
+      </el-table-column>
 
        <!-- ⭐ 数量选择 -->
       <el-table-column label="数量">
@@ -50,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -59,7 +75,60 @@ const route = useRoute()
 const dishes = ref([])
 const familyMembers = ref([])
 const selectedOrderForUserId = ref(0)
+const selectedUserAge = ref(0)
 const user = JSON.parse(localStorage.getItem('user'))
+
+// 计算折扣
+const discount = computed(() => {
+  const age = selectedUserAge.value
+  if (age >= 60 && age <= 69) {
+    return 0.9 // 9折
+  } else if (age >= 70 && age <= 79) {
+    return 0.7 // 7折
+  } else if (age >= 80 && age <= 89) {
+    return 0.5 // 5折
+  } else if (age >= 90) {
+    return 0.0 // 免费
+  }
+  return 1.0 // 无折扣
+})
+
+// 折扣文本
+const discountText = computed(() => {
+  const age = selectedUserAge.value
+  if (age >= 60 && age <= 69) {
+    return '9折优惠'
+  } else if (age >= 70 && age <= 79) {
+    return '7折优惠'
+  } else if (age >= 80 && age <= 89) {
+    return '5折优惠'
+  } else if (age >= 90) {
+    return '免费'
+  }
+  return '无优惠'
+})
+
+// 获取用户年龄
+const getUserAge = async (user_id) => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/userCenter', {
+      params: {
+        user_id: user_id
+      }
+    })
+
+    if (res.data.code === 0) {
+      selectedUserAge.value = res.data.data.age
+    }
+  } catch (error) {
+    console.error('获取用户年龄失败:', error)
+  }
+}
+
+// 切换用餐者
+const handleOrderForUserChange = async (user_id) => {
+  await getUserAge(user_id)
+}
 
 // 获取菜单
 onMounted(async () => {
@@ -83,12 +152,15 @@ onMounted(async () => {
     familyMembers.value = orderTargetRes.data.data
     if (familyMembers.value.length > 0) {
       selectedOrderForUserId.value = familyMembers.value[0].user_id
+      await getUserAge(selectedOrderForUserId.value)
     } else {
       selectedOrderForUserId.value = user.user_id
+      await getUserAge(user.user_id)
     }
   } else {
     ElMessage.warning('家庭成员加载失败，默认给自己点餐')
     selectedOrderForUserId.value = user.user_id
+    await getUserAge(user.user_id)
   }
 
   // 初始化 quantity

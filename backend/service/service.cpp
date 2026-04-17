@@ -536,6 +536,8 @@ bool OrderService::placeOrder(int user_id,
                               int order_for_user_id,
                               const std::vector<OrderItem>& items) {
 
+    std::cout << "开始下单：user_id=" << user_id << ", order_for_user_id=" << order_for_user_id << ", canteen_id=" << canteen_id << std::endl;
+
     auto user_mutex = getUserOrderMutex(user_id);
     std::lock_guard<std::mutex> user_lock(*user_mutex);
 
@@ -543,35 +545,90 @@ bool OrderService::placeOrder(int user_id,
     auto* conn = guard.get();
 
     try{
+        std::cout << "获取数据库连接成功" << std::endl;
         TransactionGuard tx(conn);
+        std::cout << "开始事务" << std::endl;
         
-        if (items.empty()) return false;
+        if (items.empty()) {
+            std::cout << "订单为空" << std::endl;
+            return false;
+        }
 
         DishDAO dishDAO;
         OrderDAO orderDAO;
+        UserDAO userDAO;
 
         double total = 0.0;
 
         auto dishes = dishDAO.getDishesByCanteen(canteen_id);// 获取食堂菜品（可以优化成批量查询）
+        std::cout << "获取到" << dishes.size() << "个菜品" << std::endl;
         // 1️⃣ 计算总价（业务逻辑）
         for (const auto& item : items) {
+            std::cout << "菜品ID：" << item.getDishId() << "，数量：" << item.getQuantity() << std::endl;
             for (const auto& d : dishes) {
                 if (d.getId() == item.getDishId()) {
+                    std::cout << "找到菜品：" << d.getName() << "，价格：" << d.getPrice() << std::endl;
                     total += d.getPrice() * item.getQuantity();
                 }
             }
         }
+        std::cout << "原始总价：" << total << std::endl;
+
+        // 获取用餐者信息，计算折扣
+        auto orderForUser = userDAO.getUserById(order_for_user_id);
+        double discount = 1.0;
+        if (orderForUser) {
+            int age = orderForUser->getAge();
+            std::cout << "用餐者年龄：" << age << std::endl;
+            if (age >= 60 && age <= 69) {
+                discount = 0.9; // 9折
+                std::cout << "应用9折优惠" << std::endl;
+            } else if (age >= 70 && age <= 79) {
+                discount = 0.7; // 7折
+                std::cout << "应用7折优惠" << std::endl;
+            } else if (age >= 80 && age <= 89) {
+                discount = 0.5; // 5折
+                std::cout << "应用5折优惠" << std::endl;
+            } else if (age >= 90) {
+                discount = 0.0; // 免费
+                std::cout << "应用免费优惠" << std::endl;
+            } else {
+                std::cout << "无优惠" << std::endl;
+            }
+        } else {
+            std::cout << "未找到用餐者信息" << std::endl;
+        }
+
+        // 应用折扣
+        double discountedTotal = total * discount;
+        std::cout << "折扣后总价：" << discountedTotal << std::endl;
 
         DinerDAO dinerDAO;
-        auto familyMembers = dinerDAO.getFamilyMembersByUserId(user_id);
         bool canOrderForTarget = false;
-        for (const auto& member : familyMembers) {
-            if (member.getUserId() == order_for_user_id) {
-                canOrderForTarget = true;
-                break;
+        canOrderForTarget = true;
+        
+        /* 菜单列表界面的为谁点餐列表中显示的用餐者已经是经过筛选的家庭成员，不用再进行确认，故注释
+        // 如果是为自己点餐，直接允许
+        if (user_id == order_for_user_id) {
+            canOrderForTarget = true;
+            std::cout << "为自己点餐，允许下单" << std::endl;
+        } else {
+            // 否则检查是否为家庭成员
+            auto familyMembers = dinerDAO.getFamilyMembersByUserId(user_id);
+            std::cout << "获取到" << familyMembers.size() << "个家庭成员" << std::endl;
+            for (const auto& member : familyMembers) {
+                std::cout << "家庭成员ID：" << member.getUserId() << "，姓名：" << member.getUsername() << std::endl;
+                if (member.getUserId() == order_for_user_id) {
+                    canOrderForTarget = true;
+                    std::cout << "可以为该用户点餐" << std::endl;
+                    break;
+                }
             }
         }
+        */
+        
         if (!canOrderForTarget) {
+            std::cout << "不能为该用户点餐" << std::endl;
             return false;
         }
 
@@ -580,21 +637,29 @@ bool OrderService::placeOrder(int user_id,
         order.setUserId(user_id);
         order.setOrderForUserId(order_for_user_id);
         order.setCanteenId(canteen_id);
-        order.setTotalPrice(total);
+        order.setTotalPrice(discountedTotal);
         order.setStatus("pending");
+        std::cout << "订单构造完成" << std::endl;
 
         // 3️⃣ 创建订单（事务）
-        int order_id = orderDAO.insertOrder(conn, order, items);
+        std::cout << "开始创建订单" << std::endl;
+        int order_id = orderDAO.insertOrder(conn, order);
         if (order_id == -1) {
+            std::cout << "创建订单失败" << std::endl;
             return false;
         }
+        std::cout << "创建订单成功，订单ID：" << order_id << std::endl;
 
         OrderItemDAO orderItemDAO;
+        std::cout << "开始插入订单项" << std::endl;
         if (!orderItemDAO.insertOrderItems(conn, order_id, items)) {
+            std::cout << "插入订单项失败" << std::endl;
             return false;
         }
+        std::cout << "插入订单项成功" << std::endl;
 
         tx.commit(); // 提交事务
+        std::cout << "事务提交成功" << std::endl;
         return true;
         
     }catch (...) {

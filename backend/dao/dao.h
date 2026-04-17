@@ -139,7 +139,7 @@ public:
 // ================================
 class OrderDAO {
 public:
-    int insertOrder(sql::Connection *conn, const Order& order, const std::vector<OrderItem>& items);
+    int insertOrder(sql::Connection *conn, const Order& order);
     std::vector<OrderVO> getOrdersByUser(int user_id);
     std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
 };

@@ -56,7 +56,6 @@ int UserDAO::insertUser(sql::Connection *conn, const User& user)
         stmt->setInt(6, user.getStatus());
 
         if (stmt->executeUpdate() == 0) {
-            conn->rollback();
             return -1;
         }
         // 获取自增ID
@@ -105,7 +104,6 @@ bool DinerDAO::insertDiner(sql::Connection *conn, int user_id, int region_id)
         stmt->setInt(1, user_id);
         stmt->setInt(2, region_id);
         if (stmt->executeUpdate() == 0) {
-            conn->rollback();
             return false;
         }
 
@@ -1453,7 +1451,7 @@ bool MenuDAO::eraseMenu(const int menu_id){
 /***************************************************************************************
  * OrderDao
  ***************************************************************************************/
- int OrderDAO::insertOrder(sql::Connection *conn, const Order& order, const std::vector<OrderItem>& items) {
+ int OrderDAO::insertOrder(sql::Connection *conn, const Order& order) {
     try {
         // 1️⃣ 插入订单
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
@@ -1470,14 +1468,15 @@ bool MenuDAO::eraseMenu(const int menu_id){
         stmt->setString(5, order.getStatus());
 
         if (stmt->executeUpdate() == 0) {
-            conn->rollback();
-            return false;
+            return -1;
         }
 
         // 获取自增ID
-        std::unique_ptr<sql::Statement> cstmt(conn->createStatement());
+        auto cstmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT LAST_INSERT_ID()")
+        );
         std::unique_ptr<sql::ResultSet> rs(
-            cstmt->executeQuery("SELECT LAST_INSERT_ID()")
+            cstmt->executeQuery()
         );
 
         int order_id = -1;
@@ -1486,7 +1485,10 @@ bool MenuDAO::eraseMenu(const int menu_id){
         }
 
         return order_id;
-    } catch (...) { return -1; }
+    } catch (const std::exception& e) {
+        std::cerr << "插入订单失败: " << e.what() << std::endl;
+        return -1;
+    }
 }
 
 std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)

@@ -77,7 +77,9 @@ public:
     std::shared_ptr<Canteen> getCanteenById(int id);
     int getCanteenIdByUserId(int user_id);
     bool updateCanteenAddress(int canteen_id, const std::string& address);
+    bool updateCanteenStatus(int canteen_id, int status);
     std::shared_ptr<Canteen> getCanteenDetails(int canteen_id);
+    std::vector<CanteenManagerVO> getCanteensWithManagers();
 };
 
 // ================================

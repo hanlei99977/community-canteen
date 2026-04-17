@@ -61,4 +61,6 @@ private:
     // 食堂管理
     static void handleMyCanteen(const httplib::Request& req, httplib::Response& res);
     static void handleUpdateCanteenAddress(const httplib::Request& req, httplib::Response& res);
+    static void handleCanteenList(const httplib::Request& req, httplib::Response& res);
+    static void handleUpdateCanteenStatus(const httplib::Request& req, httplib::Response& res);
 };

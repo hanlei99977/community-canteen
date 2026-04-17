@@ -106,6 +106,8 @@ public:
     int getCanteenIdByUserId(int user_id);
     int insertCanteen(sql::Connection *conn, const std::string& canteen_name, int region_id);
     bool updateCanteenAddress(int canteen_id, const std::string& address);
+    bool updateCanteenStatus(int canteen_id, int status);
+    std::vector<CanteenManagerVO> getCanteensWithManagers();
 };
 
 // ================================

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 #include "../../MySQL/ConnectionPool.h"
+#include "../model/vo.h"
 
 // 下单操作加锁
 std::mutex OrderService::userOrderMapMutex;
@@ -443,12 +444,25 @@ bool CanteenService::updateCanteenAddress(int canteen_id, const std::string& add
     return dao.updateCanteenAddress(canteen_id, address);
 }
 
+bool CanteenService::updateCanteenStatus(int canteen_id, int status) {
+    if (canteen_id <= 0 || (status != 0 && status != 1)) {
+        return false;
+    }
+    CanteenDAO dao;
+    return dao.updateCanteenStatus(canteen_id, status);
+}
+
 std::shared_ptr<Canteen> CanteenService::getCanteenDetails(int canteen_id) {
     if (canteen_id <= 0) {
         return nullptr;
     }
     CanteenDAO dao;
     return dao.getCanteenById(canteen_id);
+}
+
+std::vector<CanteenManagerVO> CanteenService::getCanteensWithManagers() {
+    CanteenDAO dao;
+    return dao.getCanteensWithManagers();
 }
 
 /**********************************************

@@ -126,6 +126,8 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     // 食堂管理
     server.Get("/myCanteen", handleMyCanteen);
     server.Post("/updateCanteenAddress", handleUpdateCanteenAddress);
+    server.Get("/canteenList", handleCanteenList);
+    server.Post("/updateCanteenStatus", handleUpdateCanteenStatus);
 }
 
 
@@ -1258,6 +1260,62 @@ void Controller::handleUpdateCanteenAddress(const httplib::Request& req, httplib
             res.set_content(Response::success(), "application/json");
         } else {
             res.set_content(Response::error(500, "更新地址失败"), "application/json");
+        }
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+// 获取食堂列表
+void Controller::handleCanteenList(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        CanteenService canteenService;
+        auto canteens = canteenService.getCanteensWithManagers();
+
+        json data = json::array();
+        for (const auto& canteen : canteens) {
+            json canteenJson = {
+                {"id", canteen.getId()},
+                {"name", canteen.getName()},
+                {"address", canteen.getAddress()},
+                {"regionId", canteen.getRegionId()},
+                {"regionName", canteen.getRegionName()},
+                {"managerId", canteen.getManagerId()},
+                {"managerName", canteen.getManagerName()},
+                {"status", canteen.getStatus()},
+                {"rating", canteen.getRating()},
+                {"complaintCount", canteen.getComplaintCount()}
+            };
+            data.push_back(canteenJson);
+        }
+
+        res.set_content(Response::success(data), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(500, "获取食堂列表失败"), "application/json");
+    }
+}
+
+// 更新食堂状态
+void Controller::handleUpdateCanteenStatus(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        std::cout<< " json内容是 " << req.body<<std::endl;
+        
+        json body = json::parse(req.body);
+        int canteen_id = getIntSafe(body, "canteen_id");
+        int status = getIntSafe(body, "status");
+
+        if (canteen_id <= 0 || (status != 0 && status != 1)) {
+            res.set_content(Response::error(400, "参数错误"), "application/json");
+            return;
+        }
+
+        CanteenService canteenService;
+        if (canteenService.updateCanteenStatus(canteen_id, status)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "更新状态失败"), "application/json");
         }
     } catch (...) {
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");

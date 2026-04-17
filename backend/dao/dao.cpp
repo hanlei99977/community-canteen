@@ -1,7 +1,6 @@
 #include "dao.h"
 #include <cppconn/prepared_statement.h>
 
-
 /***************************************************************************************
  * RegionDao
  ***************************************************************************************/
@@ -1014,6 +1013,89 @@ bool CanteenDAO::updateCanteenAddress(int canteen_id, const std::string& address
 
         return true;
     } catch (...) { return false; }
+}
+
+bool CanteenDAO::updateCanteenStatus(int canteen_id, int status) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE canteen SET status = ? WHERE canteen_id = ?"
+            )
+        );
+        stmt->setInt(1, status);
+        stmt->setInt(2, canteen_id);
+
+        int affected_rows = stmt->executeUpdate();
+        if (affected_rows == 0) {
+            return false;
+        }
+
+        return true;
+    } catch (...) { return false; }
+}
+
+std::vector<CanteenManagerVO> CanteenDAO::getCanteensWithManagers() {
+    std::vector<CanteenManagerVO> canteens;
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT c.canteen_id, c.name, c.address, c.region_id, r.region_name, "
+                "m.user_id as manager_id, u.username as manager_name, c.status "
+                "FROM canteen c "
+                "LEFT JOIN region r ON c.region_id = r.region_id "
+                "LEFT JOIN canteen_manager m ON c.canteen_id = m.canteen_id "
+                "LEFT JOIN users u ON m.user_id = u.user_id"
+            )
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            CanteenManagerVO canteen;
+            canteen.setId(res->getInt("canteen_id"));
+            canteen.setName(res->getString("name"));
+            canteen.setAddress(res->getString("address"));
+            canteen.setRegionId(res->getInt("region_id"));
+            canteen.setRegionName(res->getString("region_name"));
+            canteen.setManagerId(res->getInt("manager_id"));
+            canteen.setManagerName(res->getString("manager_name"));
+            canteen.setStatus(res->getInt("status"));
+            canteen.setRating(0.0); // 后续计算
+            canteen.setComplaintCount(0); // 后续计算
+            canteens.push_back(canteen);
+        }
+
+        // 计算每个食堂的评分和投诉数量
+        for (auto& canteen : canteens) {
+            // 计算评分
+            auto ratingStmt = std::unique_ptr<sql::PreparedStatement>(
+                conn->prepareStatement("SELECT AVG(score) as avg_score FROM rating WHERE canteen_id = ?")
+            );
+            ratingStmt->setInt(1, canteen.getId());
+            auto ratingRes = std::unique_ptr<sql::ResultSet>(ratingStmt->executeQuery());
+            if (ratingRes->next() && !ratingRes->isNull("avg_score")) {
+                canteen.setRating(ratingRes->getDouble("avg_score"));
+            }
+
+            // 计算投诉数量
+            auto complaintStmt = std::unique_ptr<sql::PreparedStatement>(
+                conn->prepareStatement("SELECT COUNT(*) as count FROM report WHERE canteen_id = ?")
+            );
+            complaintStmt->setInt(1, canteen.getId());
+            auto complaintRes = std::unique_ptr<sql::ResultSet>(complaintStmt->executeQuery());
+            if (complaintRes->next()) {
+                canteen.setComplaintCount(complaintRes->getInt("count"));
+            }
+        }
+    } catch (...) {
+        // 异常处理
+    }
+    return canteens;
 }
 
 /***************************************************************************************

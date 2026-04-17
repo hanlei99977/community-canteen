@@ -489,3 +489,50 @@ public:
     std::string getReviewerName() const { return reviewer_name; }
     void setReviewerName(const std::string& name) { reviewer_name = name; }
 };
+
+// 食堂管理 VO
+class CanteenManagerVO
+{
+private:
+    int canteen_id;
+    std::string name;
+    std::string address;
+    int region_id;
+    std::string region_name;
+    int manager_id;
+    std::string manager_name;
+    int status;
+    double rating;
+    int complaint_count;
+
+public:
+    int getId() const { return canteen_id; }
+    void setId(int id) { canteen_id = id; }
+
+    std::string getName() const { return name; }
+    void setName(const std::string& n) { name = n; }
+
+    std::string getAddress() const { return address; }
+    void setAddress(const std::string& a) { address = a; }
+
+    int getRegionId() const { return region_id; }
+    void setRegionId(int id) { region_id = id; }
+
+    std::string getRegionName() const { return region_name; }
+    void setRegionName(const std::string& rn) { region_name = rn; }
+
+    int getManagerId() const { return manager_id; }
+    void setManagerId(int id) { manager_id = id; }
+
+    std::string getManagerName() const { return manager_name; }
+    void setManagerName(const std::string& mn) { manager_name = mn; }
+
+    int getStatus() const { return status; }
+    void setStatus(int s) { status = s; }
+
+    double getRating() const { return rating; }
+    void setRating(double r) { rating = r; }
+
+    int getComplaintCount() const { return complaint_count; }
+    void setComplaintCount(int c) { complaint_count = c; }
+};

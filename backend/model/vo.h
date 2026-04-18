@@ -590,3 +590,51 @@ public:
     void addLabel(const std::string& label) { labels.push_back(label); }
     void addValue(double value) { values.push_back(value); }
 };
+
+// 用餐偏好相关 VO
+class DiningPreferenceSummary {
+private:
+    double total_amount;
+    int order_count;
+    int canteen_count;
+public:
+    double getTotalAmount() const { return total_amount; }
+    void setTotalAmount(double value) { total_amount = value; }
+
+    int getOrderCount() const { return order_count; }
+    void setOrderCount(int value) { order_count = value; }
+
+    int getCanteenCount() const { return canteen_count; }
+    void setCanteenCount(int value) { canteen_count = value; }
+};
+
+class ConsumptionItem {
+private:
+    std::string name;
+    int count;
+public:
+    std::string getName() const { return name; }
+    void setName(const std::string& value) { name = value; }
+
+    int getCount() const { return count; }
+    void setCount(int value) { count = value; }
+};
+
+class DiningPreference {
+private:
+    DiningPreferenceSummary summary;
+    std::vector<ConsumptionItem> canteen_consumption;
+    std::vector<ConsumptionItem> dish_consumption;
+public:
+    DiningPreferenceSummary getSummary() const { return summary; }
+    void setSummary(const DiningPreferenceSummary& value) { summary = value; }
+
+    std::vector<ConsumptionItem> getCanteenConsumption() const { return canteen_consumption; }
+    void setCanteenConsumption(const std::vector<ConsumptionItem>& value) { canteen_consumption = value; }
+
+    std::vector<ConsumptionItem> getDishConsumption() const { return dish_consumption; }
+    void setDishConsumption(const std::vector<ConsumptionItem>& value) { dish_consumption = value; }
+
+    void addCanteenConsumption(const ConsumptionItem& item) { canteen_consumption.push_back(item); }
+    void addDishConsumption(const ConsumptionItem& item) { dish_consumption.push_back(item); }
+};

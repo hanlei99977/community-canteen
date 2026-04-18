@@ -19,6 +19,7 @@
         <el-menu-item v-if="isDiner" index="/canteens">食堂列表</el-menu-item>
         <el-menu-item v-if="isDiner" index="/orders">我的订单</el-menu-item>
         <el-menu-item v-if="isDiner" index="/userCenter">用户中心</el-menu-item>
+        <el-menu-item v-if="isDiner" index="/diningPreference">用餐偏好</el-menu-item>
 
         <!-- ================== 系统管理员专属 ================== -->
         <el-menu-item v-if="isSystemAdmin" index="/adminManage">

@@ -36,6 +36,8 @@ private:
 
     static void handleRating(const httplib::Request& req, httplib::Response& res);
     static void handleReport(const httplib::Request& req, httplib::Response& res);
+    // 用餐偏好
+    static void handleDiningPreference(const httplib::Request& req, httplib::Response& res);
     //个人中心相关
     static void handleUserCenter(const httplib::Request& req, httplib::Response& res);
     static void handleUserCenterUpdate(const httplib::Request& req, httplib::Response& res);

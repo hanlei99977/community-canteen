@@ -98,6 +98,8 @@ void Controller::registerOrderRoutes(httplib::Server& server) {
     server.Get("/order_details", handleOrderDetails);
     server.Post("/rating", handleRating);
     server.Post("/report", handleReport);
+    // 用餐偏好
+    server.Get("/diningPreference", handleDiningPreference);
 }
 
 // 食堂相关路由
@@ -1429,6 +1431,52 @@ void Controller::handleFinancialStatistics(const httplib::Request& req, httplib:
         data["today_profit"] = today_data.getProfit();
         data["labels"] = stats_data.getLabels();
         data["values"] = stats_data.getValues();
+        
+        res.status = 200;
+        res.set_content(Response::success(data), "application/json");
+        
+    } catch (...) {
+        res.status = 500;
+        res.set_content(Response::error(500, "服务器错误"), "application/json");
+    }
+}
+
+// 处理用餐偏好请求
+void Controller::handleDiningPreference(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        std::string time_dimension = req.get_param_value("time_dimension");
+        
+        if (time_dimension.empty()) {
+            time_dimension = "month"; // 默认显示最近一月
+        }
+        
+        OrderService service;
+        auto preference = service.getDiningPreference(user_id, time_dimension);
+        
+        // 构建返回数据
+        json data;
+        data["total_amount"] = preference.getSummary().getTotalAmount();
+        data["order_count"] = preference.getSummary().getOrderCount();
+        data["canteen_count"] = preference.getSummary().getCanteenCount();
+        
+        json canteen_consumption = json::array();
+        for (const auto& item : preference.getCanteenConsumption()) {
+            json item_data;
+            item_data["name"] = item.getName();
+            item_data["count"] = item.getCount();
+            canteen_consumption.push_back(item_data);
+        }
+        data["canteen_consumption"] = canteen_consumption;
+        
+        json dish_consumption = json::array();
+        for (const auto& item : preference.getDishConsumption()) {
+            json item_data;
+            item_data["name"] = item.getName();
+            item_data["count"] = item.getCount();
+            dish_consumption.push_back(item_data);
+        }
+        data["dish_consumption"] = dish_consumption;
         
         res.status = 200;
         res.set_content(Response::success(data), "application/json");

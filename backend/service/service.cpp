@@ -823,6 +823,43 @@ std::vector<OrderDetailVO> OrderService::getOrdersDetailsByUser(int user_id,int 
     return dao.getOrdersDetailsByUser(user_id,order_id);
 }
 
+// 用餐偏好相关方法
+DiningPreference OrderService::getDiningPreference(int user_id, const std::string& time_dimension) {
+    DiningPreference preference;
+    try {
+        OrderDAO dao;
+        
+        // 获取用餐偏好摘要
+        auto summary = dao.getDiningPreferenceSummary(user_id, time_dimension);
+        DiningPreferenceSummary summary_vo;
+        summary_vo.setTotalAmount(summary.getTotalAmount());
+        summary_vo.setOrderCount(summary.getOrderCount());
+        summary_vo.setCanteenCount(summary.getCanteenCount());
+        preference.setSummary(summary_vo);
+        
+        // 获取餐厅消费次数
+        auto canteen_consumption = dao.getCanteenConsumptionCount(user_id, time_dimension);
+        for (const auto& item : canteen_consumption) {
+            ConsumptionItem consumption_item;
+            consumption_item.setName(item.first);
+            consumption_item.setCount(item.second);
+            preference.addCanteenConsumption(consumption_item);
+        }
+        
+        // 获取菜品消费次数
+        auto dish_consumption = dao.getDishConsumptionCount(user_id, time_dimension);
+        for (const auto& item : dish_consumption) {
+            ConsumptionItem consumption_item;
+            consumption_item.setName(item.first);
+            consumption_item.setCount(item.second);
+            preference.addDishConsumption(consumption_item);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "获取用餐偏好失败: " << e.what() << std::endl;
+    }
+    return preference;
+}
+
 /**********************************************
  * RatingService
  *********************************************/

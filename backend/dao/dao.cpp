@@ -1602,6 +1602,193 @@ std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByUser(int user_id,int orde
     return list;
 }
 
+// 用餐偏好相关方法
+DiningPreferenceSummary OrderDAO::getDiningPreferenceSummary(int user_id, const std::string& time_dimension) {
+    DiningPreferenceSummary summary;
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        
+        // 构建时间条件
+        std::string time_condition = "";
+        if (time_dimension == "year") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+        } else if (time_dimension == "quarter") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 3 MONTH)";
+        } else if (time_dimension == "month") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
+        } else if (time_dimension == "week") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 1 WEEK)";
+        } else if (time_dimension == "day") {
+            time_condition = "AND DATE(o.order_time) = DATE(NOW())";
+        }
+        
+        // 查询消费总额和订单数
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT COALESCE(SUM(total_price), 0) as total_amount, COUNT(*) as order_count "
+                "FROM orders o "
+                "WHERE o.order_for_user_id = ? " + time_condition
+            )
+        );
+        stmt->setInt(1, user_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            summary.setTotalAmount(res->getDouble("total_amount"));
+            summary.setOrderCount(res->getInt("order_count"));
+        }
+        
+        // 查询消费餐厅数
+        stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT COUNT(DISTINCT canteen_id) as canteen_count "
+                "FROM orders o "
+                "WHERE o.order_for_user_id = ? " + time_condition
+            )
+        );
+        stmt->setInt(1, user_id);
+        res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            summary.setCanteenCount(res->getInt("canteen_count"));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "获取用餐偏好摘要失败: " << e.what() << std::endl;
+    }
+    return summary;
+}
+
+std::vector<std::pair<std::string, int>> OrderDAO::getCanteenConsumptionCount(int user_id, const std::string& time_dimension) {
+    std::vector<std::pair<std::string, int>> result;
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        
+        // 构建时间条件
+        std::string time_condition = "";
+        if (time_dimension == "year") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+        } else if (time_dimension == "quarter") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 3 MONTH)";
+        } else if (time_dimension == "month") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
+        } else if (time_dimension == "week") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 1 WEEK)";
+        } else if (time_dimension == "day") {
+            time_condition = "AND DATE(o.order_time) = DATE(NOW())";
+        }
+        
+        // 查询餐厅消费次数
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT c.name as canteen_name, COUNT(*) as count "
+                "FROM orders o "
+                "JOIN canteen c ON o.canteen_id = c.canteen_id "
+                "WHERE o.order_for_user_id = ? " + time_condition + " "
+                "GROUP BY c.canteen_id, c.name "
+                "ORDER BY count DESC"
+            )
+        );
+        stmt->setInt(1, user_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        
+        int total_count = 0;
+        while (res->next()) {
+            std::string canteen_name = res->getString("canteen_name");
+            int count = res->getInt("count");
+            result.emplace_back(canteen_name, count);
+            total_count += count;
+        }
+        
+        // 处理比例低于5%的情况
+        if (total_count > 0) {
+            std::vector<std::pair<std::string, int>> filtered_result;
+            int other_count = 0;
+            for (const auto& item : result) {
+                double percentage = static_cast<double>(item.second) / total_count * 100;
+                if (percentage >= 5) {
+                    filtered_result.push_back(item);
+                } else {
+                    other_count += item.second;
+                }
+            }
+            if (other_count > 0) {
+                filtered_result.emplace_back("其他餐厅", other_count);
+            }
+            result = filtered_result;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "获取餐厅消费次数失败: " << e.what() << std::endl;
+    }
+    return result;
+}
+
+std::vector<std::pair<std::string, int>> OrderDAO::getDishConsumptionCount(int user_id, const std::string& time_dimension) {
+    std::vector<std::pair<std::string, int>> result;
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        
+        // 构建时间条件
+        std::string time_condition = "";
+        if (time_dimension == "year") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+        } else if (time_dimension == "quarter") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 3 MONTH)";
+        } else if (time_dimension == "month") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 1 MONTH)";
+        } else if (time_dimension == "week") {
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 1 WEEK)";
+        } else if (time_dimension == "day") {
+            time_condition = "AND DATE(o.order_time) = DATE(NOW())";
+        }
+        
+        // 查询菜品消费次数
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT CONCAT(d.name, ' (', c.name, ')') as dish_with_canteen, SUM(oi.quantity) as count "
+                "FROM orders o "
+                "JOIN order_item oi ON o.order_id = oi.order_id "
+                "JOIN dish d ON oi.dish_id = d.dish_id "
+                "JOIN canteen c ON d.canteen_id = c.canteen_id "
+                "WHERE o.order_for_user_id = ? " + time_condition + " "
+                "GROUP BY d.dish_id, d.name, c.name "
+                "ORDER BY count DESC"
+            )
+        );
+        stmt->setInt(1, user_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        
+        int total_count = 0;
+        while (res->next()) {
+            std::string dish_with_canteen = res->getString("dish_with_canteen");
+            int count = res->getInt("count");
+            result.emplace_back(dish_with_canteen, count);
+            total_count += count;
+        }
+        
+        // 处理比例低于5%的情况
+        if (total_count > 0) {
+            std::vector<std::pair<std::string, int>> filtered_result;
+            int other_count = 0;
+            for (const auto& item : result) {
+                double percentage = static_cast<double>(item.second) / total_count * 100;
+                if (percentage >= 5) {
+                    filtered_result.push_back(item);
+                } else {
+                    other_count += item.second;
+                }
+            }
+            if (other_count > 0) {
+                filtered_result.emplace_back("其他菜品", other_count);
+            }
+            result = filtered_result;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "获取菜品消费次数失败: " << e.what() << std::endl;
+    }
+    return result;
+}
+
 /***************************************************************************************
  * OrderItemDao
  ***************************************************************************************/

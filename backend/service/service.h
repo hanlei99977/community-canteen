@@ -120,6 +120,8 @@ public:
     std::vector<FamilyMemberVO> getOrderTargetsByUser(int user_id);
     std::vector<OrderVO> getOrdersByUser(int user_id);
     std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
+    // 用餐偏好相关方法
+    DiningPreference getDiningPreference(int user_id, const std::string& time_dimension);
 
 private:
     static std::mutex userOrderMapMutex;

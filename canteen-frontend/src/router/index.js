@@ -24,6 +24,7 @@ import FinancialStatistics from '../views/manager/FinancialStatistics.vue'
 import CanteenList from '../views/diner/CanteenList.vue'
 import Menu from '../views/diner/Menu.vue'
 import Orders from '../views/diner/Orders.vue'
+import DiningPreference from '../views/diner/DiningPreference.vue'
 
 const routes = [
   { path: '/login', component: Login },
@@ -38,6 +39,7 @@ const routes = [
       { path: '/menu', component: Menu },
       { path: '/orders', component: Orders},
       { path: '/userCenter', component: UserCenter},
+      { path: '/diningPreference', component: DiningPreference},
       { path: '/myCanteen', component: MyCanteen},
       { path: '/menuManage', component: MenuManage},
       { path: '/dishManage', component: DishManage},

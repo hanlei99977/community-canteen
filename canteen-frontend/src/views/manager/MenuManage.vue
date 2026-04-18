@@ -156,6 +156,25 @@ const submit = async () => {
     return
   }
 
+  // 验证每餐不少于六荤六素
+  let meatCount = 0
+  let vegetableCount = 0
+  
+  for (const dish of dishList.value) {
+    if (form.value.dish_ids.includes(Number(dish.dish_id))) {
+      if (dish.type === "荤") {
+        meatCount++
+      } else if (dish.type === "素") {
+        vegetableCount++
+      }
+    }
+  }
+  
+  if (meatCount < 6 || vegetableCount < 6) {
+    ElMessage.error(`餐单设置不符合标准：需要至少6荤6素，当前选择了${meatCount}荤${vegetableCount}素`)
+    return
+  }
+
   const res = await axios.post(
     'http://192.168.56.100:8080/menuCreate',
     form.value

@@ -556,3 +556,37 @@ public:
     int getComplaintCount() const { return complaint_count; }
     void setComplaintCount(int c) { complaint_count = c; }
 };
+
+// 财务统计相关 VO
+// 今日财务统计
+class TodayFinancialData {
+private:
+    double income;
+    double expense;
+    double profit;
+public:
+    double getIncome() const { return income; }
+    void setIncome(double value) { income = value; }
+
+    double getExpense() const { return expense; }
+    void setExpense(double value) { expense = value; }
+
+    double getProfit() const { return profit; }
+    void setProfit(double value) { profit = value; }
+};
+
+// 财务统计
+class FinancialData {
+private:
+    std::vector<std::string> labels;
+    std::vector<double> values;
+public:
+    std::vector<std::string> getLabels() const { return labels; }
+    void setLabels(const std::vector<std::string>& value) { labels = value; }
+
+    std::vector<double> getValues() const { return values; }
+    void setValues(const std::vector<double>& value) { values = value; }
+
+    void addLabel(const std::string& label) { labels.push_back(label); }
+    void addValue(double value) { values.push_back(value); }
+};

@@ -110,6 +110,11 @@ public:
     std::vector<CanteenManagerVO> getCanteensWithManagers();
     std::vector<PurchaseBill> getPurchaseBillsByCanteen(int canteen_id);
     int createPurchaseBill(const PurchaseBill& bill);
+    // 财务统计相关方法
+    double getTodayIncome(int canteen_id);
+    double getTodayExpense(int canteen_id);
+    double getIncomeByTimeDimension(int canteen_id, const std::string& time_dimension, const std::string& date_str);
+    double getExpenseByTimeDimension(int canteen_id, const std::string& time_dimension, const std::string& date_str);
 };
 
 // ================================

@@ -1959,3 +1959,108 @@ bool AnnouncementDAO::deleteAnnouncement(int announce_id, int publisher_id) {
         return stmt->executeUpdate() > 0;
     } catch (...) { return false; }
 }
+
+/***************************************************************************************
+ * CanteenDAO - 财务统计相关方法
+ ***************************************************************************************/
+double CanteenDAO::getTodayIncome(int canteen_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND DATE(order_time) = DATE(NOW())"
+            )
+        );
+
+        stmt->setInt(1, canteen_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        if (res->next()) {
+            return res->getDouble(1);
+        }
+    } catch (...) {}
+
+    return 0.0;
+}
+
+double CanteenDAO::getTodayExpense(int canteen_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT COALESCE(SUM(amount), 0) FROM purchase_bill WHERE canteen_id = ? AND DATE(purchase_date) = DATE(NOW())"
+            )
+        );
+
+        stmt->setInt(1, canteen_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        if (res->next()) {
+            return res->getDouble(1);
+        }
+    } catch (...) {}
+
+    return 0.0;
+}
+
+double CanteenDAO::getIncomeByTimeDimension(int canteen_id, const std::string& time_dimension, const std::string& date_str) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        std::string sql;
+        if (time_dimension == "day") {
+            sql = "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND DATE(order_time) = ?";
+        } else if (time_dimension == "month") {
+            sql = "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND DATE_FORMAT(order_time, '%Y-%m') = ?";
+        } else if (time_dimension == "year") {
+            sql = "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND YEAR(order_time) = ?";
+        } else {
+            return 0.0;
+        }
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(sql));
+        stmt->setInt(1, canteen_id);
+        stmt->setString(2, date_str);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        if (res->next()) {
+            return res->getDouble(1);
+        }
+    } catch (...) {}
+
+    return 0.0;
+}
+
+double CanteenDAO::getExpenseByTimeDimension(int canteen_id, const std::string& time_dimension, const std::string& date_str) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        std::string sql;
+        if (time_dimension == "day") {
+            sql = "SELECT COALESCE(SUM(amount), 0) FROM purchase_bill WHERE canteen_id = ? AND DATE(purchase_date) = ?";
+        } else if (time_dimension == "month") {
+            sql = "SELECT COALESCE(SUM(amount), 0) FROM purchase_bill WHERE canteen_id = ? AND DATE_FORMAT(purchase_date, '%Y-%m') = ?";
+        } else if (time_dimension == "year") {
+            sql = "SELECT COALESCE(SUM(amount), 0) FROM purchase_bill WHERE canteen_id = ? AND YEAR(purchase_date) = ?";
+        } else {
+            return 0.0;
+        }
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(sql));
+        stmt->setInt(1, canteen_id);
+        stmt->setString(2, date_str);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        if (res->next()) {
+            return res->getDouble(1);
+        }
+    } catch (...) {}
+
+    return 0.0;
+}

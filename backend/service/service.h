@@ -82,6 +82,9 @@ public:
     std::vector<CanteenManagerVO> getCanteensWithManagers();
     std::vector<PurchaseBill> getPurchaseBills(int canteen_id);
     int createPurchaseBill(const PurchaseBill& bill);
+    // 财务统计
+    TodayFinancialData getTodayFinancialData(int canteen_id);
+    FinancialData getFinancialData(int canteen_id, const std::string& time_dimension, const std::string& stats_type);
 };
 
 // ================================

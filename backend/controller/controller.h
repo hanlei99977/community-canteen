@@ -65,4 +65,6 @@ private:
     static void handleUpdateCanteenStatus(const httplib::Request& req, httplib::Response& res);
     static void handlePurchaseList(const httplib::Request& req, httplib::Response& res);
     static void handleCreatePurchase(const httplib::Request& req, httplib::Response& res);
+    // 财务统计
+    static void handleFinancialStatistics(const httplib::Request& req, httplib::Response& res);
 };

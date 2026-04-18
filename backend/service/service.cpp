@@ -481,6 +481,116 @@ int CanteenService::createPurchaseBill(const PurchaseBill& bill) {
     return dao.createPurchaseBill(bill);    
 }
 
+// 财务统计 - 获取今日财务数据
+TodayFinancialData CanteenService::getTodayFinancialData(int canteen_id) {
+    TodayFinancialData data;
+    
+    try {
+        CanteenDAO dao;
+        double income = dao.getTodayIncome(canteen_id);
+        double expense = dao.getTodayExpense(canteen_id);
+        data.setIncome(income);
+        data.setExpense(expense);
+        data.setProfit(income - expense);
+    } catch (const std::exception& e) {
+        std::cout << "获取今日财务数据失败: " << e.what() << std::endl;
+        data.setIncome(0.0);
+        data.setExpense(0.0);
+        data.setProfit(0.0);
+    }
+    
+    return data;
+}
+
+// 财务统计 - 获取指定时间维度的财务数据
+FinancialData CanteenService::getFinancialData(int canteen_id, const std::string& time_dimension, const std::string& stats_type) {
+    FinancialData data;
+    
+    try {
+        CanteenDAO dao;
+        
+        if (time_dimension == "day") {
+            // 最近30天
+            for (int i = 29; i >= 0; i--) {
+                auto date = std::chrono::system_clock::now() - std::chrono::hours(24 * i);
+                std::time_t date_c = std::chrono::system_clock::to_time_t(date);
+                std::tm* date_tm = std::localtime(&date_c);
+                char date_buf[11];
+                std::strftime(date_buf, sizeof(date_buf), "%Y-%m-%d", date_tm);
+                std::string date_str(date_buf);
+                data.addLabel(date_str);
+                
+                double value = 0.0;
+                if (stats_type == "income") {
+                    value = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
+                } else if (stats_type == "expense") {
+                    value = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                } else if (stats_type == "profit") {
+                    double income = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
+                    double expense = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                    value = income - expense;
+                }
+                
+                data.addValue(value);
+            }
+        } else if (time_dimension == "month") {
+            // 最近12个月
+            for (int i = 11; i >= 0; i--) {
+                // 使用 std::chrono::duration 替代 std::chrono::months
+                auto date = std::chrono::system_clock::now() - std::chrono::duration<int, std::ratio<2592000>>{i}; // 一个月的秒数
+                std::time_t date_c = std::chrono::system_clock::to_time_t(date);
+                std::tm* date_tm = std::localtime(&date_c);
+                char date_buf[8];
+                std::strftime(date_buf, sizeof(date_buf), "%Y-%m", date_tm);
+                std::string date_str(date_buf);
+                data.addLabel(date_str);
+                
+                double value = 0.0;
+                if (stats_type == "income") {
+                    value = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
+                } else if (stats_type == "expense") {
+                    value = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                } else if (stats_type == "profit") {
+                    double income = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
+                    double expense = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                    value = income - expense;
+                }
+                
+                data.addValue(value);
+            }
+        } else if (time_dimension == "year") {
+            // 最近10年
+            for (int i = 9; i >= 0; i--) {
+                // 使用 std::chrono::duration 替代 std::chrono::years
+                auto date = std::chrono::system_clock::now() - std::chrono::duration<int, std::ratio<31536000>>{i}; // 一年的秒数
+                std::time_t date_c = std::chrono::system_clock::to_time_t(date);
+                std::tm* date_tm = std::localtime(&date_c);
+                char date_buf[5];
+                std::strftime(date_buf, sizeof(date_buf), "%Y", date_tm);
+                std::string date_str(date_buf);
+                data.addLabel(date_str);
+                
+                double value = 0.0;
+                if (stats_type == "income") {
+                    value = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
+                } else if (stats_type == "expense") {
+                    value = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                } else if (stats_type == "profit") {
+                    double income = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
+                    double expense = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                    value = income - expense;
+                }
+                
+                data.addValue(value);
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cout << "获取财务数据失败: " << e.what() << std::endl;
+    }
+    
+    return data;
+}
+
 /**********************************************
  * MenuService
  *********************************************/

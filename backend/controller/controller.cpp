@@ -130,6 +130,8 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Post("/updateCanteenStatus", handleUpdateCanteenStatus);
     server.Get("/purchaseList", handlePurchaseList);
     server.Post("/createPurchase", handleCreatePurchase);
+    // 财务统计
+    server.Get("/financialStatistics", handleFinancialStatistics);
 }
 
 
@@ -1388,5 +1390,51 @@ void Controller::handleCreatePurchase(const httplib::Request& req, httplib::Resp
         }
     } catch (...) {
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+// 财务统计
+void Controller::handleFinancialStatistics(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        std::string stats_type = req.get_param_value("stats_type");
+        std::string time_dimension = req.get_param_value("time_dimension");
+        
+        if (stats_type.empty()) {
+            stats_type = "profit";
+        }
+        if (time_dimension.empty()) {
+            time_dimension = "day";
+        }
+        
+        CanteenService service;
+        int canteen_id = service.getCanteenIdByUserId(user_id);
+        
+        if (canteen_id <= 0) {
+            res.status = 404;
+            res.set_content(Response::error(404, "食堂未找到"), "application/json");
+            return;
+        }
+        
+        // 获取今日财务数据
+        auto today_data = service.getTodayFinancialData(canteen_id);
+        
+        // 获取统计数据
+        auto stats_data = service.getFinancialData(canteen_id, time_dimension, stats_type);
+        
+        // 构建返回数据
+        json data;
+        data["today_income"] = today_data.getIncome();
+        data["today_expense"] = today_data.getExpense();
+        data["today_profit"] = today_data.getProfit();
+        data["labels"] = stats_data.getLabels();
+        data["values"] = stats_data.getValues();
+        
+        res.status = 200;
+        res.set_content(Response::success(data), "application/json");
+        
+    } catch (...) {
+        res.status = 500;
+        res.set_content(Response::error(500, "服务器错误"), "application/json");
     }
 }

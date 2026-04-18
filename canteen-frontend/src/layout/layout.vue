@@ -67,6 +67,10 @@
           日常采购
         </el-menu-item>
 
+        <el-menu-item v-if="isCanteenAdmin" index="/financialStatistics">
+          财务统计
+        </el-menu-item>
+
       </el-menu>
     </el-aside>
 

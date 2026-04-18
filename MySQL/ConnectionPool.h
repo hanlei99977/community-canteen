@@ -76,11 +76,13 @@ public:
     void commit() {
         conn->commit();
         committed = true;
+        conn->setAutoCommit(true);
     }
 
     ~TransactionGuard() {
         if (!committed) {
             conn->rollback();
+            conn->setAutoCommit(true);
         }
     }
 };

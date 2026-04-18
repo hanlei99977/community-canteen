@@ -1018,6 +1018,10 @@ bool CanteenDAO::updateCanteenStatus(int canteen_id, int status) {
         DBConnectionGuard guard;
         auto* conn = guard.get();
 
+        // 开始事务
+        TransactionGuard tx(conn);
+
+        // 更新餐厅状态
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "UPDATE canteen SET status = ? WHERE canteen_id = ?"
@@ -1030,6 +1034,32 @@ bool CanteenDAO::updateCanteenStatus(int canteen_id, int status) {
         if (affected_rows == 0) {
             return false;
         }
+
+        // 查询餐厅管理者 ID
+        auto manager_stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT user_id FROM canteen_manager WHERE canteen_id = ?"
+            )
+        );
+        manager_stmt->setInt(1, canteen_id);
+        auto manager_res = std::unique_ptr<sql::ResultSet>(manager_stmt->executeQuery());
+
+        if (manager_res->next()) {
+            int manager_id = manager_res->getInt("user_id");
+            
+            // 更新管理者账号状态
+            auto user_stmt = std::unique_ptr<sql::PreparedStatement>(
+                conn->prepareStatement(
+                    "UPDATE users SET status = ? WHERE user_id = ?"
+                )
+            );
+            user_stmt->setInt(1, status);
+            user_stmt->setInt(2, manager_id);
+            user_stmt->executeUpdate();
+        }
+
+        // 提交事务
+        tx.commit();
 
         return true;
     } catch (...) { return false; }

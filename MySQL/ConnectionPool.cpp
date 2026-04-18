@@ -12,7 +12,7 @@ ConnectionPool& ConnectionPool::getInstance()
 ConnectionPool::ConnectionPool()
 {
     driver = sql::mysql::get_mysql_driver_instance();
-    maxSize = 8;
+    maxSize = 16;
 
     initPool(maxSize);
 }

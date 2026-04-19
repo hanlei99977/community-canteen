@@ -137,6 +137,7 @@ public:
     std::vector<CanteenMenuVO> getMenuByCanteen(int canteen_id);
     bool updateMenu(const MenuCreateDTO& menu);
     int getMenuIdByCanteenAndMealType(int canteen_id, const std::string& meal_type);
+    bool isDishInMenu(int dish_id);
 };
 
 // ================================

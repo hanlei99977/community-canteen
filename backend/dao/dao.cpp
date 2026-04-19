@@ -1430,6 +1430,32 @@ int MenuDAO::getMenuIdByCanteenAndMealType(int canteen_id, const std::string& me
     return -1;
 }
 
+bool MenuDAO::isDishInMenu(int dish_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT COUNT(*) FROM menu_dish WHERE dish_id = ?"
+            )
+        );
+
+        stmt->setInt(1, dish_id);
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        if (res->next()) {
+            return res->getInt(1) > 0;
+        }
+
+        return false;
+    } catch (const std::exception& e) {
+        std::cerr << "检查菜品是否在餐单中失败: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 bool MenuDAO::updateMenu(const MenuCreateDTO& menu) {
     try {
         DBConnectionGuard guard;

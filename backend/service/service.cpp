@@ -622,7 +622,15 @@ bool DishService::insertDish(const Dish& dish) {
     return dao.insertDish(dish);
 }
 
-bool DishService::disableDishByDishId(int dish_id) {
+bool DishService::disableDishByDishId(const int dish_id) {
+    // 检查菜品是否在餐单中
+    MenuDAO menu_dao;
+    if (menu_dao.isDishInMenu(dish_id)) {
+        std::cout<< " 菜品在餐单中，不能下架" << std::endl;
+        return false; // 菜品在餐单中，不能下架
+    }
+    
+    std::cout<< " 菜品不在餐单中，可以下架" << std::endl;
     DishDAO dao;
     return dao.disableDishByDishId(dish_id);
 }

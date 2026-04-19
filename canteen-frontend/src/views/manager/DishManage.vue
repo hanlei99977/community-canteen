@@ -162,9 +162,13 @@ const submit = async () => {
 
 // ================= 下架 =================
 const disableDish = async (dish_id) => {
-  await axios.post('http://192.168.56.100:8080/dishDisable', { dish_id })
-  ElMessage.success("已下架")
-  getDishes()
+  const res = await axios.post('http://192.168.56.100:8080/dishDisable', { dish_id })
+  if (res.data.code === 0) {
+    ElMessage.success("已下架")
+    getDishes()
+  } else {
+    ElMessage.error("该菜品在餐单中，不能下架")
+  }
 }
 
 // ================= 上架 =================

@@ -498,7 +498,7 @@ void Controller::handleDisableDish(const httplib::Request& req, httplib::Respons
         int dish_id = getIntSafe(body, "dish_id");
 
         DishService service;
-
+        std::cout<< "下架菜品:"<< dish_id << std::endl;
         if (service.disableDishByDishId(dish_id)) {
             res.set_content(Response::success(), "application/json");
         } else {

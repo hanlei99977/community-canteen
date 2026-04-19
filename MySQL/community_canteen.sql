@@ -260,6 +260,27 @@ CREATE TABLE report (
 );
 
 -- ================================
+--  留言板
+-- ================================
+CREATE TABLE messageboard (
+    message_id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+
+    canteen_id INT NOT NULL COMMENT '食堂ID',
+    user_id INT NOT NULL COMMENT '留言用户ID',
+
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '留言时间',
+    reply_time DATETIME NULL COMMENT '回复时间',
+
+    content TEXT NOT NULL COMMENT '留言内容',
+    reply_content TEXT NULL COMMENT '回复内容',
+
+    status TINYINT DEFAULT 0 COMMENT '0待回复 1已回复',
+
+    FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- ================================
 --  索引优化
 -- ================================
 -- users
@@ -348,3 +369,8 @@ CREATE INDEX idx_report_time ON report(create_time);
 CREATE INDEX idx_region_parent ON region(parent_id);
 CREATE INDEX idx_region_level ON region(region_level);
 CREATE INDEX idx_region_name ON region(region_name);
+
+-- messageboard
+CREATE INDEX idx_msg_canteen ON messageboard(canteen_id);
+CREATE INDEX idx_msg_user ON messageboard(user_id);
+CREATE INDEX idx_msg_status ON messageboard(status);

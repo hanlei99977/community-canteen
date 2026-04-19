@@ -934,3 +934,38 @@ bool AnnouncementService::deleteAnnouncement(int announce_id, int publisher_id) 
     AnnouncementDAO dao;
     return dao.deleteAnnouncement(announce_id, publisher_id);
 }
+
+/**********************************************
+ * MessageService
+ *********************************************/
+bool MessageService::createMessage(const Message& message) {
+    if (message.getCanteenId() <= 0 || message.getUserId() <= 0 || message.getContent().empty()) {
+        return false;
+    }
+    MessageDAO dao;
+    return dao.insertMessage(message);
+}
+
+std::vector<Message> MessageService::getMessagesByCanteen(int canteen_id) {
+    if (canteen_id <= 0) {
+        return {};
+    }
+    MessageDAO dao;
+    return dao.getMessagesByCanteen(canteen_id);
+}
+
+std::vector<Message> MessageService::getMessagesByUser(int user_id, int canteen_id) {
+    if (user_id <= 0 || canteen_id <= 0) {
+        return {};
+    }
+    MessageDAO dao;
+    return dao.getMessagesByUser(user_id, canteen_id);
+}
+
+bool MessageService::replyMessage(const Message& message) {
+    if (message.getId() <= 0 || message.getReply().empty()) {
+        return false;
+    }
+    MessageDAO dao;
+    return dao.replyMessage(message);
+}

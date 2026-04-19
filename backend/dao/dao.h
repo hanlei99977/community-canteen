@@ -191,3 +191,14 @@ public:
     std::vector<AnnouncementVO> getAnnouncementList();
     bool deleteAnnouncement(int announce_id, int publisher_id);
 };
+
+// ================================
+// 留言板
+// ================================
+class MessageDAO {
+public:
+    bool insertMessage(const Message& message);
+    std::vector<Message> getMessagesByCanteen(int canteen_id);
+    std::vector<Message> getMessagesByUser(int user_id, int canteen_id);
+    bool replyMessage(const Message& message);
+};

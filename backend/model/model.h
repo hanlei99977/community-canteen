@@ -289,6 +289,46 @@ public:
     void setDishId(int id) { dish_id = id; }
 };
 
+// ================================
+// Message
+// ================================
+class Message {
+private:
+    int id;
+    int canteen_id;
+    std::string message_time;
+    std::string reply_time;
+    int user_id;
+    std::string content;
+    std::string reply;
+    int status;
+
+public:
+    int getId() const { return id; }
+    void setId(int i) { id = i; }
+
+    int getCanteenId() const { return canteen_id; }
+    void setCanteenId(int cid) { canteen_id = cid; }
+
+    std::string getMessageTime() const { return message_time; }
+    void setMessageTime(const std::string& mt) { message_time = mt; }
+
+    std::string getReplyTime() const { return reply_time; }
+    void setReplyTime(const std::string& rt) { reply_time = rt; }
+
+    int getUserId() const { return user_id; }
+    void setUserId(int uid) { user_id = uid; }
+
+    std::string getContent() const { return content; }
+    void setContent(const std::string& c) { content = c; }
+
+    std::string getReply() const { return reply; }
+    void setReply(const std::string& r) { reply = r; }
+
+    int getStatus() const { return status; }
+    void setStatus(int s) { status = s; }
+};
+
 // ================================// Order// ================================
 class Order {
 private:

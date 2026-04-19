@@ -68,4 +68,9 @@ private:
     static void handleCreatePurchase(const httplib::Request& req, httplib::Response& res);
     // 财务统计
     static void handleFinancialStatistics(const httplib::Request& req, httplib::Response& res);
+    // 留言板
+    static void handleCreateMessage(const httplib::Request& req, httplib::Response& res);
+    static void handleGetUserMessages(const httplib::Request& req, httplib::Response& res);
+    static void handleGetCanteenMessages(const httplib::Request& req, httplib::Response& res);
+    static void handleReplyMessage(const httplib::Request& req, httplib::Response& res);
 };

@@ -114,6 +114,11 @@ void Controller::registerCanteenRoutes(httplib::Server& server) {
     server.Post("/dishCreate", handleCreateDish);
     server.Post("/dishDisable", handleDisableDish);
     server.Post("/dishEnable", handleEnableDish);
+    // 留言板
+    server.Post("/messageCreate", handleCreateMessage);
+    server.Get("/userMessages", handleGetUserMessages);
+    server.Get("/canteenMessages", handleGetCanteenMessages);
+    server.Post("/messageReply", handleReplyMessage);
 
 }
 
@@ -1463,5 +1468,104 @@ void Controller::handleDiningPreference(const httplib::Request& req, httplib::Re
     } catch (...) {
         res.status = 500;
         res.set_content(Response::error(500, "服务器错误"), "application/json");
+    }
+}
+
+// ================================
+// 留言板相关
+// ================================
+void Controller::handleCreateMessage(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json body = json::parse(req.body);
+        Message message;
+        message.setCanteenId(getIntSafe(body, "canteen_id"));
+        message.setUserId(getIntSafe(body, "user_id"));
+        message.setContent(getStringSafe(body, "content"));
+
+        MessageService service;
+        bool success = service.createMessage(message);
+
+        if (success) {
+            res.set_content(Response::success({}), "application/json");
+        } else {
+            res.set_content(Response::error(400, "创建留言失败"), "application/json");
+        }
+    } catch (...) {
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+void Controller::handleGetUserMessages(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+
+        MessageService service;
+        auto messages = service.getMessagesByUser(user_id, canteen_id);
+
+        json arr = json::array();
+        for (const auto& msg : messages) {
+            arr.push_back({
+                {"id", msg.getId()},
+                {"canteen_id", msg.getCanteenId()},
+                {"message_time", msg.getMessageTime()},
+                {"reply_time", msg.getReplyTime()},
+                {"user_id", msg.getUserId()},
+                {"content", msg.getContent()},
+                {"reply", msg.getReply()},
+                {"status", msg.getStatus()}
+            });
+        }
+
+        res.set_content(Response::success(arr), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+void Controller::handleGetCanteenMessages(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+
+        MessageService service;
+        auto messages = service.getMessagesByCanteen(canteen_id);
+
+        json arr = json::array();
+        for (const auto& msg : messages) {
+            arr.push_back({
+                {"id", msg.getId()},
+                {"canteen_id", msg.getCanteenId()},
+                {"message_time", msg.getMessageTime()},
+                {"reply_time", msg.getReplyTime()},
+                {"user_id", msg.getUserId()},
+                {"content", msg.getContent()},
+                {"reply", msg.getReply()},
+                {"status", msg.getStatus()}
+            });
+        }
+
+        res.set_content(Response::success(arr), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+void Controller::handleReplyMessage(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json body = json::parse(req.body);
+        Message message;
+        message.setId(getIntSafe(body, "id"));
+        message.setReply(getStringSafe(body, "reply"));
+
+        MessageService service;
+        bool success = service.replyMessage(message);
+
+        if (success) {
+            res.set_content(Response::success({}), "application/json");
+        } else {
+            res.set_content(Response::error(400, "回复留言失败"), "application/json");
+        }
+    } catch (...) {
+        res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }

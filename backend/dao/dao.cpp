@@ -2163,15 +2163,119 @@ bool AnnouncementDAO::deleteAnnouncement(int announce_id, int publisher_id) {
         auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement(
-                "DELETE FROM announcement WHERE announce_id = ? AND publisher_id = ?"
-            )
+            conn->prepareStatement("DELETE FROM announcement WHERE announce_id = ? AND publisher_id = ?")
         );
 
         stmt->setInt(1, announce_id);
         stmt->setInt(2, publisher_id);
+
         return stmt->executeUpdate() > 0;
-    } catch (...) { return false; }
+    } catch (...) {
+        return false;
+    }
+}
+
+/***************************************************************************************
+ * MessageDAO
+ ***************************************************************************************/
+bool MessageDAO::insertMessage(const Message& message) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("INSERT INTO messageboard(canteen_id, message_time, user_id, content, status) VALUES (?, NOW(), ?, ?, 0)")
+        );
+
+        stmt->setInt(1, message.getCanteenId());
+        stmt->setInt(2, message.getUserId());
+        stmt->setString(3, message.getContent());
+
+        return stmt->executeUpdate() > 0;
+    } catch (...) {
+        return false;
+    }
+}
+
+std::vector<Message> MessageDAO::getMessagesByCanteen(int canteen_id) {
+    std::vector<Message> list;
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT * FROM messageboard WHERE canteen_id = ? ORDER BY status ASC, message_time DESC")
+        );
+
+        stmt->setInt(1, canteen_id);
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            Message msg;
+            msg.setId(res->getInt("id"));
+            msg.setCanteenId(res->getInt("canteen_id"));
+            msg.setMessageTime(res->getString("message_time"));
+            msg.setReplyTime(res->getString("reply_time"));
+            msg.setUserId(res->getInt("user_id"));
+            msg.setContent(res->getString("content"));
+            msg.setReply(res->getString("reply"));
+            msg.setStatus(res->getInt("status"));
+            list.push_back(msg);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
+std::vector<Message> MessageDAO::getMessagesByUser(int user_id, int canteen_id) {
+    std::vector<Message> list;
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT * FROM messageboard WHERE user_id = ? AND canteen_id = ? ORDER BY message_time DESC")
+        );
+
+        stmt->setInt(1, user_id);
+        stmt->setInt(2, canteen_id);
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            Message msg;
+            msg.setId(res->getInt("id"));
+            msg.setCanteenId(res->getInt("canteen_id"));
+            msg.setMessageTime(res->getString("message_time"));
+            msg.setReplyTime(res->getString("reply_time"));
+            msg.setUserId(res->getInt("user_id"));
+            msg.setContent(res->getString("content"));
+            msg.setReply(res->getString("reply"));
+            msg.setStatus(res->getInt("status"));
+            list.push_back(msg);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
+bool MessageDAO::replyMessage(const Message& message) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("UPDATE messageboard SET reply = ?, reply_time = NOW(), status = 1 WHERE id = ?")
+        );
+
+        stmt->setString(1, message.getReply());
+        stmt->setInt(2, message.getId());
+
+        return stmt->executeUpdate() > 0;
+    } catch (...) {
+        return false;
+    }
 }
 
 /***************************************************************************************

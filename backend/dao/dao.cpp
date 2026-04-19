@@ -1339,6 +1339,9 @@ std::vector<Dish> MenuDAO::getMenuByMealType(int canteen_id, const std::string& 
             d.setId(res->getInt("dish_id"));
             d.setName(res->getString("name"));
             d.setPrice(res->getDouble("price"));
+            d.setType(res->getString("type"));
+            d.setCalories(res->getDouble("calories"));
+            d.setNutritionInfo(res->getString("nutrition_info"));
             list.push_back(d);
         }
     } catch (...) {}

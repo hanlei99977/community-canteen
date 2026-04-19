@@ -67,7 +67,36 @@
         </template>
       </el-table-column>
 
+      <!-- ⭐ 营养信息 -->
+      <el-table-column label="营养信息" width="120">
+        <template #default="scope">
+          <el-button type="info" size="small" @click="showNutritionInfo(scope.row)">
+            营养信息
+          </el-button>
+        </template>
+      </el-table-column>
+
     </el-table>
+
+    <!-- ⭐ 营养信息弹窗 -->
+    <el-dialog v-model="nutritionDialogVisible" title="营养信息" width="400px">
+      <div v-if="selectedDish">
+        <el-form :model="selectedDish" label-width="80px">
+          <el-form-item label="菜品名称">
+            {{ selectedDish.name }}
+          </el-form-item>
+          <el-form-item label="类型">
+            {{ selectedDish.type }}
+          </el-form-item>
+          <el-form-item label="热量">
+            {{ selectedDish.calories }} 卡路里
+          </el-form-item>
+          <el-form-item label="营养信息">
+            {{ selectedDish.nutrition_info || '暂无营养信息' }}
+          </el-form-item>
+        </el-form>
+      </div>
+    </el-dialog>
 
   <!-- ⭐ 下单按钮 -->
     <el-button
@@ -93,6 +122,8 @@ const familyMembers = ref([])
 const selectedOrderForUserId = ref(0)
 const selectedUserAge = ref(0)
 const selectedMealType = ref('午餐')
+const nutritionDialogVisible = ref(false)
+const selectedDish = ref(null)
 const user = JSON.parse(localStorage.getItem('user'))
 
 // 计算折扣
@@ -145,6 +176,12 @@ const getUserAge = async (user_id) => {
 // 切换用餐者
 const handleOrderForUserChange = async (user_id) => {
   await getUserAge(user_id)
+}
+
+// 显示营养信息
+const showNutritionInfo = (dish) => {
+  selectedDish.value = dish
+  nutritionDialogVisible.value = true
 }
 
 // 获取菜单

@@ -333,9 +333,12 @@ void Controller::handleMenu(const httplib::Request& req, httplib::Response& res)
             arr.push_back({
                 {"id", d.getId()},
                 {"name", d.getName()},
-                {"price", d.getPrice()}
+                {"price", d.getPrice()},
+                {"type", d.getType()},
+                {"calories", d.getCalories()},
+                {"nutrition_info", d.getNutritionInfo()}
             });
-            std::cout << "菜单项：id=" << d.getId() << ", name=" << d.getName() << ", price=" << d.getPrice() << std::endl;
+            std::cout << "菜单项：id=" << d.getId() << ", name=" << d.getName() << ", price=" << d.getPrice() << ", type=" << d.getType() << ", calories=" << d.getCalories() << std::endl;
         }
 
         res.set_content(Response::success(arr), "application/json");

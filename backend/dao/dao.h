@@ -147,6 +147,8 @@ public:
     int insertOrder(sql::Connection *conn, const Order& order);
     std::vector<OrderVO> getOrdersByUser(int user_id);
     std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
+    // 获取最近订单
+    std::shared_ptr<RecentOrderVO> getRecentOrder(int user_id, int order_for_user_id, int canteen_id);
     // 用餐偏好相关方法
     DiningPreferenceSummary getDiningPreferenceSummary(int user_id, const std::string& time_dimension);
     std::vector<std::pair<std::string, int>> getCanteenConsumptionCount(int user_id, const std::string& time_dimension);

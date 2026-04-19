@@ -121,6 +121,8 @@ public:
     std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
     // 用餐偏好相关方法
     DiningPreference getDiningPreference(int user_id, const std::string& time_dimension);
+    // 获取最近订单
+    std::shared_ptr<RecentOrderVO> getRecentOrder(int user_id, int order_for_user_id, int canteen_id);
 
 private:
     static std::mutex userOrderMapMutex;

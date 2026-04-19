@@ -93,6 +93,7 @@ void Controller::registerUserRoutes(httplib::Server& server) {
 // 订单相关路由
 void Controller::registerOrderRoutes(httplib::Server& server) {
     server.Post("/placeOrder", handlePlaceOrder);
+    server.Get("/recentOrder", handleRecentOrder);
     server.Get("/orderTargets", handleOrderTargets);
     server.Get("/getOrders", handleGetOrders);
     server.Get("/order_details", handleOrderDetails);
@@ -655,6 +656,51 @@ void Controller::handleOrderDetails(const httplib::Request& req, httplib::Respon
         }
 
         res.set_content(Response::success(arr), "application/json");
+
+    } catch (...) {
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+void Controller::handleRecentOrder(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        std::cout << "最近订单请求参数：user_id=" << req.get_param_value("user_id") << ", order_for_user_id=" << req.get_param_value("order_for_user_id") << ", canteen_id=" << req.get_param_value("canteen_id") << std::endl;
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        int order_for_user_id = std::stoi(req.get_param_value("order_for_user_id"));
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+
+        OrderService service;
+        auto recent_order = service.getRecentOrder(user_id, order_for_user_id, canteen_id);
+
+        if (recent_order) {
+            json order_json;
+            order_json["order_id"] = recent_order->getOrderId();
+            order_json["canteen_id"] = recent_order->getCanteenId();
+            order_json["canteen_name"] = recent_order->getCanteenName();
+            order_json["order_time"] = recent_order->getOrderTime();
+            order_json["total_price"] = recent_order->getTotalPrice();
+            order_json["discount_rate"] = recent_order->getDiscountRate();
+            order_json["original_total"] = recent_order->getOriginalTotal();
+            order_json["saved_amount"] = recent_order->getSavedAmount();
+            
+            json items = json::array();
+            for (const auto& item : recent_order->getItems()) {
+                json item_json;
+                item_json["dish_id"] = item.getDishId();
+                item_json["dish_name"] = item.getDishName();
+                item_json["quantity"] = item.getQuantity();
+                item_json["unit_price"] = item.getUnitPrice();
+                item_json["discount_price"] = item.getDiscountPrice();
+                item_json["subtotal"] = item.getSubtotal();
+                items.push_back(item_json);
+            }
+            order_json["items"] = items;
+            
+            res.set_content(Response::success(order_json), "application/json");
+        } else {
+            res.set_content(Response::success(nullptr), "application/json");
+        }
 
     } catch (...) {
         res.set_content(Response::error(400, "参数错误"), "application/json");

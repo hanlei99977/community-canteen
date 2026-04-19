@@ -208,6 +208,82 @@ public:
 
 };
 
+// 最近订单菜品VO
+class RecentOrderItemVO {
+private:
+    int dish_id;
+    std::string dish_name;
+    int quantity;
+    double unit_price;
+    double discount_price;
+    double subtotal;
+
+public:
+    RecentOrderItemVO() = default;
+
+    int getDishId() const { return dish_id; }
+    void setDishId(int id) { dish_id = id; }
+
+    std::string getDishName() const { return dish_name; }
+    void setDishName(const std::string& name) { dish_name = name; }
+
+    int getQuantity() const { return quantity; }
+    void setQuantity(int q) { quantity = q; }
+
+    double getUnitPrice() const { return unit_price; }
+    void setUnitPrice(double price) { unit_price = price; }
+
+    double getDiscountPrice() const { return discount_price; }
+    void setDiscountPrice(double price) { discount_price = price; }
+
+    double getSubtotal() const { return subtotal; }
+    void setSubtotal(double total) { subtotal = total; }
+};
+
+// 最近订单VO
+class RecentOrderVO {
+private:
+    int order_id;
+    int canteen_id;
+    std::string canteen_name;
+    std::string order_time;
+    double total_price;
+    double discount_rate;
+    double original_total;
+    double saved_amount;
+    std::vector<RecentOrderItemVO> items;
+
+public:
+    RecentOrderVO() = default;
+
+    int getOrderId() const { return order_id; }
+    void setOrderId(int id) { order_id = id; }
+
+    int getCanteenId() const { return canteen_id; }
+    void setCanteenId(int id) { canteen_id = id; }
+
+    std::string getCanteenName() const { return canteen_name; }
+    void setCanteenName(const std::string& name) { canteen_name = name; }
+
+    std::string getOrderTime() const { return order_time; }
+    void setOrderTime(const std::string& time) { order_time = time; }
+
+    double getTotalPrice() const { return total_price; }
+    void setTotalPrice(double price) { total_price = price; }
+
+    double getDiscountRate() const { return discount_rate; }
+    void setDiscountRate(double rate) { discount_rate = rate; }
+
+    double getOriginalTotal() const { return original_total; }
+    void setOriginalTotal(double total) { original_total = total; }
+
+    double getSavedAmount() const { return saved_amount; }
+    void setSavedAmount(double amount) { saved_amount = amount; }
+
+    std::vector<RecentOrderItemVO> getItems() const { return items; }
+    void addItem(const RecentOrderItemVO& item) { items.push_back(item); }
+};
+
 //Diner个人中心VO
 class DinerCenterVO {
 private:

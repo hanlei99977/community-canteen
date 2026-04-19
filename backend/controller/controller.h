@@ -32,6 +32,7 @@ private:
     static void handleOrderTargets(const httplib::Request& req, httplib::Response& res);
     static void handleGetOrders(const httplib::Request& req, httplib::Response& res);
     static void handleOrderDetails(const httplib::Request& req, httplib::Response& res);
+    static void handleRecentOrder(const httplib::Request& req, httplib::Response& res);
 
     static void handleRating(const httplib::Request& req, httplib::Response& res);
     static void handleReport(const httplib::Request& req, httplib::Response& res);

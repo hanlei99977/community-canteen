@@ -35,6 +35,47 @@
       </el-form-item>
     </el-form>
 
+    <!-- 最近订单信息 -->
+    <div v-if="showRecentOrder" style="margin-bottom: 20px; padding: 15px; border: 1px solid #e4e7ed; border-radius: 4px; background-color: #f9f9f9;">
+      <h3 style="margin-top: 0; margin-bottom: 10px;">最近订单</h3>
+      <div v-if="recentOrderItems.length > 0">
+        <div style="margin-bottom: 10px;">
+          <span>订单时间：{{ recentOrder.order_time }}</span>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <span>菜品：</span>
+          <span v-for="(item, index) in recentOrderItems" :key="index">
+            {{ item.dish_name }} × {{ item.quantity }}
+            <span v-if="index < recentOrderItems.length - 1">，</span>
+          </span>
+        </div>
+      </div>
+      <div v-else>
+        暂无最近的订单信息
+      </div>
+    </div>
+    <div v-else style="margin-bottom: 20px; padding: 15px; border: 1px solid #e4e7ed; border-radius: 4px; background-color: #f9f9f9;">
+      暂无最近的订单信息
+    </div>
+
+    <!-- 已选菜品 -->
+    <div v-if="showRecentOrder && recentOrderItems.length > 0" style="margin-bottom: 20px; padding: 15px; border: 1px solid #e4e7ed; border-radius: 4px; background-color: #f9f9f9;">
+      <h3 style="margin-top: 0; margin-bottom: 10px;">已选菜品</h3>
+      <div v-if="selectedDishes.length > 0">
+        <div style="margin-bottom: 10px;">
+          <span>菜品：</span>
+          <span v-for="(item, index) in selectedDishes" :key="index">
+            {{ item.dish_name }} × {{ item.quantity }}
+            <span v-if="index < selectedDishes.length - 1">，</span>
+          </span>
+        </div>
+       <el-button type="primary" @click="reorder">再次点单</el-button>
+      </div>
+      <div v-else>
+        暂无已选菜品
+      </div>
+    </div>
+
     <div v-if="dishes.length === 0" style="text-align: center; padding: 20px; color: #999;">
       该餐暂无菜品
     </div>
@@ -126,6 +167,14 @@ const nutritionDialogVisible = ref(false)
 const selectedDish = ref(null)
 const user = JSON.parse(localStorage.getItem('user'))
 
+// 最近订单
+const recentOrder = ref(null)
+const recentOrderItems = ref([])
+const showRecentOrder = ref(false)
+const outOfStockDishes = ref([])
+// 已选菜品
+const selectedDishes = ref([])
+
 // 计算折扣
 const discount = computed(() => {
   const age = selectedUserAge.value
@@ -176,6 +225,116 @@ const getUserAge = async (user_id) => {
 // 切换用餐者
 const handleOrderForUserChange = async (user_id) => {
   await getUserAge(user_id)
+  await getRecentOrder()
+}
+
+// 获取最近订单信息
+const getRecentOrder = async () => {
+  const canteen_id = Number(route.query.canteen_id)
+  const order_for_user_id = Number(selectedOrderForUserId.value || user.user_id)
+  
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/recentOrder', {
+      params: {
+        user_id: user.user_id,
+        order_for_user_id: order_for_user_id,
+        canteen_id: canteen_id
+      }
+    })
+    
+    if (res.data.code === 0 && res.data.data) {
+      recentOrder.value = res.data.data
+      recentOrderItems.value = res.data.data.items || []
+      showRecentOrder.value = true
+      
+      // 检查菜品状态
+      await checkDishesStatus()
+    } else {
+      showRecentOrder.value = false
+      recentOrder.value = null
+      recentOrderItems.value = []
+      outOfStockDishes.value = []
+    }
+  } catch (error) {
+    console.error('获取最近订单失败:', error)
+    showRecentOrder.value = false
+    recentOrder.value = null
+    recentOrderItems.value = []
+    outOfStockDishes.value = []
+  }
+}
+
+// 检查菜品状态
+const checkDishesStatus = async () => {
+  outOfStockDishes.value = []
+  selectedDishes.value = []
+  
+  try {
+    // 获取当前餐单中的菜品ID集合
+    const availableDishIds = new Set(dishes.value.map(dish => dish.id))
+    
+    // 检查最近订单中的菜品是否在当前餐单中
+    for (const item of recentOrderItems.value) {
+      if (!availableDishIds.has(item.dish_id)) {
+        // 查找菜品名称
+        const dish = recentOrderItems.value.find(d => d.dish_id === item.dish_id)
+        if (dish) {
+          outOfStockDishes.value.push(dish.dish_name)
+        }
+      } else {
+        // 餐单中存在的菜品，添加到已选菜品
+        selectedDishes.value.push(item)
+      }
+    }
+    
+    // 如果有餐单中没有的菜品，显示提示
+    if (outOfStockDishes.value.length > 0) {
+      ElMessage.warning(`${outOfStockDishes.value.join('、')} 餐单中没有，已自动移除`)
+    }
+  } catch (error) {
+    console.error('检查菜品状态失败:', error)
+  }
+}
+
+// 再次点单
+const reorder = async () => {
+  if (!recentOrder.value) return
+  
+  const canteen_id = route.query.canteen_id
+  
+  // 过滤掉餐单中没有的菜品
+  const availableDishes = new Set(dishes.value.map(dish => dish.id))
+  const items = recentOrderItems.value
+    .filter(item => availableDishes.has(item.dish_id))
+    .map(item => ({
+      dish_id: item.dish_id,
+      quantity: item.quantity
+    }))
+  
+  if (items.length === 0) {
+    ElMessage.warning('最近订单中的菜品在当前餐单中都不存在')
+    return
+  }
+  
+  try {
+    const res = await axios.post(
+      'http://192.168.56.100:8080/placeOrder',
+      {
+        user_id: user.user_id,
+        order_for_user_id: Number(selectedOrderForUserId.value || user.user_id),
+        canteen_id: Number(canteen_id),
+        items: items
+      }
+    )
+    
+    if (res.data.code === 0) {
+      ElMessage.success('下单成功 🎉')
+    } else {
+      ElMessage.error(res.data.message || '下单失败')
+    }
+  } catch (error) {
+    ElMessage.error('请求失败')
+  }
 }
 
 // 显示营养信息
@@ -229,6 +388,9 @@ onMounted(async () => {
 
   // 获取菜单
   await getMenu()
+  
+  // 获取最近订单
+  await getRecentOrder()
 })
 
 // ⭐ 提交订单

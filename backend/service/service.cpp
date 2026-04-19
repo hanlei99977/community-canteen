@@ -854,6 +854,16 @@ DiningPreference OrderService::getDiningPreference(int user_id, const std::strin
     return preference;
 }
 
+std::shared_ptr<RecentOrderVO> OrderService::getRecentOrder(int user_id, int order_for_user_id, int canteen_id) {
+    try {
+        OrderDAO dao;
+        return dao.getRecentOrder(user_id, order_for_user_id, canteen_id);
+    } catch (const std::exception& e) {
+        std::cerr << "获取最近订单失败: " << e.what() << std::endl;
+        return nullptr;
+    }
+}
+
 /**********************************************
  * RatingService
  *********************************************/

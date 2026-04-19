@@ -133,10 +133,10 @@ public:
 // ================================
 class MenuDAO {
 public:
-    std::vector<Dish> getMenuByDate(int canteen_id, const std::string& date);
+    std::vector<Dish> getMenuByMealType(int canteen_id, const std::string& meal_type);
     std::vector<CanteenMenuVO> getMenuByCanteen(int canteen_id);
-    bool insertMenu(const MenuCreateDTO& menu);
-    bool eraseMenu(const int menu_id);
+    bool updateMenu(const MenuCreateDTO& menu);
+    int getMenuIdByCanteenAndMealType(int canteen_id, const std::string& meal_type);
 };
 
 // ================================

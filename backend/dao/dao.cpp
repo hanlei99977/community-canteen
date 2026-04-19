@@ -984,9 +984,25 @@ int CanteenDAO::insertCanteen(sql::Connection *conn, const std::string& canteen_
         std::unique_ptr<sql::ResultSet> rs(
             cstmt->executeQuery("SELECT LAST_INSERT_ID()")
         );
+        int canteen_id = -1;
         if (rs->next()) {
-            return rs->getInt(1);
+            canteen_id = rs->getInt(1);
         }
+
+        // 插入早午晚三餐餐单
+        auto menu_stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO daily_menu(canteen_id, meal_type) VALUES (?, ?)"
+            )
+        );
+        std::vector<std::string> meal_types = {"早餐", "午餐", "晚餐"};
+        for (const auto& meal_type : meal_types) {
+            menu_stmt->setInt(1, canteen_id);
+            menu_stmt->setString(2, meal_type);
+            menu_stmt->executeUpdate();
+        }
+
+        return canteen_id;
     } catch (...) {}
     return -1;
 }
@@ -1297,7 +1313,7 @@ bool DishDAO::enableDishByDishId(const int dish_id){
 /***************************************************************************************
  * MenuDao
  ***************************************************************************************/
-std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date) {
+std::vector<Dish> MenuDAO::getMenuByMealType(int canteen_id, const std::string& meal_type) {
     std::vector<Dish> list;
 
     try {
@@ -1309,12 +1325,12 @@ std::vector<Dish> MenuDAO::getMenuByDate(int canteen_id, const std::string& date
                 "SELECT d.* FROM daily_menu m "
                 "JOIN menu_dish md ON m.menu_id = md.menu_id "
                 "JOIN dish d ON md.dish_id = d.dish_id "
-                "WHERE m.canteen_id=? AND m.date=?"
+                "WHERE m.canteen_id=? AND m.meal_type=?"
             )
         );
 
         stmt->setInt(1, canteen_id);
-        stmt->setString(2, date);
+        stmt->setString(2, meal_type);
 
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
 
@@ -1338,12 +1354,12 @@ std::vector<CanteenMenuVO> MenuDAO::getMenuByCanteen(int canteen_id) {
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "SELECT m.menu_id, m.date, m.meal_type, d.dish_id, d.name, d.price "
+                "SELECT m.menu_id, m.meal_type, d.dish_id, d.name, d.price "
                 "FROM daily_menu m "
-                "JOIN menu_dish md ON m.menu_id = md.menu_id "
-                "JOIN dish d ON md.dish_id = d.dish_id "
+                "LEFT JOIN menu_dish md ON m.menu_id = md.menu_id "
+                "LEFT JOIN dish d ON md.dish_id = d.dish_id "
                 "WHERE m.canteen_id = ? "
-                "ORDER BY m.date DESC"
+                "ORDER BY m.meal_type"
             )
         );
 
@@ -1358,17 +1374,18 @@ std::vector<CanteenMenuVO> MenuDAO::getMenuByCanteen(int canteen_id) {
             if (menuMap.find(menu_id) == menuMap.end()) {
                 CanteenMenuVO menu;
                 menu.setMenuId(menu_id);
-                menu.setDate(res->getString("date"));
                 menu.setType(res->getString("meal_type"));
                 menuMap[menu_id] = menu;
             }
 
-            Dish dish;
-            dish.setId(res->getInt("dish_id"));
-            dish.setName(res->getString("name"));
-            dish.setPrice(res->getDouble("price"));
+            if (!res->isNull("dish_id")) {
+                Dish dish;
+                dish.setId(res->getInt("dish_id"));
+                dish.setName(res->getString("name"));
+                dish.setPrice(res->getDouble("price"));
 
-            menuMap[menu_id].addDish(dish);
+                menuMap[menu_id].addDish(dish);
+            }
         }
 
         // 转 vector
@@ -1384,40 +1401,55 @@ std::vector<CanteenMenuVO> MenuDAO::getMenuByCanteen(int canteen_id) {
 }
 
 
-bool MenuDAO::insertMenu(const MenuCreateDTO& menu) {
+int MenuDAO::getMenuIdByCanteenAndMealType(int canteen_id, const std::string& meal_type) {
     try {
         DBConnectionGuard guard;
         auto* conn = guard.get();
 
-        TransactionGuard tx(conn);
-        // 1️⃣ 插入 daily_menu 表
-        auto stmt1 = std::unique_ptr<sql::PreparedStatement>(
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "INSERT INTO daily_menu(canteen_id, date, meal_type) "
-                "VALUES (?, ?, ?)"
+                "SELECT menu_id FROM daily_menu WHERE canteen_id = ? AND meal_type = ?"
             )
         );
 
-        stmt1->setInt(1, menu.getCanteenId());
-        stmt1->setString(2, menu.getDate());
-        stmt1->setString(3, menu.getMealType());
+        stmt->setInt(1, canteen_id);
+        stmt->setString(2, meal_type);
 
-        if (stmt1->executeUpdate() == 0) {
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        if (res->next()) {
+            return res->getInt("menu_id");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "获取餐单 ID 失败: " << e.what() << std::endl;
+    }
+
+    return -1;
+}
+
+bool MenuDAO::updateMenu(const MenuCreateDTO& menu) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        // 获取餐单 ID
+        int menu_id = getMenuIdByCanteenAndMealType(menu.getCanteenId(), menu.getMealType());
+        if (menu_id == -1) {
             return false;
         }
 
-        // 获取自增ID
-        std::unique_ptr<sql::Statement> cstmt(conn->createStatement());
-        std::unique_ptr<sql::ResultSet> rs(
-            cstmt->executeQuery("SELECT LAST_INSERT_ID()")
+        TransactionGuard tx(conn);
+        // 1️⃣ 删除 menu_dish 表中的旧数据
+        auto stmt1 = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "DELETE FROM menu_dish WHERE menu_id = ?"
+            )
         );
 
-        int menu_id = -1;
-        if (rs->next()) {
-            menu_id = rs->getInt(1);
-        }
+        stmt1->setInt(1, menu_id);
+        stmt1->executeUpdate();
 
-        // 2️⃣ 插入 menu_dish 表
+        // 2️⃣ 插入新的菜品
         for (int dish_id : menu.getDishIds()) {
             auto stmt2 = std::unique_ptr<sql::PreparedStatement>(
                 conn->prepareStatement(
@@ -1436,47 +1468,9 @@ bool MenuDAO::insertMenu(const MenuCreateDTO& menu) {
         tx.commit();
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "插入每日餐单失败: " << e.what() << std::endl;
+        std::cerr << "更新餐单失败: " << e.what() << std::endl;
         return false;
     }
-}
-
-bool MenuDAO::eraseMenu(const int menu_id){
-    try {
-        DBConnectionGuard guard;
-        auto conn = guard.get();
-        TransactionGuard tx(conn);
-        //menu_dish
-        auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement(
-                "DELETE FROM menu_dish "
-                "WHERE menu_id=? "
-            )
-        );
-
-        stmt->setInt(1, menu_id);
-
-        if (stmt->executeUpdate() == 0) {
-            return false;
-        }
-
-        //daily_menu
-        stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement(
-                "DELETE FROM daily_menu "
-                "WHERE menu_id=? "
-            )
-        );
-
-        stmt->setInt(1, menu_id);
-
-        if (stmt->executeUpdate() == 0) {
-            return false;
-        }
-        
-        tx.commit();
-        return true;
-    } catch (...) { return false; }
 }
 /***************************************************************************************
  * OrderDao

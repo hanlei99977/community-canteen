@@ -1,16 +1,14 @@
 <template>
   <div>
 
-    <!-- 标题 + 新建 -->
-    <div style="display:flex;justify-content: space-between;align-items: center;margin-bottom: 20px;">
+    <!-- 标题 -->
+    <div style="margin-bottom: 20px;">
       <h2>每日餐单管理</h2>
-      <el-button type="primary" @click="openDialog">新建</el-button>
     </div>
 
     <!-- ================= 餐单列表 ================= -->
     <el-table :data="menuList" border>
 
-      <el-table-column prop="date" label="日期" width="120"/>
       <el-table-column prop="meal_type" label="餐别" width="100"/>
 
       <el-table-column label="餐单菜品">        <template #default="scope">
@@ -19,35 +17,28 @@
               {{ d.name }}（{{ d.price }}元）、
             </span>
           </span>
-          <span v-else>暂无菜品</span>
+          <span v-else>该餐暂无菜品</span>
         </template>
       </el-table-column>
 
       <el-table-column label="操作" width="120">
         <template #default="scope">
-          <el-button type="danger" size="small" @click="deleteMenu(scope.row.menu_id)">
-            删除
+          <el-button type="primary" size="small" @click="openDialog(scope.row)">
+            修改
           </el-button>
         </template>
       </el-table-column>
 
     </el-table>
 
-    <!-- ================= 新建弹窗 ================= -->
-    <el-dialog v-model="dialogVisible" title="新建餐单" width="500px">
+    <!-- ================= 修改弹窗 ================= -->
+    <el-dialog v-model="dialogVisible" title="修改餐单" width="500px">
 
       <el-form>
 
-        <el-form-item label="日期">
-          <el-date-picker
-            v-model="form.date"
-            type="date"
-            value-format="YYYY-MM-DD"
-          />
-        </el-form-item>
-
         <el-form-item label="餐别">
-          <el-select v-model="form.meal_type">
+          <el-select v-model="form.meal_type" disabled>
+            <el-option label="早餐" value="早餐"/>
             <el-option label="午餐" value="午餐"/>
             <el-option label="晚餐" value="晚餐"/>
           </el-select>
@@ -102,7 +93,6 @@ const dialogVisible = ref(false)
 // 表单
 const form = ref({
   canteen_id: '',
-  date: '',
   meal_type: '',
   dish_ids: []
 })
@@ -132,16 +122,15 @@ const getDishes = async () => {
 }
 
 // ================= 打开弹窗 =================
-const openDialog = () => {
+const openDialog = (menu) => {
   const user = getUser()
 
   dialogVisible.value = true
 
   form.value = {
     canteen_id: user.canteen_id,
-    date: '',
-    meal_type: '',
-    dish_ids: []
+    meal_type: menu.meal_type,
+    dish_ids: menu.dishes ? menu.dishes.map(d => d.dish_id) : []
   }
 }
 
@@ -151,7 +140,7 @@ const submit = async () => {
   // 防止 null
   form.value.dish_ids = form.value.dish_ids.filter(id => id != null)
 
-  if (!form.value.date || !form.value.meal_type || form.value.dish_ids.length === 0) {
+  if (!form.value.meal_type || form.value.dish_ids.length === 0) {
     ElMessage.warning("请填写完整信息")
     return
   }
@@ -176,24 +165,17 @@ const submit = async () => {
   }
 
   const res = await axios.post(
-    'http://192.168.56.100:8080/menuCreate',
+    'http://192.168.56.100:8080/menuUpdate',
     form.value
   )
 
   if (res.data.code === 0) {
-    ElMessage.success("创建成功")
+    ElMessage.success("更新成功")
     dialogVisible.value = false
     getMenus()
   } else {
-    ElMessage.error(res.data.msg || "创建失败")
+    ElMessage.error(res.data.msg || "更新失败")
   }
-}
-
-// ================= 删除 =================
-const deleteMenu = async (menu_id) => {
-  await axios.post('http://192.168.56.100:8080/menuDelete', { menu_id })
-  ElMessage.success("删除成功")
-  getMenus()
 }
 
 // 初始化

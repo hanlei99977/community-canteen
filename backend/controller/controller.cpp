@@ -108,8 +108,7 @@ void Controller::registerCanteenRoutes(httplib::Server& server) {
     // 餐单
     server.Get("/menu", handleMenu);
     server.Get("/getMenus", handleGetCanteenMenus);
-    server.Post("/menuCreate", handleCreateMenu);
-    server.Post("/menuDelete", handleDeleteMenu);
+    server.Post("/menuUpdate", handleUpdateMenu);
     //菜品
     server.Get("/getDishes", handleGetDishes);
     server.Post("/dishCreate", handleCreateDish);
@@ -323,10 +322,10 @@ void Controller::handleMenu(const httplib::Request& req, httplib::Response& res)
 {
  try {
         int canteen_id = std::stoi(req.get_param_value("canteen_id"));
-        std::string date = req.get_param_value("date");
-        std::cout << "请求菜单参数：canteen_id=" << canteen_id << ", date=" << date << std::endl;
+        std::string meal_type = req.get_param_value("meal_type");
+        std::cout << "请求菜单参数：canteen_id=" << canteen_id << ", meal_type=" << meal_type << std::endl;
         MenuService service;
-        auto dishes = service.getTodayMenu(canteen_id, date);
+        auto dishes = service.getMenuByMealType(canteen_id, meal_type);
 
         json arr = json::array();
 
@@ -374,7 +373,6 @@ void Controller::handleGetCanteenMenus(const httplib::Request& req, httplib::Res
             // ⭐ 一个菜单
             arr.push_back({
                 {"menu_id", m.getMenuId()},
-                {"date", m.getDate()},
                 {"meal_type", m.getType()},
                 {"dishes", dishes}
             });
@@ -390,17 +388,16 @@ void Controller::handleGetCanteenMenus(const httplib::Request& req, httplib::Res
     }
 }
 
-void Controller::handleCreateMenu(const httplib::Request& req, httplib::Response& res)
+void Controller::handleUpdateMenu(const httplib::Request& req, httplib::Response& res)
 {
     std::cout<< " json内容是 " << req.body<<std::endl;
     try {
         json body = json::parse(req.body);
         MenuCreateDTO dto;
         dto.setCanteenId(getIntSafe(body, "canteen_id"));
-        dto.setDate(getStringSafe(body, "date"));
         dto.setMealType(getStringSafe(body, "meal_type"));
 
-        std::cout<<" 餐厅 " << dto.getCanteenId() << " 新建每日餐单 "<<std::endl;
+        std::cout<<" 餐厅 " << dto.getCanteenId() << " 更新餐单 "<<std::endl;
 
        std::vector<int> dish_ids;
         for (const auto& id : body["dish_ids"]) {
@@ -410,35 +407,14 @@ void Controller::handleCreateMenu(const httplib::Request& req, httplib::Response
 
         MenuService service;
 
-        if (service.insertMenu(dto)) {
+        if (service.updateMenu(dto)) {
             res.set_content(Response::success(), "application/json");
         } else {
-            res.set_content(Response::error(500, "创建菜单失败"), "application/json");
+            res.set_content(Response::error(500, "更新菜单失败"), "application/json");
         }
 
     } catch (const std::exception& e) {
-        std::cerr << "新建餐单失败: " << e.what() << std::endl;
-        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
-    }
-}
-
-void Controller::handleDeleteMenu(const httplib::Request& req, httplib::Response& res)
-{
-    std::cout<< " json内容是 " << req.body<<std::endl;
-    try {
-        json body = json::parse(req.body);
-        int menu_id = getIntSafe(body, "menu_id");
-
-        MenuService service;
-
-        if (service.eraseMenu(menu_id)) {
-            res.set_content(Response::success(), "application/json");
-        } else {
-            res.set_content(Response::error(500, "删除餐单失败"), "application/json");
-        }
-
-    } catch (const std::exception& e) {
-        std::cerr << "删除餐单失败: " << e.what() << std::endl;
+        std::cerr << "更新餐单失败: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }

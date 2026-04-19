@@ -3,6 +3,18 @@
     <h2>菜单列表</h2>
 
     <el-form inline style="margin-bottom: 16px">
+      <el-form-item label="餐别">
+        <el-select
+          v-model="selectedMealType"
+          placeholder="请选择餐别"
+          style="width: 120px"
+          @change="getMenu"
+        >
+          <el-option label="早餐" value="早餐"/>
+          <el-option label="午餐" value="午餐"/>
+          <el-option label="晚餐" value="晚餐"/>
+        </el-select>
+      </el-form-item>
       <el-form-item label="为谁点餐">
         <el-select
           v-model="selectedOrderForUserId"
@@ -23,7 +35,11 @@
       </el-form-item>
     </el-form>
 
-    <el-table :data="dishes" style="width: 100%">
+    <div v-if="dishes.length === 0" style="text-align: center; padding: 20px; color: #999;">
+      该餐暂无菜品
+    </div>
+
+    <el-table v-else :data="dishes" style="width: 100%">
       <el-table-column prop="id" label="ID" width="100" />
       <el-table-column prop="name" label="菜品名称" />
       <el-table-column label="价格" width="180">
@@ -76,6 +92,7 @@ const dishes = ref([])
 const familyMembers = ref([])
 const selectedOrderForUserId = ref(0)
 const selectedUserAge = ref(0)
+const selectedMealType = ref('午餐')
 const user = JSON.parse(localStorage.getItem('user'))
 
 // 计算折扣
@@ -131,22 +148,32 @@ const handleOrderForUserChange = async (user_id) => {
 }
 
 // 获取菜单
+const getMenu = async () => {
+  const canteen_id = Number(route.query.canteen_id)
+
+  const res = await axios.get('http://192.168.56.100:8080/menu', {
+    params: {
+      canteen_id: canteen_id,
+      meal_type: selectedMealType.value
+    }
+  })
+
+  // 初始化 quantity
+  dishes.value = res.data.data.map(d => ({
+    ...d,
+    quantity: 0
+  }))
+}
+
+// 初始化
 onMounted(async () => {
   const canteen_id = Number(route.query.canteen_id)
 
-  const [menuRes, orderTargetRes] = await Promise.all([
-    axios.get('http://192.168.56.100:8080/menu', {
-      params: {
-        canteen_id: canteen_id,
-        date: getToday()
-      }
-    }),
-    axios.get('http://192.168.56.100:8080/orderTargets', {
-      params: {
-        user_id: user.user_id
-      }
-    })
-  ])
+  const orderTargetRes = await axios.get('http://192.168.56.100:8080/orderTargets', {
+    params: {
+      user_id: user.user_id
+    }
+  })
 
   if (orderTargetRes.data.code === 0) {
     familyMembers.value = orderTargetRes.data.data
@@ -163,22 +190,10 @@ onMounted(async () => {
     await getUserAge(user.user_id)
   }
 
-  // 初始化 quantity
-  dishes.value = menuRes.data.data.map(d => ({
-    ...d,
-    quantity: 0
-  }))
+  // 获取菜单
+  await getMenu()
 })
 
-const getToday = () => {
-  const now = new Date()
-
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
 // ⭐ 提交订单
 const submitOrder = async () => {
   const canteen_id = route.query.canteen_id

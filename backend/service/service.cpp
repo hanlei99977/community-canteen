@@ -594,9 +594,9 @@ FinancialData CanteenService::getFinancialData(int canteen_id, const std::string
 /**********************************************
  * MenuService
  *********************************************/
-std::vector<Dish> MenuService::getTodayMenu(int canteen_id, const std::string& date) {
+std::vector<Dish> MenuService::getMenuByMealType(int canteen_id, const std::string& meal_type) {
     MenuDAO dao;
-    return dao.getMenuByDate(canteen_id, date);
+    return dao.getMenuByMealType(canteen_id, meal_type);
 }
 
 std::vector<CanteenMenuVO> MenuService::getMenuByCanteen(int canteen_id) {
@@ -604,15 +604,9 @@ std::vector<CanteenMenuVO> MenuService::getMenuByCanteen(int canteen_id) {
     return dao.getMenuByCanteen(canteen_id);
 }
 
-bool MenuService::insertMenu(const MenuCreateDTO& menu) {
+bool MenuService::updateMenu(const MenuCreateDTO& menu) {
     MenuDAO dao;
-    return dao.insertMenu(menu);
-}
-
-bool MenuService::eraseMenu(const int menu_id)
-{
-    MenuDAO dao;
-    return dao.eraseMenu(menu_id);
+    return dao.updateMenu(menu);
 }
 
 /**********************************************

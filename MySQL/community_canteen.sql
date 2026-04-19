@@ -159,7 +159,6 @@ CREATE TABLE dish (
 CREATE TABLE daily_menu (
     menu_id INT PRIMARY KEY AUTO_INCREMENT,
     canteen_id INT,
-    date DATE,
     meal_type VARCHAR(10),  -- 早餐 / 午餐 / 晚餐
     FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
 );

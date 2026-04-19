@@ -98,6 +98,9 @@ void Controller::registerOrderRoutes(httplib::Server& server) {
     server.Get("/getOrders", handleGetOrders);
     server.Get("/order_details", handleOrderDetails);
     server.Post("/rating", handleRating);
+    // 食堂订单相关
+    server.Get("/canteenOrders", handleCanteenOrders);
+    server.Post("/updateOrderStatus", handleUpdateOrderStatus);
     server.Post("/report", handleReport);
     // 用餐偏好
     server.Get("/diningPreference", handleDiningPreference);
@@ -613,6 +616,7 @@ void Controller::handleGetOrders(const httplib::Request& req, httplib::Response&
                 {"discount_rate", o.getDiscountRate()},
                 {"original_total", o.getOriginalTotal()},
                 {"saved_amount", o.getSavedAmount()},
+                {"status", o.getStatus()},
                 {"create_time", o.getCreateTime()},
                 {"has_rating", o.getHasRating()},
                 {"rating_score", o.getRatingScore()},
@@ -1232,7 +1236,8 @@ void Controller::handleMyCanteen(const httplib::Request& req, httplib::Response&
             res.set_content(Response::error(401, "未登录"), "application/json");
             return;
         }
-
+        std::cout<< " user_id 是 " << user_id<<std::endl;
+            
         CanteenService canteenService;
         // 获取食堂 ID
         int canteen_id = canteenService.getCanteenIdByUserId(user_id);
@@ -1240,6 +1245,7 @@ void Controller::handleMyCanteen(const httplib::Request& req, httplib::Response&
             res.set_content(Response::error(404, "未找到食堂信息"), "application/json");
             return;
         }
+        std::cout<< " canteen_id 是 " << canteen_id<<std::endl;
 
         // 获取食堂详情
         auto canteen = canteenService.getCanteenDetails(canteen_id);
@@ -1271,11 +1277,12 @@ void Controller::handleMyCanteen(const httplib::Request& req, httplib::Response&
             {"name", canteen->getName()},
             {"address", canteen->getAddress()},
             {"regionId", canteen->getRegionId()},
-            {"regionName", ""}, // 需要从区域服务获取
+            {"regionName", canteen->getRegionName()},
             {"rating", average_rating},
             {"complaintCount", complaint_count}
         };
 
+        std::cout<< " data 是 " << data.dump(2)<<std::endl;
         res.set_content(Response::success(data), "application/json");
     } catch (...) {
         res.set_content(Response::error(500, "获取食堂信息失败"), "application/json");
@@ -1514,6 +1521,64 @@ void Controller::handleDiningPreference(const httplib::Request& req, httplib::Re
     } catch (...) {
         res.status = 500;
         res.set_content(Response::error(500, "服务器错误"), "application/json");
+    }
+}
+
+// 处理食堂订单请求
+void Controller::handleCanteenOrders(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        
+        OrderService service;
+        auto orders = service.getOrdersByCanteen(canteen_id);
+        
+        json orders_json = json::array();
+        for (const auto& order : orders) {
+            json order_json;
+            order_json["order_id"] = order.getOrderId();
+            order_json["canteen_id"] = order.getCanteenId();
+            order_json["canteen_name"] = order.getCanteenName();
+            order_json["order_for_user_name"] = order.getOrderForUserName();
+            order_json["order_time"] = order.getCreateTime();
+            order_json["total_price"] = order.getTotalPrice();
+            order_json["discount_rate"] = order.getDiscountRate();
+            order_json["original_total"] = order.getOriginalTotal();
+            order_json["saved_amount"] = order.getSavedAmount();
+            order_json["status"] = order.getStatus();
+            order_json["has_rating"] = order.getHasRating();
+            if (order.getHasRating()) {
+                order_json["rating_score"] = order.getRatingScore();
+                order_json["rating_comment"] = order.getRatingComment();
+                order_json["rating_time"] = order.getRatingTime();
+            }
+            orders_json.push_back(order_json);
+        }
+        
+        res.set_content(Response::success(orders_json), "application/json");
+        
+    } catch (...) {
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+// 处理更新订单状态请求
+void Controller::handleUpdateOrderStatus(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json body = json::parse(req.body);
+        int order_id = getIntSafe(body, "order_id");
+        int status = getIntSafe(body, "status");
+        
+        OrderService service;
+        
+        if (service.updateOrderStatus(order_id, status)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "更新订单状态失败"), "application/json");
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "更新订单状态失败: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
 

@@ -28,6 +28,13 @@
       <el-table-column prop="total_price" label="实付" />
       <el-table-column prop="saved_amount" label="优惠" />
       <el-table-column prop="create_time" label="时间" />
+      <el-table-column prop="status" label="状态" width="100">
+        <template #default="scope">
+          <el-tag :type="scope.row.status === 0 ? 'warning' : 'success'">
+            {{ scope.row.status === 0 ? '未完成' : '已完成' }}
+          </el-tag>
+        </template>
+      </el-table-column>
 
       <el-table-column label="操作" width="240">
         <template #default="scope">

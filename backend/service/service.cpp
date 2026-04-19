@@ -431,7 +431,7 @@ std::vector<Canteen> CanteenService::getAllCanteens() {
     return dao.getAllCanteens();
 }
 
-std::shared_ptr<Canteen> CanteenService::getCanteenById(int id) {
+std::shared_ptr<CanteenVO> CanteenService::getCanteenById(int id) {
     CanteenDAO dao;
     return dao.getCanteenById(id);
 }
@@ -452,7 +452,7 @@ bool CanteenService::updateCanteenStatus(int canteen_id, int status) {
     return dao.updateCanteenStatus(canteen_id, status);
 }
 
-std::shared_ptr<Canteen> CanteenService::getCanteenDetails(int canteen_id) {
+std::shared_ptr<CanteenVO> CanteenService::getCanteenDetails(int canteen_id) {
     if (canteen_id <= 0) {
         return nullptr;
     }
@@ -771,7 +771,7 @@ bool OrderService::placeOrder(int user_id,
         order.setOrderForUserId(order_for_user_id);
         order.setCanteenId(canteen_id);
         order.setTotalPrice(discountedTotal);
-        order.setStatus("pending");
+        order.setStatus(0);
         order.setDiscountRate(discount);
         order.setOriginalTotal(total);
         order.setSavedAmount(savedAmount);
@@ -818,6 +818,18 @@ std::vector<OrderVO> OrderService::getOrdersByUser(int user_id)
 {
     OrderDAO dao;
     return dao.getOrdersByUser(user_id);
+}
+
+std::vector<OrderVO> OrderService::getOrdersByCanteen(int canteen_id)
+{
+    OrderDAO dao;
+    return dao.getOrdersByCanteen(canteen_id);
+}
+
+bool OrderService::updateOrderStatus(int order_id, int status)
+{
+    OrderDAO dao;
+    return dao.updateOrderStatus(order_id, status);
 }
 
 std::vector<OrderDetailVO> OrderService::getOrdersDetailsByUser(int user_id,int order_id) {

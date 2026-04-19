@@ -33,6 +33,9 @@ private:
     static void handleGetOrders(const httplib::Request& req, httplib::Response& res);
     static void handleOrderDetails(const httplib::Request& req, httplib::Response& res);
     static void handleRecentOrder(const httplib::Request& req, httplib::Response& res);
+    // 食堂订单相关
+    static void handleCanteenOrders(const httplib::Request& req, httplib::Response& res);
+    static void handleUpdateOrderStatus(const httplib::Request& req, httplib::Response& res);
 
     static void handleRating(const httplib::Request& req, httplib::Response& res);
     static void handleReport(const httplib::Request& req, httplib::Response& res);

@@ -74,11 +74,11 @@ public:
 class CanteenService {
 public:
     std::vector<Canteen> getAllCanteens();
-    std::shared_ptr<Canteen> getCanteenById(int id);
+    std::shared_ptr<CanteenVO> getCanteenById(int id);
     int getCanteenIdByUserId(int user_id);
     bool updateCanteenAddress(int canteen_id, const std::string& address);
     bool updateCanteenStatus(int canteen_id, int status);
-    std::shared_ptr<Canteen> getCanteenDetails(int canteen_id);
+    std::shared_ptr<CanteenVO> getCanteenDetails(int canteen_id);
     std::vector<CanteenManagerVO> getCanteensWithManagers();
     std::vector<PurchaseBill> getPurchaseBills(int canteen_id);
     int createPurchaseBill(const PurchaseBill& bill);
@@ -123,6 +123,10 @@ public:
     DiningPreference getDiningPreference(int user_id, const std::string& time_dimension);
     // 获取最近订单
     std::shared_ptr<RecentOrderVO> getRecentOrder(int user_id, int order_for_user_id, int canteen_id);
+    // 获取食堂订单
+    std::vector<OrderVO> getOrdersByCanteen(int canteen_id);
+    // 更新订单状态
+    bool updateOrderStatus(int order_id, int status);
 
 private:
     static std::mutex userOrderMapMutex;

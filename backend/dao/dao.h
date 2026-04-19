@@ -102,7 +102,7 @@ public:
 class CanteenDAO {
 public:
     std::vector<Canteen> getAllCanteens();
-    std::shared_ptr<Canteen> getCanteenById(int id);
+    std::shared_ptr<CanteenVO> getCanteenById(int id);
     int getCanteenIdByUserId(int user_id);
     int insertCanteen(sql::Connection *conn, const std::string& canteen_name, int region_id);
     bool updateCanteenAddress(int canteen_id, const std::string& address);
@@ -154,6 +154,10 @@ public:
     DiningPreferenceSummary getDiningPreferenceSummary(int user_id, const std::string& time_dimension);
     std::vector<std::pair<std::string, int>> getCanteenConsumptionCount(int user_id, const std::string& time_dimension);
     std::vector<std::pair<std::string, int>> getDishConsumptionCount(int user_id, const std::string& time_dimension);
+    // 获取食堂订单
+    std::vector<OrderVO> getOrdersByCanteen(int canteen_id);
+    // 更新订单状态
+    bool updateOrderStatus(int order_id, int status);
 };
 
 // ================================

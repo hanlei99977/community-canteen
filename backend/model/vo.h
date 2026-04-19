@@ -17,6 +17,7 @@ private:
     double discount_rate;
     double original_total;
     double saved_amount;
+    int status;
     bool has_rating = false;
     int rating_score = 0;
     std::string rating_comment;
@@ -48,6 +49,9 @@ public:
 
     double getSavedAmount() const { return saved_amount; }
     void setSavedAmount(double amount) { saved_amount = amount; }
+
+    int getStatus() const { return status; }
+    void setStatus(int s) { status = s; }
 
     bool getHasRating() const { return has_rating; }
     void setHasRating(bool value) { has_rating = value; }
@@ -632,6 +636,44 @@ public:
     int getComplaintCount() const { return complaint_count; }
     void setComplaintCount(int c) { complaint_count = c; }
 };
+
+
+// ================================
+// CanteenVO
+// ================================
+class CanteenVO {
+private:
+    int canteen_id;
+    std::string code;
+    std::string name;
+    std::string address;
+    std::string region_name;
+    int region_id;
+    int status;
+
+public:
+    int getId() const { return canteen_id; }
+    void setId(int id) { canteen_id = id; }
+
+    std::string getCode() const { return code; }
+    void setCode(const std::string& c) { code = c; }
+
+    std::string getName() const { return name; }
+    void setName(const std::string& n) { name = n; }
+
+    std::string getAddress() const { return address; }
+    void setAddress(const std::string& a) { address = a; }
+
+    std::string getRegionName() const { return region_name; }
+    void setRegionName(const std::string& n) { region_name = n; }
+
+    int getRegionId() const { return region_id; }
+    void setRegionId(int id) { region_id = id; }
+
+    int getStatus() const { return status; }
+    void setStatus(int s) { status = s; }
+};
+
 
 // 财务统计相关 VO
 // 今日财务统计

@@ -184,7 +184,7 @@ CREATE TABLE orders (
     canteen_id INT,
     total_price DECIMAL(6,2),
     order_time DATETIME DEFAULT CURRENT_TIMESTAMP, -- 下单时间
-    status VARCHAR(20),
+    status INT DEFAULT 0, -- 0待处理 1已处理 2已取消
 
     discount_rate DECIMAL(5,2) DEFAULT 1.00 COMMENT '订单折扣系数',
     original_total DECIMAL(10,2) COMMENT '原总价',

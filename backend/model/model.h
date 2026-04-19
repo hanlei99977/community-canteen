@@ -338,7 +338,7 @@ private:
     int canteen_id;
     double total_price;
     std::string order_time;
-    std::string status;
+    int status;
     double discount_rate;
     double original_total;
     double saved_amount;
@@ -362,8 +362,8 @@ public:
     std::string getOrderTime() const { return order_time; }
     void setOrderTime(const std::string& t) { order_time = t; }
 
-    std::string getStatus() const { return status; }
-    void setStatus(const std::string& s) { status = s; }
+    int getStatus() const { return status; }
+    void setStatus(int s) { status = s; }
 
     double getDiscountRate() const { return discount_rate; }
     void setDiscountRate(double rate) { discount_rate = rate; }

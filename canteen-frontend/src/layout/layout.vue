@@ -72,6 +72,10 @@
           财务统计
         </el-menu-item>
 
+        <el-menu-item v-if="isCanteenAdmin" index="/canteenOrders">
+          食堂订单
+        </el-menu-item>
+
         <el-menu-item v-if="isCanteenAdmin" index="/messageBoard">
           留言板
         </el-menu-item>

@@ -918,24 +918,29 @@ std::vector<Canteen> CanteenDAO::getAllCanteens() {
     return list;
 }
 
-std::shared_ptr<Canteen> CanteenDAO::getCanteenById(int id) {
+std::shared_ptr<CanteenVO> CanteenDAO::getCanteenById(int id) {
     try {
         DBConnectionGuard guard;
         auto* conn = guard.get();
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("SELECT * FROM canteen WHERE canteen_id=?")
+            conn->prepareStatement(
+                "SELECT c.canteen_id, c.name, c.address, r.region_id, r.region_name, c.status "
+                "FROM canteen c "
+                "JOIN region r ON r.region_id = c.region_id "
+                "WHERE c.canteen_id = ?")
         );
 
         stmt->setInt(1, id);
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
 
         if (res->next()) {
-            auto c = std::make_shared<Canteen>();
+            auto c = std::make_shared<CanteenVO>();
             c->setId(res->getInt("canteen_id"));
             c->setName(res->getString("name"));
             c->setAddress(res->getString("address"));
             c->setRegionId(res->getInt("region_id"));
+            c->setRegionName(res->getString("region_name"));
             c->setStatus(res->getInt("status"));
             return c;
         }
@@ -1518,7 +1523,7 @@ bool MenuDAO::updateMenu(const MenuCreateDTO& menu) {
         stmt->setInt(2, order.getOrderForUserId());
         stmt->setInt(3, order.getCanteenId());
         stmt->setDouble(4, order.getTotalPrice());
-        stmt->setString(5, order.getStatus());
+        stmt->setInt(5, order.getStatus());
         stmt->setDouble(6, order.getDiscountRate());
         stmt->setDouble(7, order.getOriginalTotal());
         stmt->setDouble(8, order.getSavedAmount());
@@ -1566,6 +1571,7 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
                 o.discount_rate,
                 o.original_total,
                 o.saved_amount,
+                o.status,
                 o.order_time,
                 r.score AS rating_score,
                 r.comment AS rating_comment,
@@ -1592,6 +1598,7 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
             o.setDiscountRate(std::stod(res->getString("discount_rate").c_str()));
             o.setOriginalTotal(std::stod(res->getString("original_total").c_str()));
             o.setSavedAmount(std::stod(res->getString("saved_amount").c_str()));
+            o.setStatus(res->getInt("status"));
             o.setCreateTime(res->getString("order_time"));
             o.setHasRating(!res->isNull("rating_score"));
             if (!res->isNull("rating_score")) {
@@ -1605,6 +1612,88 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
     } catch (...) {}
 
     return list;
+}
+
+std::vector<OrderVO> OrderDAO::getOrdersByCanteen(int canteen_id)
+{
+    std::vector<OrderVO> list;
+
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+    auto stmt = std::unique_ptr<sql::PreparedStatement>(
+        conn->prepareStatement(R"(
+             SELECT 
+                o.order_id AS order_id,
+                o.canteen_id AS canteen_id,
+                u.username AS order_for_user_name,
+                c.name AS canteen_name,
+                o.total_price,
+                o.discount_rate,
+                o.original_total,
+                o.saved_amount,
+                o.status,
+                o.order_time,
+                r.score AS rating_score,
+                r.comment AS rating_comment,
+                r.time AS rating_time
+            FROM orders o
+            JOIN canteen c ON o.canteen_id = c.canteen_id
+            JOIN users u ON u.user_id  = o.order_for_user_id 
+            LEFT JOIN rating r ON r.order_id = o.order_id AND r.user_id = o.user_id
+            WHERE o.canteen_id = ?
+            ORDER BY o.status ASC, o.order_time DESC
+        )")
+    );
+
+        stmt->setInt(1, canteen_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            OrderVO o;
+            o.setOrderId(res->getInt("order_id"));
+            o.setCanteenId(res->getInt("canteen_id"));
+            o.setOrderForUserName(res->getString("order_for_user_name"));
+            o.setCanteenName(res->getString("canteen_name"));
+            o.setTotalPrice(std::stod(res->getString("total_price").c_str()));
+            o.setDiscountRate(std::stod(res->getString("discount_rate").c_str()));
+            o.setOriginalTotal(std::stod(res->getString("original_total").c_str()));
+            o.setSavedAmount(std::stod(res->getString("saved_amount").c_str()));
+            o.setStatus(res->getInt("status"));
+            o.setCreateTime(res->getString("order_time"));
+            o.setHasRating(!res->isNull("rating_score"));
+            if (!res->isNull("rating_score")) {
+                o.setRatingScore(res->getInt("rating_score"));
+                o.setRatingComment(res->isNull("rating_comment") ? "" : res->getString("rating_comment"));
+                o.setRatingTime(res->isNull("rating_time") ? "" : res->getString("rating_time"));
+            }
+
+            list.push_back(o);
+        }
+    } catch (...) {}
+
+    return list;
+}
+
+bool OrderDAO::updateOrderStatus(int order_id, int status)
+{
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("UPDATE orders SET status = ? WHERE order_id = ?")
+        );
+
+        stmt->setInt(1, status);
+        stmt->setInt(2, order_id);
+
+        return stmt->executeUpdate() > 0;
+    } catch (const std::exception& e) {
+        std::cerr << "更新订单状态失败: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByUser(int user_id,int order_id)

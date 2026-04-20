@@ -1109,6 +1109,12 @@ bool OrderCancelService::createCancelApply(int order_id, const std::string& canc
         DBConnectionGuard guard;
         auto* conn = guard.get();
         
+        //已取消申请，不允许重复申请
+        auto cancel_apply = getCancelApplyByOrderId(order_id);
+        if (cancel_apply) {
+            return false;
+        }
+
         OrderCancelDAO dao;
         int cancel_id = dao.insertCancelApply(conn, order_id, cancel_reason);
         return cancel_id > 0;

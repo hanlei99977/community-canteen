@@ -1637,7 +1637,7 @@ std::shared_ptr<RecentOrderVO> OrderDAO::getRecentOrder(sql::Connection *conn, i
             conn->prepareStatement(R"(
                 SELECT order_id
                 FROM orders
-                WHERE order_for_user_id = ? AND canteen_id = ?
+                WHERE order_for_user_id = ? AND canteen_id = ? AND status = 1 
                 ORDER BY order_time DESC
                 LIMIT 1
             )")
@@ -1749,7 +1749,7 @@ DiningPreferenceSummary OrderDAO::getDiningPreferenceSummary(sql::Connection *co
             conn->prepareStatement(
                 "SELECT COALESCE(SUM(total_price), 0) as total_amount, COUNT(*) as order_count "
                 "FROM orders o "
-                "WHERE o.order_for_user_id = ? " + time_condition
+                "WHERE o.order_for_user_id = ? AND o.status = 1 " + time_condition 
             )
         );
         stmt->setInt(1, user_id);
@@ -1801,7 +1801,7 @@ std::vector<std::pair<std::string, int>> OrderDAO::getCanteenConsumptionCount(sq
                 "SELECT c.name as canteen_name, COUNT(*) as count "
                 "FROM orders o "
                 "JOIN canteen c ON o.canteen_id = c.canteen_id "
-                "WHERE o.order_for_user_id = ? " + time_condition + " "
+                "WHERE o.order_for_user_id = ? AND o.status = 1 " + time_condition + " "
                 "GROUP BY c.canteen_id, c.name "
                 "ORDER BY count DESC"
             )
@@ -1865,7 +1865,7 @@ std::vector<std::pair<std::string, int>> OrderDAO::getDishConsumptionCount(sql::
                 "JOIN order_item oi ON o.order_id = oi.order_id "
                 "JOIN dish d ON oi.dish_id = d.dish_id "
                 "JOIN canteen c ON d.canteen_id = c.canteen_id "
-                "WHERE o.order_for_user_id = ? " + time_condition + " "
+                "WHERE o.order_for_user_id = ? AND o.status = 1 " + time_condition + " "
                 "GROUP BY d.dish_id, d.name, c.name "
                 "ORDER BY count DESC"
             )
@@ -2331,7 +2331,7 @@ double CanteenDAO::getTodayIncome(sql::Connection *conn, int canteen_id) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND DATE(order_time) = DATE(NOW())"
+                "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND status = 1 AND DATE(order_time) = DATE(NOW())"
             )
         );
 
@@ -2515,11 +2515,11 @@ double CanteenDAO::getIncomeByTimeDimension(sql::Connection *conn, int canteen_i
     try {
         std::string sql;
         if (time_dimension == "day") {
-            sql = "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND DATE(order_time) = ?";
+            sql = "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND status = 1 AND DATE(order_time) = ?";
         } else if (time_dimension == "month") {
-            sql = "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND DATE_FORMAT(order_time, '%Y-%m') = ?";
+            sql = "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND status = 1 AND DATE_FORMAT(order_time, '%Y-%m') = ?";
         } else if (time_dimension == "year") {
-            sql = "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND YEAR(order_time) = ?";
+            sql = "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND status = 1 AND YEAR(order_time) = ?";
         } else {
             return 0.0;
         }

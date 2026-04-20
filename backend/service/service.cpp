@@ -1129,6 +1129,8 @@ bool OrderCancelService::handleCancelApply(int cancel_id, int status, const std:
     try {
         DBConnectionGuard guard;
         auto* conn = guard.get();
+        TransactionGuard tx(conn);
+
         OrderCancelDAO dao;
         if (dao.updateCancelStatus(conn, cancel_id, status, reject_reason)) {
             // 如果同意取消，更新订单状态为已取消
@@ -1143,6 +1145,7 @@ bool OrderCancelService::handleCancelApply(int cancel_id, int status, const std:
                     order_dao.updateOrderStatus(conn, order_id, 2);
                 }
             }
+            tx.commit();
             return true;
         }
         return false;

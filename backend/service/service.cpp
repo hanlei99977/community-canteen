@@ -899,11 +899,11 @@ bool OrderService::updateOrderStatus(int order_id, int status) {
     return dao.updateOrderStatus(conn, order_id, status);
 }
 
-std::vector<OrderDetailVO> OrderService::getOrdersDetailsByUser(int user_id,int order_id) {
+std::vector<OrderDetailVO> OrderService::getOrdersDetailsByOrderId(int order_id) {
     OrderDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.getOrdersDetailsByUser(conn, user_id, order_id);
+    return dao.getOrdersDetailsByOrderId(conn, order_id);
 }
 
 // 用餐偏好相关方法

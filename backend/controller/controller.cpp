@@ -96,7 +96,7 @@ void Controller::registerOrderRoutes(httplib::Server& server) {
     server.Get("/recentOrder", handleRecentOrder);
     server.Get("/orderTargets", handleOrderTargets);
     server.Get("/getOrders", handleGetOrders);
-    server.Get("/order_details", handleOrderDetails);
+    server.Get("/orderDetails", handleOrderDetails);
     server.Post("/rating", handleRating);
     // 食堂订单相关
     server.Get("/canteenOrders", handleCanteenOrders);
@@ -645,10 +645,8 @@ void Controller::handleOrderDetails(const httplib::Request& req, httplib::Respon
     try {
         std::cout << "订单详情请求参数：order_id=" << req.get_param_value("order_id") << ", user_id=" << req.get_param_value("user_id") << std::endl;
         int order_id = std::stoi(req.get_param_value("order_id"));
-        int user_id = std::stoi(req.get_param_value("user_id"));
-
         OrderService service;
-        auto items = service.getOrdersDetailsByUser(user_id,order_id);
+        auto items = service.getOrdersDetailsByOrderId(order_id);
 
         json arr = json::array();
 

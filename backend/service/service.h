@@ -118,7 +118,7 @@ public:
                     const std::vector<OrderItem>& items);
     std::vector<FamilyMemberVO> getOrderTargetsByUser(int user_id);
     std::vector<OrderVO> getOrdersByUser(int user_id);
-    std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
+    std::vector<OrderDetailVO> getOrdersDetailsByOrderId(int order_id);
     // 用餐偏好相关方法
     DiningPreference getDiningPreference(int user_id, const std::string& time_dimension);
     // 获取最近订单

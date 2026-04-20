@@ -1585,7 +1585,7 @@ bool OrderDAO::updateOrderStatus(sql::Connection *conn, int order_id, int status
     }
 }
 
-std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByUser(sql::Connection *conn, int user_id,int order_id)
+std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByOrderId(sql::Connection *conn, int order_id)
 {
     std::vector<OrderDetailVO> list;
 
@@ -1601,13 +1601,12 @@ std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByUser(sql::Connection *con
                 FROM orders o
                 JOIN order_item oi ON oi.order_id = o.order_id
                 JOIN dish d ON oi.dish_id = d.dish_id
-                WHERE o.user_id = ? AND o.order_id = ?
+                WHERE o.order_id = ?
                 ORDER BY o.order_id DESC
             )")
         );
 
-        stmt->setInt(1, user_id);
-        stmt->setInt(2, order_id);
+        stmt->setInt(1, order_id);
 
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
 

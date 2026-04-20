@@ -41,8 +41,15 @@
       </el-table>
     </el-card>
     
+    <!-- 订单状态标签页 -->
+    <el-tabs v-model="activeStatusTab" @tab-click="handleStatusTabChange" style="margin-bottom: 20px">
+      <el-tab-pane label="未完成" name="0" />
+      <el-tab-pane label="已完成" name="1" />
+      <el-tab-pane label="已取消" name="2" />
+    </el-tabs>
+
     <!-- 普通订单列表 -->
-    <el-table :data="orders" style="width: 100%">
+    <el-table :data="filteredOrders" style="width: 100%">
       <el-table-column prop="order_id" label="订单ID" width="100" />
       <el-table-column prop="order_for_user_name" label="用餐者" width="150" />
       <el-table-column prop="order_time" label="订单时间" width="200" />
@@ -58,8 +65,15 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="150">
+      <el-table-column label="操作" width="250">
         <template #default="scope">
+          <el-button
+            type="primary"
+            size="small"
+            @click="viewOrderDetails(scope.row)"
+          >
+            详细信息
+          </el-button>
           <el-button
             v-if="scope.row.status === 0"
             type="success"
@@ -68,10 +82,51 @@
           >
             标记为已完成
           </el-button>
-          <span v-else>{{ getStatusText(scope.row.status) }}</span>
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- 订单详情弹窗 -->
+    <el-dialog
+      v-model="orderDetailsDialogVisible"
+      title="订单详细信息"
+      width="600px"
+    >
+      <div v-if="currentOrderDetails">
+        <el-form label-width="100px">
+          <el-form-item label="订单ID">
+            <span>{{ currentOrderDetails.order_id }}</span>
+          </el-form-item>
+          <el-form-item label="用餐者">
+            <span>{{ currentOrderDetails.order_for_user_name }}</span>
+          </el-form-item>
+          <el-form-item label="订单时间">
+            <span>{{ currentOrderDetails.order_time }}</span>
+          </el-form-item>
+          <el-form-item label="总价">
+            <span>¥{{ currentOrderDetails.total_price.toFixed(2) }}</span>
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-tag :type="getTagType(currentOrderDetails.status)">
+              {{ getStatusText(currentOrderDetails.status) }}
+            </el-tag>
+          </el-form-item>
+          <el-form-item label="菜品详情">
+            <el-table :data="currentOrderDetails.items" style="width: 100%">
+              <el-table-column prop="dish_name" label="菜品" width="200" />
+              <el-table-column prop="unit_price" label="单价" width="100" />
+              <el-table-column prop="quantity" label="数量" width="100" />
+              <el-table-column prop="subtotal" label="小计" width="100" />
+            </el-table>
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="orderDetailsDialogVisible = false">关闭</el-button>
+        </span>
+      </template>
+    </el-dialog>
     
     <!-- 拒绝取消申请弹窗 -->
     <el-dialog
@@ -105,17 +160,33 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 const orders = ref([])
 const cancelApplies = ref([])
 const rejectDialogVisible = ref(false)
+const orderDetailsDialogVisible = ref(false)
 const currentCancelApply = ref(null)
+const currentOrderDetails = ref(null)
+const activeStatusTab = ref('0') // 默认显示未完成订单
 const rejectForm = ref({
   reject_reason: ''
 })
+
+// 筛选订单
+const filteredOrders = computed(() => {
+  if (activeStatusTab.value === '') {
+    return orders.value
+  }
+  return orders.value.filter(order => order.status === Number(activeStatusTab.value))
+})
+
+// 处理状态标签切换
+const handleStatusTabChange = () => {
+  // 状态标签切换时无需额外操作
+}
 
 // 获取食堂ID
 const getCanteenId = async () => {
@@ -244,6 +315,29 @@ const submitRejectApply = async () => {
   } catch (error) {
     console.error('拒绝取消失败:', error)
     ElMessage.error('拒绝取消失败')
+  }
+}
+
+// 查看订单详情
+const viewOrderDetails = async (order) => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/orderDetails', {
+      params: {
+        order_id: order.order_id
+      }
+    })
+    if (res.data.code === 0) {
+      currentOrderDetails.value = {
+        ...order,
+        items: res.data.data
+      }
+      orderDetailsDialogVisible.value = true
+    } else {
+      ElMessage.error('获取订单详情失败')
+    }
+  } catch (error) {
+    console.error('获取订单详情失败:', error)
+    ElMessage.error('获取订单详情失败')
   }
 }
 

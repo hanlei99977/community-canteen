@@ -508,3 +508,36 @@ public:
     int getHandlerId() const { return handler_id; }
     void setHandlerId(int id) { handler_id = id; }
 };
+
+// ================================
+// MessageNotification
+// ================================
+class MessageNotification {
+private:
+    int message_id;
+    int sender_id;
+    int receiver_id;
+    std::string content;
+    int status;
+    std::string create_time;
+
+public:
+    // Getters and setters
+    int getMessageId() const { return message_id; }
+    void setMessageId(int id) { message_id = id; }
+
+    int getSenderId() const { return sender_id; }
+    void setSenderId(int id) { sender_id = id; }
+
+    int getReceiverId() const { return receiver_id; }
+    void setReceiverId(int id) { receiver_id = id; }
+
+    std::string getContent() const { return content; }
+    void setContent(const std::string& cont) { content = cont; }
+
+    int getStatus() const { return status; }
+    void setStatus(int s) { status = s; }
+
+    std::string getCreateTime() const { return create_time; }
+    void setCreateTime(const std::string& time) { create_time = time; }
+};

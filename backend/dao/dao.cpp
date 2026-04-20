@@ -1662,6 +1662,34 @@ std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByOrderId(sql::Connection *
     return list;
 }
 
+std::shared_ptr<Order> OrderDAO::getOrderById(sql::Connection *conn, int order_id)
+{
+    std::shared_ptr<Order> order = std::make_shared<Order>();
+    try{
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT order_id, user_id, order_for_user_id, canteen_id, total_price, order_time, status, discount_rate, original_total, saved_amount FROM orders WHERE order_id = ?")
+        );
+        stmt->setInt(1, order_id);
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            order->setId(res->getInt("order_id"));
+            order->setUserId(res->getInt("user_id"));
+            order->setOrderForUserId(res->getInt("order_for_user_id"));
+            order->setCanteenId(res->getInt("canteen_id"));
+            order->setTotalPrice(res->getDouble("total_price"));
+            order->setOrderTime(res->getString("order_time"));
+            order->setStatus(res->getInt("status"));
+            order->setDiscountRate(res->getDouble("discount_rate"));
+            order->setOriginalTotal(res->getDouble("original_total"));
+            order->setSavedAmount(res->getDouble("saved_amount"));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "获取订单失败: " << e.what() << std::endl;
+    }
+    return order;
+}
+
 std::shared_ptr<RecentOrderVO> OrderDAO::getRecentOrder(sql::Connection *conn, int user_id, int order_for_user_id, int canteen_id) {
     try {
         // 获取最近的订单ID
@@ -2352,6 +2380,73 @@ bool MessageDAO::replyMessage(sql::Connection *conn, const Message& message) {
 
         return stmt->executeUpdate() > 0;
     } catch (...) {
+        return false;
+    }
+}
+
+/***************************************************************************************
+ * MessageCenterDAO
+ ***************************************************************************************/
+int MessageCenterDAO::createMessage(sql::Connection *conn, const MessageNotification& message) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("INSERT INTO message (sender_id, receiver_id, content, status, create_time) VALUES (?, ?, ?, ?, NOW())")
+        );
+        stmt->setInt(1, message.getSenderId());
+        stmt->setInt(2, message.getReceiverId());
+        stmt->setString(3, message.getContent());
+        stmt->setInt(4, message.getStatus());
+
+        stmt->executeUpdate();
+
+        // 获取生成的ID
+        auto idStmt = std::unique_ptr<sql::Statement>(conn->createStatement());
+        auto res = std::unique_ptr<sql::ResultSet>(idStmt->executeQuery("SELECT LAST_INSERT_ID()"));
+        if (res->next()) {
+            return res->getInt(1);
+        }
+    } catch (const std::exception& e) {
+        std::cout << "创建消息失败: " << e.what() << std::endl;
+    }
+    return -1;
+}
+
+std::vector<MessageNotification> MessageCenterDAO::getMessagesByReceiver(sql::Connection *conn, int receiver_id) {
+    std::vector<MessageNotification> messages;
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT message_id, sender_id, receiver_id, content, status, create_time FROM message WHERE receiver_id = ? ORDER BY status ASC, create_time DESC")
+        );
+        stmt->setInt(1, receiver_id);
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            MessageNotification message;
+            message.setMessageId(res->getInt("message_id"));
+            message.setSenderId(res->getInt("sender_id"));
+            message.setReceiverId(res->getInt("receiver_id"));
+            message.setContent(res->getString("content"));
+            message.setStatus(res->getInt("status"));
+            message.setCreateTime(res->getString("create_time"));
+            messages.push_back(message);
+        }
+    } catch (const std::exception& e) {
+        std::cout << "获取消息失败: " << e.what() << std::endl;
+    }
+    return messages;
+}
+
+bool MessageCenterDAO::updateMessageStatus(sql::Connection *conn, int message_id, int status) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("UPDATE message SET status = ? WHERE message_id = ?")
+        );
+        stmt->setInt(1, status);
+        stmt->setInt(2, message_id);
+
+        return stmt->executeUpdate() > 0;
+    } catch (const std::exception& e) {
+        std::cout << "更新消息状态失败: " << e.what() << std::endl;
         return false;
     }
 }

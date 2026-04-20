@@ -150,6 +150,7 @@ public:
     int insertOrder(sql::Connection *conn, const Order& order);
     std::vector<OrderVO> getOrdersByUser(sql::Connection *conn, int user_id);
     std::vector<OrderDetailVO> getOrdersDetailsByOrderId(sql::Connection *conn, int order_id);
+    std::shared_ptr<Order> getOrderById(sql::Connection *conn, int order_id);
     // 获取最近订单
     std::shared_ptr<RecentOrderVO> getRecentOrder(sql::Connection *conn, int user_id, int order_for_user_id, int canteen_id);
     // 用餐偏好相关方法
@@ -210,6 +211,13 @@ public:
     std::vector<Message> getMessagesByCanteen(sql::Connection *conn, int canteen_id);
     std::vector<Message> getMessagesByUser(sql::Connection *conn, int user_id, int canteen_id);
     bool replyMessage(sql::Connection *conn, const Message& message);
+};
+
+class MessageCenterDAO {
+public:
+    int createMessage(sql::Connection *conn, const MessageNotification& message);
+    std::vector<MessageNotification> getMessagesByReceiver(sql::Connection *conn, int receiver_id);
+    bool updateMessageStatus(sql::Connection *conn, int message_id, int status);
 };
 
 // ================================

@@ -83,4 +83,7 @@ private:
     static void handleGetUserMessages(const httplib::Request& req, httplib::Response& res);
     static void handleGetCanteenMessages(const httplib::Request& req, httplib::Response& res);
     static void handleReplyMessage(const httplib::Request& req, httplib::Response& res);
+    // 消息中心
+    static void handleGetMessages(const httplib::Request& req, httplib::Response& res);
+    static void handleMarkMessageAsRead(const httplib::Request& req, httplib::Response& res);
 };

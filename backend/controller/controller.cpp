@@ -148,6 +148,9 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Post("/deletePurchase", handleDeletePurchase);
     // 财务统计
     server.Get("/financialStatistics", handleFinancialStatistics);
+    // 消息中心
+    server.Get("/messages", handleGetMessages);
+    server.Post("/markMessageAsRead", handleMarkMessageAsRead);
 }
 
 
@@ -1623,6 +1626,56 @@ void Controller::handleFinancialStatistics(const httplib::Request& req, httplib:
     } catch (...) {
         res.status = 500;
         res.set_content(Response::error(500, "服务器错误"), "application/json");
+    }
+}
+
+// 获取消息列表
+void Controller::handleGetMessages(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        std::cout<<"user_id is "<<user_id<<std::endl;
+        MessageCenterService service;
+        auto messages = service.getMessagesByReceiver(user_id);
+        
+        json arr = json::array();
+        for (const auto& message : messages) {
+            json message_json = {
+                {"message_id", message.getMessageId()},
+                {"sender_id", message.getSenderId()},
+                {"receiver_id", message.getReceiverId()},
+                {"content", message.getContent()},
+                {"status", message.getStatus()},
+                {"create_time", message.getCreateTime()}
+            };
+            arr.push_back(message_json);
+        }
+        
+        res.set_content(Response::success(arr), "application/json");
+        
+    } catch (const std::exception& e) {
+        std::cerr << "获取消息失败: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+// 标记消息为已读
+void Controller::handleMarkMessageAsRead(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json body = json::parse(req.body);
+        int message_id = getIntSafe(body, "message_id");
+        
+        MessageCenterService service;
+        bool success = service.updateMessageStatus(message_id, 1);
+        
+        if (success) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "标记消息为已读失败"), "application/json");
+        }
+        
+    } catch (const std::exception& e) {
+        std::cerr << "标记消息为已读失败: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
 

@@ -1121,6 +1121,39 @@ bool MessageService::replyMessage(const Message& message) {
     return dao.replyMessage(conn, message);
 }
 
+/***************************************************************************************
+ * MessageCenterService
+ ***************************************************************************************/
+int MessageCenterService::createMessage(const MessageNotification& message) {
+    if (message.getSenderId() <= 0 || message.getReceiverId() <= 0 || message.getContent().empty()) {
+        return -1;
+    }
+    MessageCenterDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.createMessage(conn, message);
+}
+
+std::vector<MessageNotification> MessageCenterService::getMessagesByReceiver(int receiver_id) {
+    if (receiver_id <= 0) {
+        return {};
+    }
+    MessageCenterDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getMessagesByReceiver(conn, receiver_id);
+}
+
+bool MessageCenterService::updateMessageStatus(int message_id, int status) {
+    if (message_id <= 0 || (status != 0 && status != 1)) {
+        return false;
+    }
+    MessageCenterDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.updateMessageStatus(conn, message_id, status);
+}
+
 /**********************************************
  * OrderCancelService
  *********************************************/
@@ -1168,7 +1201,41 @@ bool OrderCancelService::handleCancelApply(int cancel_id, int status, const std:
                 if (cancel_apply) {
                     int order_id = cancel_apply->getOrderId();
                     // 更新订单状态为已取消
-                    order_dao.updateOrderStatus(conn, order_id, 2);
+                    if (!order_dao.updateOrderStatus(conn, order_id, 2)) {
+                        std::cout<<"updateOrderStatus failed"<<std::endl;
+                        return false;
+                    }
+                }
+            } else if (status == 2) { // 拒绝取消申请，发送消息给用户
+                OrderDAO order_dao;
+                OrderCancelDAO cancel_dao;
+                // 获取取消申请信息
+                auto cancel_apply = cancel_dao.getCancelApplyByCancelId(conn, cancel_id);
+                if (cancel_apply) {
+                    int order_id = cancel_apply->getOrderId();
+                    // 获取订单信息
+                    auto order = order_dao.getOrderById(conn, order_id);
+                    if (order) {
+                        int user_id = order->getUserId();
+                        // 构建消息内容
+                        std::string content = "您申请取消的订单（订单号：" + std::to_string(order_id) + "）已被食堂拒绝。原因：" + reject_reason + "。";
+                        // 创建消息
+                        MessageNotification message;
+                        message.setSenderId(1); // 系统发送
+                        message.setReceiverId(user_id);
+                        message.setContent(content);
+                        message.setStatus(0); // 未读
+                        // 发送消息
+                        MessageCenterDAO message_dao;
+                        if (!message_dao.createMessage(conn, message)) {
+                            std::cout<<"createMessage failed"<<std::endl;
+                            return false;
+                        }
+                    }
+                }
+                else {
+                    std::cout<<"cancel_apply is null"<<std::endl;
+                    return false;
                 }
             }
             tx.commit();

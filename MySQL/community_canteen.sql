@@ -292,6 +292,21 @@ CREATE TABLE order_cancel (
     FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
 );
 
+-- ================================
+--  消息表
+-- ================================
+CREATE TABLE message (
+    message_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '消息ID',
+    sender_id INT NOT NULL COMMENT '发送人ID',
+    receiver_id INT NOT NULL COMMENT '接收人ID',
+    content TEXT NOT NULL COMMENT '发送内容',
+    status INT DEFAULT 0 COMMENT '状态：0未读，1已读',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+    FOREIGN KEY (sender_id) REFERENCES users(user_id),
+    FOREIGN KEY (receiver_id) REFERENCES users(user_id)
+) COMMENT '消息表';
+
+
 -- 添加索引
 CREATE INDEX idx_order_id ON order_cancel(order_id);
 CREATE INDEX idx_status ON order_cancel(status);
@@ -390,3 +405,8 @@ CREATE INDEX idx_region_name ON region(region_name);
 CREATE INDEX idx_msg_canteen ON messageboard(canteen_id);
 CREATE INDEX idx_msg_user ON messageboard(user_id);
 CREATE INDEX idx_msg_status ON messageboard(status);
+
+-- message索引
+CREATE INDEX idx_message_receiver ON message(receiver_id);
+CREATE INDEX idx_message_status ON message(status);
+CREATE INDEX idx_message_time ON message(create_time);

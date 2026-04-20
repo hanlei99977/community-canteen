@@ -185,3 +185,10 @@ public:
     std::vector<Message> getMessagesByUser(int user_id, int canteen_id);
     bool replyMessage(const Message& message);
 };
+
+class MessageCenterService {
+public:
+    int createMessage(const MessageNotification& message);
+    std::vector<MessageNotification> getMessagesByReceiver(int receiver_id);
+    bool updateMessageStatus(int message_id, int status);
+};

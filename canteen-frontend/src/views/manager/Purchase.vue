@@ -47,7 +47,64 @@
           </template>
         </el-table-column>
         <el-table-column prop="remark" label="备注" />
+        <el-table-column label="操作" width="200">
+          <template #default="scope">
+            <el-button
+              type="primary"
+              size="small"
+              @click="editPurchase(scope.row)"
+            >
+              修改
+            </el-button>
+            <el-button
+              type="danger"
+              size="small"
+              @click="deletePurchase(scope.row)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
+
+      <!-- 修改采购记录弹窗 -->
+      <el-dialog
+        v-model="editDialogVisible"
+        title="修改采购记录"
+        width="500px"
+      >
+        <el-form :model="editForm" label-width="100px" :rules="rules" ref="editFormRef">
+          <el-form-item label="采购金额" prop="amount">
+            <el-input v-model.number="editForm.amount" type="number" placeholder="请输入采购金额" />
+          </el-form-item>
+
+          <el-form-item label="采购时间" prop="purchase_date">
+            <el-date-picker
+              v-model="editForm.purchase_date"
+              type="date"
+              placeholder="选择采购日期"
+              style="width: 100%"
+              value-format="YYYY-MM-DD"
+              format="YYYY-MM-DD"
+            />
+          </el-form-item>
+
+          <el-form-item label="备注" prop="remark">
+            <el-input
+              v-model="editForm.remark"
+              type="textarea"
+              placeholder="请输入备注信息"
+              rows="4"
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="editDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="submitEdit">提交修改</el-button>
+          </span>
+        </template>
+      </el-dialog>
     </el-card>
   </div>
 </template>
@@ -55,7 +112,7 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 // 采购表单
 const purchaseForm = reactive({
@@ -80,6 +137,16 @@ const purchaseFormRef = ref(null)
 
 // 采购记录列表
 const purchaseList = ref([])
+
+// 编辑相关变量
+const editDialogVisible = ref(false)
+const editForm = reactive({
+  bill_id: '',
+  amount: '',
+  purchase_date: '',
+  remark: ''
+})
+const editFormRef = ref(null)
 
 // 格式化日期
 const formatDate = (dateStr) => {
@@ -162,6 +229,63 @@ const submitPurchase = async () => {
       ElMessage.error(res.data.message)
     }
   } catch (err) {}
+}
+
+// 编辑采购记录
+const editPurchase = (purchase) => {
+  editForm.bill_id = purchase.bill_id
+  editForm.amount = purchase.amount
+  editForm.purchase_date = purchase.purchase_date
+  editForm.remark = purchase.remark
+  editDialogVisible.value = true
+}
+
+// 提交修改
+const submitEdit = async () => {
+  try {
+    await editFormRef.value.validate()
+
+    const res = await axios.post('http://192.168.56.100:8080/updatePurchase', {
+      bill_id: editForm.bill_id,
+      amount: editForm.amount,
+      purchase_date: editForm.purchase_date,
+      remark: editForm.remark
+    })
+
+    if (res.data.code === 0) {
+      ElMessage.success('采购记录修改成功')
+      editDialogVisible.value = false
+      getPurchaseRecords()
+    } else {
+      ElMessage.error(res.data.message)
+    }
+  } catch (err) {}
+}
+
+// 删除采购记录
+const deletePurchase = (purchase) => {
+  ElMessageBox.confirm('确定要删除这条采购记录吗？', '警告', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      const res = await axios.post('http://192.168.56.100:8080/deletePurchase', {
+        bill_id: purchase.bill_id
+      })
+
+      if (res.data.code === 0) {
+        ElMessage.success('采购记录删除成功')
+        getPurchaseRecords()
+      } else {
+        ElMessage.error(res.data.message)
+      }
+    } catch (err) {
+      ElMessage.error('删除失败')
+    }
+  }).catch(() => {
+    // 取消删除
+  })
 }
 
 onMounted(() => {

@@ -1126,6 +1126,39 @@ int CanteenDAO::createPurchaseBill(sql::Connection *conn, const PurchaseBill& bi
     return -1;
 }
 
+bool CanteenDAO::updatePurchaseBill(sql::Connection *conn, const PurchaseBill& bill) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("UPDATE purchase_bill SET amount = ?, purchase_date = ?, remark = ? WHERE bill_id = ?")
+        );
+        stmt->setDouble(1, bill.getAmount());
+        stmt->setString(2, bill.getPurchaseDate());
+        stmt->setString(3, bill.getRemark());
+        stmt->setInt(4, bill.getId());
+
+        int affected_rows = stmt->executeUpdate();
+        return affected_rows > 0;
+    } catch (...) {
+        // 异常处理
+        return false;
+    }
+}
+
+bool CanteenDAO::deletePurchaseBill(sql::Connection *conn, int bill_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("DELETE FROM purchase_bill WHERE bill_id = ?")
+        );
+        stmt->setInt(1, bill_id);
+
+        int affected_rows = stmt->executeUpdate();
+        return affected_rows > 0;
+    } catch (...) {
+        // 异常处理
+        return false;
+    }
+}
+
 /***************************************************************************************
  * DishDao
  ***************************************************************************************/

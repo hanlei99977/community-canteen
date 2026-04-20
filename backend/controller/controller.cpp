@@ -144,6 +144,8 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Post("/updateCanteenStatus", handleUpdateCanteenStatus);
     server.Get("/purchaseList", handlePurchaseList);
     server.Post("/createPurchase", handleCreatePurchase);
+    server.Post("/updatePurchase", handleUpdatePurchase);
+    server.Post("/deletePurchase", handleDeletePurchase);
     // 财务统计
     server.Get("/financialStatistics", handleFinancialStatistics);
 }
@@ -1518,6 +1520,60 @@ void Controller::handleCreatePurchase(const httplib::Request& req, httplib::Resp
             res.set_content(Response::success(), "application/json");
         } else {
             res.set_content(Response::error(500, "创建采购记录失败"), "application/json");
+        }
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleUpdatePurchase(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        std::cout<< " json内容是 " << req.body<<std::endl;
+        
+        json body = json::parse(req.body);
+        PurchaseBill bill;
+        bill.setId(getIntSafe(body, "bill_id"));
+        bill.setAmount(body["amount"].get<double>());
+        bill.setPurchaseDate(getStringSafe(body, "purchase_date"));
+        bill.setRemark(getStringSafe(body, "remark"));
+
+        if (bill.getId() <= 0 || bill.getAmount() <= 0 || bill.getPurchaseDate().empty()) {
+            res.set_content(Response::error(400, "参数错误"), "application/json");
+            return;
+        }
+
+        CanteenService canteenService;
+        bool success = canteenService.updatePurchaseBill(bill);
+        if (success) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "更新采购记录失败"), "application/json");
+        }
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleDeletePurchase(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        std::cout<< " json内容是 " << req.body<<std::endl;
+        
+        json body = json::parse(req.body);
+        int bill_id = getIntSafe(body, "bill_id");
+
+        if (bill_id <= 0) {
+            res.set_content(Response::error(400, "参数错误"), "application/json");
+            return;
+        }
+
+        CanteenService canteenService;
+        bool success = canteenService.deletePurchaseBill(bill_id);
+        if (success) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "删除采购记录失败"), "application/json");
         }
     } catch (...) {
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");

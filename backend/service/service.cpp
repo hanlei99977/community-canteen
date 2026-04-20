@@ -522,6 +522,26 @@ int CanteenService::createPurchaseBill(const PurchaseBill& bill) {
     return dao.createPurchaseBill(conn, bill);
 }
 
+bool CanteenService::updatePurchaseBill(const PurchaseBill& bill) {
+    if (bill.getId() <= 0 || bill.getAmount() <= 0 || bill.getPurchaseDate().empty()) {
+        return false;
+    }
+    CanteenDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.updatePurchaseBill(conn, bill);
+}
+
+bool CanteenService::deletePurchaseBill(int bill_id) {
+    if (bill_id <= 0) {
+        return false;
+    }
+    CanteenDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.deletePurchaseBill(conn, bill_id);
+}
+
 // 财务统计 - 获取今日财务数据
 TodayFinancialData CanteenService::getTodayFinancialData(int canteen_id) {
     TodayFinancialData data;

@@ -110,6 +110,8 @@ public:
     std::vector<CanteenManagerVO> getCanteensWithManagers(sql::Connection *conn);
     std::vector<PurchaseBill> getPurchaseBillsByCanteen(sql::Connection *conn, int canteen_id);
     int createPurchaseBill(sql::Connection *conn, const PurchaseBill& bill);
+    bool updatePurchaseBill(sql::Connection *conn, const PurchaseBill& bill);
+    bool deletePurchaseBill(sql::Connection *conn, int bill_id);
     // 财务统计相关方法
     double getTodayIncome(sql::Connection *conn, int canteen_id);
     double getTodayExpense(sql::Connection *conn, int canteen_id);

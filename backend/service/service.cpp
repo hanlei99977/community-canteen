@@ -78,7 +78,9 @@ bool UserService::isUsernameTaken(const std::string& username) {
         return false;
     }
     UserDAO dao;
-    return dao.existsByUsername(username);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.existsByUsername(conn, username);
 }
 
 std::shared_ptr<User> UserService::login(
@@ -86,14 +88,16 @@ std::shared_ptr<User> UserService::login(
     std::string& password
 ) {
     UserDAO dao;
-     // 去空格（很重要）
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    // 去空格（很重要）
     username.erase(0, username.find_first_not_of(" "));
     username.erase(username.find_last_not_of(" ") + 1);
 
     password.erase(0, password.find_first_not_of(" "));
     password.erase(password.find_last_not_of(" ") + 1);
 
-    auto user = dao.getUserByUsernameAndPassword(username, password);
+    auto user = dao.getUserByUsernameAndPassword(conn, username, password);
     if (user && user->getStatus() == 1) {
         return user;
     }
@@ -102,7 +106,9 @@ std::shared_ptr<User> UserService::login(
 
 std::shared_ptr<DinerCenterVO> UserService::getDinerCenterByUserId(int user_id) {
     DinerDAO dao;
-    return dao.getDinerCenterByUserId(user_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getDinerCenterByUserId(conn, user_id);
 }
 
 bool UserService::updateDinerCenter(const DinerCenterVO& diner) {
@@ -136,16 +142,20 @@ bool UserService::updateDinerCenter(const DinerCenterVO& diner) {
 
 std::string UserService::getUserRole(int user_id) {
     UserDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
     if (user_id <= 0) {
         return "unknown";
     }
-    return dao.getUserRole(user_id);
+    return dao.getUserRole(conn, user_id);
 }   
 
 bool UserService::updateStatus(const User& user)
 {
     UserDAO dao;
-    return dao.updateStatus(user);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.updateStatus(conn, user);
 }
 
 // ================================
@@ -190,13 +200,17 @@ bool AdminService::submitAdminApply(const User& user, int level_id, int region_i
 std::vector<AdminInformation> AdminService::getAdminList()
 {
     AdminDAO admin;
-    return admin.getAdminList();
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return admin.getAdminList(conn);
 }
 
 std::vector<AdminApplyVO> AdminService::getAdminApplyList()
 {
     AdminApplyDAO dao;
-    return dao.getApplyList();
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getApplyList(conn);
 }
 
 bool AdminService::reviewAdminApply(int apply_id, int reviewer_id, int status)
@@ -281,7 +295,9 @@ bool ManagerService::submitManagerApply(const User& user, const std::string& can
 std::vector<CanteenManagerApplyVO> ManagerService::getManagerApplyList()
 {
     CanteenManagerApplyDAO dao;
-    return dao.getApplyList();
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getApplyList(conn);
 }
 
 bool ManagerService::reviewManagerApply(int apply_id, int reviewer_id, int status)
@@ -340,22 +356,27 @@ bool ManagerService::reviewManagerApply(int apply_id, int reviewer_id, int statu
 std::vector<DinerInformation> DinerService::getDinerList()
 {
     DinerDAO diner;
-    return diner.getDinerList();
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return diner.getDinerList(conn);
 }
 
 int CanteenService::getCanteenIdByUserId(int user_id) {
     CanteenDAO dao;
-    return dao.getCanteenIdByUserId(user_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getCanteenIdByUserId(conn, user_id);
 }
 
 
 /**********************************************
  *RegionService
  *********************************************/
-std::vector<Region> RegionService::getRegionList()
-{
+std::vector<Region> RegionService::getRegionList() {
     RegionDAO dao;
-    return dao.getRegionList();
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getRegionList(conn);
 }
 
 /**********************************************
@@ -363,12 +384,16 @@ std::vector<Region> RegionService::getRegionList()
  *********************************************/
 Family FamilyService::getFamilyByUserId(int user_id) {
     FamilyDAO dao;
-    return dao.getFamilyByUserId(user_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getFamilyByUserId(conn, user_id);
 }
 
 std::vector<Family> FamilyService::getFamilyList() {
     FamilyDAO dao;
-    return dao.getFamilyList();
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getFamilyList(conn);
 }
 
 bool FamilyService::createFamily(int user_id, const std::string& family_name) {
@@ -388,7 +413,7 @@ bool FamilyService::createFamily(int user_id, const std::string& family_name) {
         family.setName(family_name);
 
         FamilyDAO familyDAO;
-        int family_id = familyDAO.insertFamily(family);
+        int family_id = familyDAO.insertFamily(conn, family);
         if (family_id == -1) {
             std::cout << "插入家庭失败" << std::endl;
             return false;
@@ -397,7 +422,7 @@ bool FamilyService::createFamily(int user_id, const std::string& family_name) {
 
         // 更新用餐者的家庭ID
         DinerDAO dinerDAO;
-        auto diner = dinerDAO.getDinerByUserId(user_id);
+        auto diner = dinerDAO.getDinerByUserId(conn, user_id);
         if (!diner) {
             std::cout << "获取用餐者信息失败，user_id=" << user_id << std::endl;
             return false;
@@ -428,12 +453,16 @@ bool FamilyService::createFamily(int user_id, const std::string& family_name) {
  *********************************************/
 std::vector<Canteen> CanteenService::getAllCanteens() {
     CanteenDAO dao;
-    return dao.getAllCanteens();
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getAllCanteens(conn);
 }
 
 std::shared_ptr<CanteenVO> CanteenService::getCanteenById(int id) {
     CanteenDAO dao;
-    return dao.getCanteenById(id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getCanteenById(conn, id);
 }
 
 bool CanteenService::updateCanteenAddress(int canteen_id, const std::string& address) {
@@ -441,7 +470,9 @@ bool CanteenService::updateCanteenAddress(int canteen_id, const std::string& add
         return false;
     }
     CanteenDAO dao;
-    return dao.updateCanteenAddress(canteen_id, address);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.updateCanteenAddress(conn, canteen_id, address);
 }
 
 bool CanteenService::updateCanteenStatus(int canteen_id, int status) {
@@ -449,7 +480,9 @@ bool CanteenService::updateCanteenStatus(int canteen_id, int status) {
         return false;
     }
     CanteenDAO dao;
-    return dao.updateCanteenStatus(canteen_id, status);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.updateCanteenStatus(conn, canteen_id, status);
 }
 
 std::shared_ptr<CanteenVO> CanteenService::getCanteenDetails(int canteen_id) {
@@ -457,12 +490,16 @@ std::shared_ptr<CanteenVO> CanteenService::getCanteenDetails(int canteen_id) {
         return nullptr;
     }
     CanteenDAO dao;
-    return dao.getCanteenById(canteen_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getCanteenById(conn, canteen_id);
 }
 
 std::vector<CanteenManagerVO> CanteenService::getCanteensWithManagers() {
     CanteenDAO dao;
-    return dao.getCanteensWithManagers();
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getCanteensWithManagers(conn);
 }
 
 std::vector<PurchaseBill> CanteenService::getPurchaseBills(int canteen_id) {
@@ -470,7 +507,9 @@ std::vector<PurchaseBill> CanteenService::getPurchaseBills(int canteen_id) {
         return std::vector<PurchaseBill>();
     }
     CanteenDAO dao;
-    return dao.getPurchaseBillsByCanteen(canteen_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getPurchaseBillsByCanteen(conn, canteen_id);
 }
 
 int CanteenService::createPurchaseBill(const PurchaseBill& bill) {
@@ -478,7 +517,9 @@ int CanteenService::createPurchaseBill(const PurchaseBill& bill) {
         return -1;
     }
     CanteenDAO dao;
-    return dao.createPurchaseBill(bill);    
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.createPurchaseBill(conn, bill);
 }
 
 // 财务统计 - 获取今日财务数据
@@ -487,8 +528,10 @@ TodayFinancialData CanteenService::getTodayFinancialData(int canteen_id) {
     
     try {
         CanteenDAO dao;
-        double income = dao.getTodayIncome(canteen_id);
-        double expense = dao.getTodayExpense(canteen_id);
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        double income = dao.getTodayIncome(conn, canteen_id);
+        double expense = dao.getTodayExpense(conn, canteen_id);
         data.setIncome(income);
         data.setExpense(expense);
         data.setProfit(income - expense);
@@ -508,6 +551,8 @@ FinancialData CanteenService::getFinancialData(int canteen_id, const std::string
     
     try {
         CanteenDAO dao;
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
         
         if (time_dimension == "day") {
             // 最近30天
@@ -522,12 +567,12 @@ FinancialData CanteenService::getFinancialData(int canteen_id, const std::string
                 
                 double value = 0.0;
                 if (stats_type == "income") {
-                    value = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
+                    value = dao.getIncomeByTimeDimension(conn, canteen_id, time_dimension, date_str);
                 } else if (stats_type == "expense") {
-                    value = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                    value = dao.getExpenseByTimeDimension(conn, canteen_id, time_dimension, date_str);
                 } else if (stats_type == "profit") {
-                    double income = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
-                    double expense = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                    double income = dao.getIncomeByTimeDimension(conn, canteen_id, time_dimension, date_str);
+                    double expense = dao.getExpenseByTimeDimension(conn, canteen_id, time_dimension, date_str);
                     value = income - expense;
                 }
                 
@@ -547,12 +592,12 @@ FinancialData CanteenService::getFinancialData(int canteen_id, const std::string
                 
                 double value = 0.0;
                 if (stats_type == "income") {
-                    value = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
+                    value = dao.getIncomeByTimeDimension(conn, canteen_id, time_dimension, date_str);
                 } else if (stats_type == "expense") {
-                    value = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                    value = dao.getExpenseByTimeDimension(conn, canteen_id, time_dimension, date_str);
                 } else if (stats_type == "profit") {
-                    double income = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
-                    double expense = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                    double income = dao.getIncomeByTimeDimension(conn, canteen_id, time_dimension, date_str);
+                    double expense = dao.getExpenseByTimeDimension(conn, canteen_id, time_dimension, date_str);
                     value = income - expense;
                 }
                 
@@ -572,12 +617,12 @@ FinancialData CanteenService::getFinancialData(int canteen_id, const std::string
                 
                 double value = 0.0;
                 if (stats_type == "income") {
-                    value = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
+                    value = dao.getIncomeByTimeDimension(conn, canteen_id, time_dimension, date_str);
                 } else if (stats_type == "expense") {
-                    value = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                    value = dao.getExpenseByTimeDimension(conn, canteen_id, time_dimension, date_str);
                 } else if (stats_type == "profit") {
-                    double income = dao.getIncomeByTimeDimension(canteen_id, time_dimension, date_str);
-                    double expense = dao.getExpenseByTimeDimension(canteen_id, time_dimension, date_str);
+                    double income = dao.getIncomeByTimeDimension(conn, canteen_id, time_dimension, date_str);
+                    double expense = dao.getExpenseByTimeDimension(conn, canteen_id, time_dimension, date_str);
                     value = income - expense;
                 }
                 
@@ -596,17 +641,23 @@ FinancialData CanteenService::getFinancialData(int canteen_id, const std::string
  *********************************************/
 std::vector<Dish> MenuService::getMenuByMealType(int canteen_id, const std::string& meal_type) {
     MenuDAO dao;
-    return dao.getMenuByMealType(canteen_id, meal_type);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getMenuByMealType(conn, canteen_id, meal_type);
 }
 
 std::vector<CanteenMenuVO> MenuService::getMenuByCanteen(int canteen_id) {
     MenuDAO dao;
-    return dao.getMenuByCanteen(canteen_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getMenuByCanteen(conn, canteen_id);
 }
 
 bool MenuService::updateMenu(const MenuCreateDTO& menu) {
     MenuDAO dao;
-    return dao.updateMenu(menu);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.updateMenu(conn, menu);
 }
 
 /**********************************************
@@ -614,30 +665,39 @@ bool MenuService::updateMenu(const MenuCreateDTO& menu) {
  *********************************************/
 std::vector<Dish> DishService::getDishsByCanteen(int canteen_id) {
     DishDAO dao;
-    return dao.getDishesByCanteen(canteen_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getDishesByCanteen(conn, canteen_id);
 }
 
 bool DishService::insertDish(const Dish& dish) {
     DishDAO dao;
-    return dao.insertDish(dish);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.insertDish(conn, dish);
 }
 
 bool DishService::disableDishByDishId(const int dish_id) {
     // 检查菜品是否在餐单中
     MenuDAO menu_dao;
-    if (menu_dao.isDishInMenu(dish_id)) {
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    
+    if (menu_dao.isDishInMenu(conn, dish_id)) {
         std::cout<< " 菜品在餐单中，不能下架" << std::endl;
         return false; // 菜品在餐单中，不能下架
     }
     
     std::cout<< " 菜品不在餐单中，可以下架" << std::endl;
     DishDAO dao;
-    return dao.disableDishByDishId(dish_id);
+    return dao.disableDishByDishId(conn, dish_id);
 }
 
 bool DishService::enableDishByDishId(int dish_id) {
     DishDAO dao;
-    return dao.enableDishByDishId(dish_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.enableDishByDishId(conn, dish_id);
 }
 
 /**********************************************
@@ -672,7 +732,7 @@ bool OrderService::placeOrder(int user_id,
 
         double total = 0.0;
 
-        auto dishes = dishDAO.getDishesByCanteen(canteen_id);// 获取食堂菜品（可以优化成批量查询）
+        auto dishes = dishDAO.getDishesByCanteen(conn, canteen_id);// 获取食堂菜品（可以优化成批量查询）
         std::cout << "获取到" << dishes.size() << "个菜品" << std::endl;
         // 1️⃣ 计算总价（业务逻辑）
         std::vector<OrderItem> orderItems;
@@ -697,7 +757,7 @@ bool OrderService::placeOrder(int user_id,
         std::cout << "原始总价：" << total << std::endl;
 
         // 获取用餐者信息，计算折扣
-        auto orderForUser = userDAO.getUserById(order_for_user_id);
+        auto orderForUser = userDAO.getUserById(conn, order_for_user_id);
         double discount = 1.0;
         if (orderForUser) {
             int age = orderForUser->getAge();
@@ -747,7 +807,7 @@ bool OrderService::placeOrder(int user_id,
             std::cout << "为自己点餐，允许下单" << std::endl;
         } else {
             // 否则检查是否为家庭成员
-            auto familyMembers = dinerDAO.getFamilyMembersByUserId(user_id);
+            auto familyMembers = dinerDAO.getFamilyMembersByUserId(conn, user_id);
             std::cout << "获取到" << familyMembers.size() << "个家庭成员" << std::endl;
             for (const auto& member : familyMembers) {
                 std::cout << "家庭成员ID：" << member.getUserId() << "，姓名：" << member.getUsername() << std::endl;
@@ -811,30 +871,39 @@ bool OrderService::placeOrder(int user_id,
 std::vector<FamilyMemberVO> OrderService::getOrderTargetsByUser(int user_id)
 {
     DinerDAO dao;
-    return dao.getFamilyMembersByUserId(user_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getFamilyMembersByUserId(conn, user_id);
 }
 
 std::vector<OrderVO> OrderService::getOrdersByUser(int user_id)
 {
     OrderDAO dao;
-    return dao.getOrdersByUser(user_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getOrdersByUser(conn, user_id);
 }
 
 std::vector<OrderVO> OrderService::getOrdersByCanteen(int canteen_id)
 {
     OrderDAO dao;
-    return dao.getOrdersByCanteen(canteen_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getOrdersByCanteen(conn, canteen_id);
 }
 
-bool OrderService::updateOrderStatus(int order_id, int status)
-{
+bool OrderService::updateOrderStatus(int order_id, int status) {
     OrderDAO dao;
-    return dao.updateOrderStatus(order_id, status);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.updateOrderStatus(conn, order_id, status);
 }
 
 std::vector<OrderDetailVO> OrderService::getOrdersDetailsByUser(int user_id,int order_id) {
     OrderDAO dao;
-    return dao.getOrdersDetailsByUser(user_id,order_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getOrdersDetailsByUser(conn, user_id, order_id);
 }
 
 // 用餐偏好相关方法
@@ -842,9 +911,11 @@ DiningPreference OrderService::getDiningPreference(int user_id, const std::strin
     DiningPreference preference;
     try {
         OrderDAO dao;
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
         
         // 获取用餐偏好摘要
-        auto summary = dao.getDiningPreferenceSummary(user_id, time_dimension);
+        auto summary = dao.getDiningPreferenceSummary(conn, user_id, time_dimension);
         DiningPreferenceSummary summary_vo;
         summary_vo.setTotalAmount(summary.getTotalAmount());
         summary_vo.setOrderCount(summary.getOrderCount());
@@ -852,7 +923,7 @@ DiningPreference OrderService::getDiningPreference(int user_id, const std::strin
         preference.setSummary(summary_vo);
         
         // 获取餐厅消费次数
-        auto canteen_consumption = dao.getCanteenConsumptionCount(user_id, time_dimension);
+        auto canteen_consumption = dao.getCanteenConsumptionCount(conn, user_id, time_dimension);
         for (const auto& item : canteen_consumption) {
             ConsumptionItem consumption_item;
             consumption_item.setName(item.first);
@@ -861,7 +932,7 @@ DiningPreference OrderService::getDiningPreference(int user_id, const std::strin
         }
         
         // 获取菜品消费次数
-        auto dish_consumption = dao.getDishConsumptionCount(user_id, time_dimension);
+        auto dish_consumption = dao.getDishConsumptionCount(conn, user_id, time_dimension);
         for (const auto& item : dish_consumption) {
             ConsumptionItem consumption_item;
             consumption_item.setName(item.first);
@@ -877,7 +948,9 @@ DiningPreference OrderService::getDiningPreference(int user_id, const std::strin
 std::shared_ptr<RecentOrderVO> OrderService::getRecentOrder(int user_id, int order_for_user_id, int canteen_id) {
     try {
         OrderDAO dao;
-        return dao.getRecentOrder(user_id, order_for_user_id, canteen_id);
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        return dao.getRecentOrder(conn, user_id, order_for_user_id, canteen_id);
     } catch (const std::exception& e) {
         std::cerr << "获取最近订单失败: " << e.what() << std::endl;
         return nullptr;
@@ -889,23 +962,29 @@ std::shared_ptr<RecentOrderVO> OrderService::getRecentOrder(int user_id, int ord
  *********************************************/
 bool RatingService::submitRating(const Rating& rating) {
     RatingDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
 
     // 校验评分
     if (rating.getScore() < 1 || rating.getScore() > 5) {
         return false;
     }
 
-    return dao.insertRating(rating);
+    return dao.insertRating(conn, rating);
 }
 
 std::vector<Rating> RatingService::getRatings(int canteen_id) {
     RatingDAO dao;
-    return dao.getRatingsByCanteen(canteen_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getRatingsByCanteen(conn, canteen_id);
 }
 
 std::vector<CanteenRatingVO> RatingService::getCanteenRatingDetails(int canteen_id) {
     RatingDAO dao;
-    return dao.getCanteenRatingDetails(canteen_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getCanteenRatingDetails(conn, canteen_id);
 }
 
 /**********************************************
@@ -913,20 +992,26 @@ std::vector<CanteenRatingVO> RatingService::getCanteenRatingDetails(int canteen_
  *********************************************/
 bool ReportService::addReport(const Report& report) {
     ReportDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
 
     if (report.getContent().empty()) return false;
 
-    return dao.insertReport(report);
+    return dao.insertReport(conn, report);
 }
 
 std::vector<Report> ReportService::getReportsByCanteen(int canteen_id) {
     ReportDAO dao;
-    return dao.getReportsByCanteen(canteen_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getReportsByCanteen(conn, canteen_id);
 }
 
 std::vector<ReportVO> ReportService::getAllReports() {
     ReportDAO dao;
-    return dao.getAllReports();
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getAllReports(conn);
 }
 
 bool ReportService::updateReportStatus(int report_id, int status, int handler_id) {
@@ -937,7 +1022,9 @@ bool ReportService::updateReportStatus(int report_id, int status, int handler_id
         return false;
     }
     ReportDAO dao;
-    return dao.updateReportStatus(report_id, status, handler_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.updateReportStatus(conn, report_id, status, handler_id);
 }
 
 /**********************************************
@@ -949,12 +1036,16 @@ bool AnnouncementService::publishAnnouncement(const Announcement& announcement) 
     }
 
     AnnouncementDAO dao;
-    return dao.insertAnnouncement(announcement);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.insertAnnouncement(conn, announcement);
 }
 
 std::vector<AnnouncementVO> AnnouncementService::getAnnouncementList() {
     AnnouncementDAO dao;
-    return dao.getAnnouncementList();
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getAnnouncementList(conn);
 }
 
 bool AnnouncementService::deleteAnnouncement(int announce_id, int publisher_id) {
@@ -962,7 +1053,9 @@ bool AnnouncementService::deleteAnnouncement(int announce_id, int publisher_id) 
         return false;
     }
     AnnouncementDAO dao;
-    return dao.deleteAnnouncement(announce_id, publisher_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.deleteAnnouncement(conn, announce_id, publisher_id);
 }
 
 /**********************************************
@@ -973,7 +1066,9 @@ bool MessageService::createMessage(const Message& message) {
         return false;
     }
     MessageDAO dao;
-    return dao.insertMessage(message);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.insertMessage(conn, message);
 }
 
 std::vector<Message> MessageService::getMessagesByCanteen(int canteen_id) {
@@ -981,7 +1076,9 @@ std::vector<Message> MessageService::getMessagesByCanteen(int canteen_id) {
         return {};
     }
     MessageDAO dao;
-    return dao.getMessagesByCanteen(canteen_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getMessagesByCanteen(conn, canteen_id);
 }
 
 std::vector<Message> MessageService::getMessagesByUser(int user_id, int canteen_id) {
@@ -989,7 +1086,9 @@ std::vector<Message> MessageService::getMessagesByUser(int user_id, int canteen_
         return {};
     }
     MessageDAO dao;
-    return dao.getMessagesByUser(user_id, canteen_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getMessagesByUser(conn, user_id, canteen_id);
 }
 
 bool MessageService::replyMessage(const Message& message) {
@@ -997,7 +1096,9 @@ bool MessageService::replyMessage(const Message& message) {
         return false;
     }
     MessageDAO dao;
-    return dao.replyMessage(message);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.replyMessage(conn, message);
 }
 
 /**********************************************
@@ -1019,7 +1120,9 @@ bool OrderCancelService::createCancelApply(int order_id, const std::string& canc
 
 std::vector<OrderCancelVO> OrderCancelService::getCancelAppliesByCanteen(int canteen_id) {
     OrderCancelDAO dao;
-    return dao.getCancelAppliesByCanteen(canteen_id);
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getCancelAppliesByCanteen(conn, canteen_id);
 }
 
 bool OrderCancelService::handleCancelApply(int cancel_id, int status, const std::string& reject_reason) {
@@ -1033,11 +1136,11 @@ bool OrderCancelService::handleCancelApply(int cancel_id, int status, const std:
                 OrderDAO order_dao;
                 OrderCancelDAO cancel_dao;
                 // 获取订单ID
-                auto cancel_apply = cancel_dao.getCancelApplyByCancelId(cancel_id);
+                auto cancel_apply = cancel_dao.getCancelApplyByCancelId(conn, cancel_id);
                 if (cancel_apply) {
                     int order_id = cancel_apply->getOrderId();
                     // 更新订单状态为已取消
-                    order_dao.updateOrderStatus(order_id, 2);
+                    order_dao.updateOrderStatus(conn, order_id, 2);
                 }
             }
             return true;

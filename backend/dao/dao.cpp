@@ -5,13 +5,10 @@
  * RegionDao
  ***************************************************************************************/
 
-std::vector<Region> RegionDAO::getRegionList() {
+std::vector<Region> RegionDAO::getRegionList(sql::Connection *conn) {
     std::vector<Region> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT r.region_id, r.region_name, r.region_level, r.parent_id FROM region r "
@@ -73,12 +70,9 @@ int UserDAO::insertUser(sql::Connection *conn, const User& user)
     } catch (...) { return -1; }
 }
 
-bool UserDAO::existsByUsername(const std::string& username)
+bool UserDAO::existsByUsername(sql::Connection *conn, const std::string& username)
 {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("SELECT 1 FROM users WHERE username = ? LIMIT 1")
         );
@@ -169,12 +163,9 @@ bool ManagerDAO::insertManager(sql::Connection *conn, int user_id, int canteen_i
     } catch (...) { return false; }
 }
 
-std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(const std::string& username, const std::string& password)
+std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(sql::Connection *conn, const std::string& username, const std::string& password)
 {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT * FROM users WHERE username=? AND password=?"
@@ -200,12 +191,9 @@ std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(const std::string& u
     } catch (...) {}
     return nullptr;
 }
-std::shared_ptr<User> UserDAO::getUserById(int user_id)
+std::shared_ptr<User> UserDAO::getUserById(sql::Connection *conn, int user_id)
 {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT * FROM users WHERE user_id=?"
@@ -251,10 +239,8 @@ bool UserDAO::updateUser(sql::Connection *conn, const DinerCenterVO& user) {
     } catch (...) { return false; }
 }
 
-std::string UserDAO::getUserRole(int user_id)
+std::string UserDAO::getUserRole(sql::Connection *conn, int user_id)
 {
-    DBConnectionGuard guard;
-    auto* conn = guard.get();
     // 查 admin 表
     auto stmt1 = std::unique_ptr<sql::PreparedStatement>(
         conn->prepareStatement("SELECT level_id FROM admin WHERE user_id = ?")
@@ -316,12 +302,9 @@ bool UserDAO::updateStatus(sql::Connection *conn, int user_id, int status)
     } catch (...) { return false; }
 }
 
-bool UserDAO::updateStatus(const User& user)
+bool UserDAO::updateStatus(sql::Connection *conn, const User& user)
 {
     try {
-        DBConnectionGuard guard;
-        auto conn = guard.get();
-
         return updateStatus(conn, user.getId(), user.getStatus());
     } catch (...) { return false; }
 }
@@ -348,11 +331,8 @@ bool AdminDAO::insertAdmin(sql::Connection *conn, int user_id, int level_id, int
 }
 
 
-std::shared_ptr<Admin> AdminDAO::getAdminByUserId(int user_id) {
+std::shared_ptr<Admin> AdminDAO::getAdminByUserId(sql::Connection *conn, int user_id) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT * FROM admin WHERE user_id=?"
@@ -373,14 +353,11 @@ std::shared_ptr<Admin> AdminDAO::getAdminByUserId(int user_id) {
     return nullptr;
 }
 
-std::vector<AdminInformation> AdminDAO::getAdminList()
+std::vector<AdminInformation> AdminDAO::getAdminList(sql::Connection *conn)
 {
     std::vector<AdminInformation> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT u.user_id, username, age, phone, status, a.level_id, l.level_name, r.region_id, r.region_name " 
@@ -430,14 +407,11 @@ bool AdminApplyDAO::insertApply(sql::Connection *conn, int user_id, int level_id
     } catch (...) { return false; }
 }
 
-std::vector<AdminApplyVO> AdminApplyDAO::getApplyList()
+std::vector<AdminApplyVO> AdminApplyDAO::getApplyList(sql::Connection *conn)
 {
     std::vector<AdminApplyVO> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT aa.apply_id, aa.user_id, u.username, u.age, u.phone, aa.level_id, l.level_name, "
@@ -536,14 +510,11 @@ bool CanteenManagerApplyDAO::insertApply(sql::Connection *conn, int user_id, con
     } catch (...) { return false; }
 }
 
-std::vector<CanteenManagerApplyVO> CanteenManagerApplyDAO::getApplyList()
+std::vector<CanteenManagerApplyVO> CanteenManagerApplyDAO::getApplyList(sql::Connection *conn)
 {
     std::vector<CanteenManagerApplyVO> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT ca.apply_id, ca.user_id, u.username, u.age, u.phone, ca.canteen_name, ca.status, "
@@ -622,12 +593,9 @@ bool CanteenManagerApplyDAO::reviewApply(sql::Connection *conn, int apply_id, in
     } catch (...) { return false; }
 }
 
-std::shared_ptr<Diner> DinerDAO::getDinerByUserId(int user_id)
+std::shared_ptr<Diner> DinerDAO::getDinerByUserId(sql::Connection *conn, int user_id)
 {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT * FROM diner WHERE user_id=?"
@@ -649,12 +617,9 @@ std::shared_ptr<Diner> DinerDAO::getDinerByUserId(int user_id)
     return nullptr;
 }
 
-std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(int user_id)
+std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(sql::Connection *conn, int user_id)
 {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT u.username, u.age, u.phone, u.id_card, r.region_id, r.region_name, d.family_id, f.family_name, d.disease_history, d.taste_preference "
@@ -687,14 +652,11 @@ std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(int user_id)
     return nullptr;
 }
 
-std::vector<FamilyMemberVO> DinerDAO::getFamilyMembersByUserId(int user_id)
+std::vector<FamilyMemberVO> DinerDAO::getFamilyMembersByUserId(sql::Connection *conn, int user_id)
 {
     std::vector<FamilyMemberVO> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT u.user_id, u.username "
@@ -766,14 +728,11 @@ bool DinerDAO::updateFamilyId(sql::Connection *conn, int user_id, int family_id)
     } catch (...) { return false; }
 }
 
-std::vector<DinerInformation> DinerDAO::getDinerList()
+std::vector<DinerInformation> DinerDAO::getDinerList(sql::Connection *conn)
 {
     std::vector<DinerInformation> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT u.user_id, u.username, u.age, u.phone, u.status, r.region_id, r.region_name, d.disease_history, d.taste_preference "
@@ -806,16 +765,12 @@ std::vector<DinerInformation> DinerDAO::getDinerList()
 /***************************************************************************************
  * FamilyDao
 ***************************************************************************************/
-int FamilyDAO::insertFamily(const Family& family) {
+int FamilyDAO::insertFamily(sql::Connection *conn, const Family& family) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "INSERT INTO family(family_name) "
-                "VALUES (?)"
-            )
+                "VALUES (?)")
         );
 
         stmt->setString(1, family.getName());
@@ -839,13 +794,10 @@ int FamilyDAO::insertFamily(const Family& family) {
     } catch (...) { return -1; }
 }
 
-Family FamilyDAO::getFamilyByUserId(int user_id) {
+Family FamilyDAO::getFamilyByUserId(sql::Connection *conn, int user_id) {
     Family family;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT f.family_id, f.family_name FROM family f "
@@ -865,13 +817,10 @@ Family FamilyDAO::getFamilyByUserId(int user_id) {
     return family;
 }
 
-std::vector<Family> FamilyDAO::getFamilyList() {
+std::vector<Family> FamilyDAO::getFamilyList(sql::Connection *conn) {
     std::vector<Family> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT f.family_id, f.family_name FROM family f "
@@ -894,13 +843,10 @@ std::vector<Family> FamilyDAO::getFamilyList() {
 /***************************************************************************************
  * CanteenDao
  ***************************************************************************************/
-std::vector<Canteen> CanteenDAO::getAllCanteens() {
+std::vector<Canteen> CanteenDAO::getAllCanteens(sql::Connection *conn) {
     std::vector<Canteen> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("SELECT * FROM canteen")
         );
@@ -918,11 +864,8 @@ std::vector<Canteen> CanteenDAO::getAllCanteens() {
     return list;
 }
 
-std::shared_ptr<CanteenVO> CanteenDAO::getCanteenById(int id) {
+std::shared_ptr<CanteenVO> CanteenDAO::getCanteenById(sql::Connection *conn, int id) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT c.canteen_id, c.name, c.address, r.region_id, r.region_name, c.status "
@@ -949,11 +892,8 @@ std::shared_ptr<CanteenVO> CanteenDAO::getCanteenById(int id) {
     return nullptr;
 }
 
-int CanteenDAO::getCanteenIdByUserId(int user_id) {
+int CanteenDAO::getCanteenIdByUserId(sql::Connection *conn, int user_id) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT canteen_id FROM canteen_manager WHERE user_id=?"
@@ -1012,11 +952,8 @@ int CanteenDAO::insertCanteen(sql::Connection *conn, const std::string& canteen_
     return -1;
 }
 
-bool CanteenDAO::updateCanteenAddress(int canteen_id, const std::string& address) {
+bool CanteenDAO::updateCanteenAddress(sql::Connection *conn, int canteen_id, const std::string& address) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "UPDATE canteen SET address = ? WHERE canteen_id = ?"
@@ -1034,11 +971,8 @@ bool CanteenDAO::updateCanteenAddress(int canteen_id, const std::string& address
     } catch (...) { return false; }
 }
 
-bool CanteenDAO::updateCanteenStatus(int canteen_id, int status) {
+bool CanteenDAO::updateCanteenStatus(sql::Connection *conn, int canteen_id, int status) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         // 开始事务
         TransactionGuard tx(conn);
 
@@ -1086,12 +1020,9 @@ bool CanteenDAO::updateCanteenStatus(int canteen_id, int status) {
     } catch (...) { return false; }
 }
 
-std::vector<CanteenManagerVO> CanteenDAO::getCanteensWithManagers() {
+std::vector<CanteenManagerVO> CanteenDAO::getCanteensWithManagers(sql::Connection *conn) {
     std::vector<CanteenManagerVO> canteens;
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT c.canteen_id, c.name, c.address, c.region_id, r.region_name, "
@@ -1147,12 +1078,9 @@ std::vector<CanteenManagerVO> CanteenDAO::getCanteensWithManagers() {
     return canteens;
 }
 
-std::vector<PurchaseBill> CanteenDAO::getPurchaseBillsByCanteen(int canteen_id) {
+std::vector<PurchaseBill> CanteenDAO::getPurchaseBillsByCanteen(sql::Connection *conn, int canteen_id) {
     std::vector<PurchaseBill> bills;
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("SELECT * FROM purchase_bill WHERE canteen_id = ? ORDER BY purchase_date DESC")
         );
@@ -1174,11 +1102,8 @@ std::vector<PurchaseBill> CanteenDAO::getPurchaseBillsByCanteen(int canteen_id) 
     return bills;
 }
 
-int CanteenDAO::createPurchaseBill(const PurchaseBill& bill) {
+int CanteenDAO::createPurchaseBill(sql::Connection *conn, const PurchaseBill& bill) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("INSERT INTO purchase_bill (canteen_id, amount, purchase_date, remark) VALUES (?, ?, ?, ?)")
         );
@@ -1204,14 +1129,11 @@ int CanteenDAO::createPurchaseBill(const PurchaseBill& bill) {
 /***************************************************************************************
  * DishDao
  ***************************************************************************************/
-std::vector<Dish> DishDAO::getDishesByCanteen(int canteen_id)
+std::vector<Dish> DishDAO::getDishesByCanteen(sql::Connection *conn, int canteen_id)
 {
     std::vector<Dish> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("SELECT * FROM dish WHERE canteen_id=? ")
         );
@@ -1237,11 +1159,8 @@ std::vector<Dish> DishDAO::getDishesByCanteen(int canteen_id)
     return list;
 }
 
-bool DishDAO::insertDish(const Dish& dish){
+bool DishDAO::insertDish(sql::Connection *conn, const Dish& dish){
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt1 = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "INSERT INTO dish(canteen_id, name, type, price, calories, nutrition_info) "
@@ -1267,11 +1186,8 @@ bool DishDAO::insertDish(const Dish& dish){
     }
 
 }
-bool DishDAO::disableDishByDishId(const int dish_id){
+bool DishDAO::disableDishByDishId(sql::Connection *conn, const int dish_id){
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "UPDATE dish SET status = 0 WHERE dish_id = ? "
@@ -1291,11 +1207,8 @@ bool DishDAO::disableDishByDishId(const int dish_id){
 
 }
 
-bool DishDAO::enableDishByDishId(const int dish_id){
+bool DishDAO::enableDishByDishId(sql::Connection *conn, const int dish_id){
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "UPDATE dish SET status = 1 WHERE dish_id = ? "
@@ -1318,13 +1231,10 @@ bool DishDAO::enableDishByDishId(const int dish_id){
 /***************************************************************************************
  * MenuDao
  ***************************************************************************************/
-std::vector<Dish> MenuDAO::getMenuByMealType(int canteen_id, const std::string& meal_type) {
+std::vector<Dish> MenuDAO::getMenuByMealType(sql::Connection *conn, int canteen_id, const std::string& meal_type) {
     std::vector<Dish> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT d.* FROM daily_menu m "
@@ -1354,12 +1264,9 @@ std::vector<Dish> MenuDAO::getMenuByMealType(int canteen_id, const std::string& 
     return list;
 }
 
-std::vector<CanteenMenuVO> MenuDAO::getMenuByCanteen(int canteen_id) {
+std::vector<CanteenMenuVO> MenuDAO::getMenuByCanteen(sql::Connection *conn, int canteen_id) {
     std::vector<CanteenMenuVO> list;
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT m.menu_id, m.meal_type, d.dish_id, d.name, d.price "
@@ -1409,11 +1316,8 @@ std::vector<CanteenMenuVO> MenuDAO::getMenuByCanteen(int canteen_id) {
 }
 
 
-int MenuDAO::getMenuIdByCanteenAndMealType(int canteen_id, const std::string& meal_type) {
+int MenuDAO::getMenuIdByCanteenAndMealType(sql::Connection *conn, int canteen_id, const std::string& meal_type) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT menu_id FROM daily_menu WHERE canteen_id = ? AND meal_type = ?"
@@ -1435,11 +1339,8 @@ int MenuDAO::getMenuIdByCanteenAndMealType(int canteen_id, const std::string& me
     return -1;
 }
 
-bool MenuDAO::isDishInMenu(int dish_id) {
+bool MenuDAO::isDishInMenu(sql::Connection *conn, int dish_id) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT COUNT(*) FROM menu_dish WHERE dish_id = ?"
@@ -1461,13 +1362,10 @@ bool MenuDAO::isDishInMenu(int dish_id) {
     }
 }
 
-bool MenuDAO::updateMenu(const MenuCreateDTO& menu) {
+bool MenuDAO::updateMenu(sql::Connection *conn, const MenuCreateDTO& menu) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         // 获取餐单 ID
-        int menu_id = getMenuIdByCanteenAndMealType(menu.getCanteenId(), menu.getMealType());
+        int menu_id = getMenuIdByCanteenAndMealType(conn, menu.getCanteenId(), menu.getMealType());
         if (menu_id == -1) {
             return false;
         }
@@ -1552,14 +1450,11 @@ bool MenuDAO::updateMenu(const MenuCreateDTO& menu) {
     }
 }
 
-std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
+std::vector<OrderVO> OrderDAO::getOrdersByUser(sql::Connection *conn, int user_id)
 {
     std::vector<OrderVO> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
     auto stmt = std::unique_ptr<sql::PreparedStatement>(
         conn->prepareStatement(R"(
              SELECT 
@@ -1614,14 +1509,11 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(int user_id)
     return list;
 }
 
-std::vector<OrderVO> OrderDAO::getOrdersByCanteen(int canteen_id)
+std::vector<OrderVO> OrderDAO::getOrdersByCanteen(sql::Connection *conn, int canteen_id)
 {
     std::vector<OrderVO> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
     auto stmt = std::unique_ptr<sql::PreparedStatement>(
         conn->prepareStatement(R"(
              SELECT 
@@ -1676,12 +1568,9 @@ std::vector<OrderVO> OrderDAO::getOrdersByCanteen(int canteen_id)
     return list;
 }
 
-bool OrderDAO::updateOrderStatus(int order_id, int status)
+bool OrderDAO::updateOrderStatus(sql::Connection *conn, int order_id, int status)
 {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("UPDATE orders SET status = ? WHERE order_id = ?")
         );
@@ -1696,14 +1585,11 @@ bool OrderDAO::updateOrderStatus(int order_id, int status)
     }
 }
 
-std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByUser(int user_id,int order_id)
+std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByUser(sql::Connection *conn, int user_id,int order_id)
 {
     std::vector<OrderDetailVO> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(R"(
                 SELECT 
@@ -1744,11 +1630,8 @@ std::vector<OrderDetailVO> OrderDAO::getOrdersDetailsByUser(int user_id,int orde
     return list;
 }
 
-std::shared_ptr<RecentOrderVO> OrderDAO::getRecentOrder(int user_id, int order_for_user_id, int canteen_id) {
+std::shared_ptr<RecentOrderVO> OrderDAO::getRecentOrder(sql::Connection *conn, int user_id, int order_for_user_id, int canteen_id) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         // 获取最近的订单ID
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(R"(
@@ -1844,12 +1727,9 @@ std::shared_ptr<RecentOrderVO> OrderDAO::getRecentOrder(int user_id, int order_f
 }
 
 // 用餐偏好相关方法
-DiningPreferenceSummary OrderDAO::getDiningPreferenceSummary(int user_id, const std::string& time_dimension) {
+DiningPreferenceSummary OrderDAO::getDiningPreferenceSummary(sql::Connection *conn, int user_id, const std::string& time_dimension) {
     DiningPreferenceSummary summary;
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-        
         // 构建时间条件
         std::string time_condition = "";
         if (time_dimension == "year") {
@@ -1898,12 +1778,9 @@ DiningPreferenceSummary OrderDAO::getDiningPreferenceSummary(int user_id, const 
     return summary;
 }
 
-std::vector<std::pair<std::string, int>> OrderDAO::getCanteenConsumptionCount(int user_id, const std::string& time_dimension) {
+std::vector<std::pair<std::string, int>> OrderDAO::getCanteenConsumptionCount(sql::Connection *conn, int user_id, const std::string& time_dimension) {
     std::vector<std::pair<std::string, int>> result;
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-        
         // 构建时间条件
         std::string time_condition = "";
         if (time_dimension == "year") {
@@ -1963,12 +1840,9 @@ std::vector<std::pair<std::string, int>> OrderDAO::getCanteenConsumptionCount(in
     return result;
 }
 
-std::vector<std::pair<std::string, int>> OrderDAO::getDishConsumptionCount(int user_id, const std::string& time_dimension) {
+std::vector<std::pair<std::string, int>> OrderDAO::getDishConsumptionCount(sql::Connection *conn, int user_id, const std::string& time_dimension) {
     std::vector<std::pair<std::string, int>> result;
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-        
         // 构建时间条件
         std::string time_condition = "";
         if (time_dimension == "year") {
@@ -2060,11 +1934,8 @@ bool OrderItemDAO::insertOrderItems(sql::Connection *conn, int order_id, const s
 /***************************************************************************************
  * RatingDao
  ***************************************************************************************/
-bool RatingDAO::insertRating(const Rating& rating) {
+bool RatingDAO::insertRating(sql::Connection *conn, const Rating& rating) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "INSERT INTO rating(user_id, canteen_id, order_id, score, comment, time) "
@@ -2090,14 +1961,11 @@ bool RatingDAO::insertRating(const Rating& rating) {
     } catch (...) { return false; }
 }
 
- std::vector<Rating> RatingDAO::getRatingsByCanteen(int canteen_id)
+ std::vector<Rating> RatingDAO::getRatingsByCanteen(sql::Connection *conn, int canteen_id)
  {
     std::vector<Rating> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT * FROM rating WHERE canteen_id=?"
@@ -2122,14 +1990,11 @@ bool RatingDAO::insertRating(const Rating& rating) {
     return list;
 }
 
-std::vector<CanteenRatingVO> RatingDAO::getCanteenRatingDetails(int canteen_id)
+std::vector<CanteenRatingVO> RatingDAO::getCanteenRatingDetails(sql::Connection *conn, int canteen_id)
 {
     std::vector<CanteenRatingVO> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(R"(
                 SELECT
@@ -2185,11 +2050,8 @@ std::vector<CanteenRatingVO> RatingDAO::getCanteenRatingDetails(int canteen_id)
 /***************************************************************************************
  * ReportDao
 ***************************************************************************************/
-bool ReportDAO::insertReport(const Report& report) {
+bool ReportDAO::insertReport(sql::Connection *conn, const Report& report) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "INSERT INTO report(user_id, canteen_id, type, content, status, create_time) "
@@ -2206,14 +2068,11 @@ bool ReportDAO::insertReport(const Report& report) {
     } catch (...) { return false; }
 }
 
-std::vector<Report> ReportDAO::getReportsByCanteen(int canteen_id)
+std::vector<Report> ReportDAO::getReportsByCanteen(sql::Connection *conn, int canteen_id)
 {
     std::vector<Report> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT * FROM report WHERE canteen_id=?"
@@ -2238,14 +2097,11 @@ std::vector<Report> ReportDAO::getReportsByCanteen(int canteen_id)
     return list;
 }
 
-std::vector<ReportVO> ReportDAO::getAllReports()
+std::vector<ReportVO> ReportDAO::getAllReports(sql::Connection *conn)
 {
     std::vector<ReportVO> list;
 
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(R"(
                 SELECT
@@ -2297,12 +2153,9 @@ std::vector<ReportVO> ReportDAO::getAllReports()
     return list;
 }
 
-bool ReportDAO::updateReportStatus(int report_id, int status, int handler_id)
+bool ReportDAO::updateReportStatus(sql::Connection *conn, int report_id, int status, int handler_id)
 {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "UPDATE report SET status = ?, handler_id = ?, handle_time = NOW() "
@@ -2320,11 +2173,8 @@ bool ReportDAO::updateReportStatus(int report_id, int status, int handler_id)
 /***************************************************************************************
  * AnnouncementDao
 ***************************************************************************************/
-bool AnnouncementDAO::insertAnnouncement(const Announcement& announcement) {
+bool AnnouncementDAO::insertAnnouncement(sql::Connection *conn, const Announcement& announcement) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "INSERT INTO announcement(title, content, publisher_id, publish_time) "
@@ -2340,12 +2190,9 @@ bool AnnouncementDAO::insertAnnouncement(const Announcement& announcement) {
     } catch (...) { return false; }
 }
 
-std::vector<AnnouncementVO> AnnouncementDAO::getAnnouncementList() {
+std::vector<AnnouncementVO> AnnouncementDAO::getAnnouncementList(sql::Connection *conn) {
     std::vector<AnnouncementVO> list;
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT a.announce_id, a.title, a.content, a.publish_time, a.publisher_id, u.username "
@@ -2371,11 +2218,8 @@ std::vector<AnnouncementVO> AnnouncementDAO::getAnnouncementList() {
     return list;
 }
 
-bool AnnouncementDAO::deleteAnnouncement(int announce_id, int publisher_id) {
+bool AnnouncementDAO::deleteAnnouncement(sql::Connection *conn, int announce_id, int publisher_id) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("DELETE FROM announcement WHERE announce_id = ? AND publisher_id = ?")
         );
@@ -2392,11 +2236,8 @@ bool AnnouncementDAO::deleteAnnouncement(int announce_id, int publisher_id) {
 /***************************************************************************************
  * MessageDAO
  ***************************************************************************************/
-bool MessageDAO::insertMessage(const Message& message) {
+bool MessageDAO::insertMessage(sql::Connection *conn, const Message& message) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("INSERT INTO messageboard(canteen_id, message_time, user_id, content, status) VALUES (?, NOW(), ?, ?, 0)")
         );
@@ -2411,12 +2252,9 @@ bool MessageDAO::insertMessage(const Message& message) {
     }
 }
 
-std::vector<Message> MessageDAO::getMessagesByCanteen(int canteen_id) {
+std::vector<Message> MessageDAO::getMessagesByCanteen(sql::Connection *conn, int canteen_id) {
     std::vector<Message> list;
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("SELECT * FROM messageboard WHERE canteen_id = ? ORDER BY status ASC, message_time DESC")
         );
@@ -2442,12 +2280,9 @@ std::vector<Message> MessageDAO::getMessagesByCanteen(int canteen_id) {
     return list;
 }
 
-std::vector<Message> MessageDAO::getMessagesByUser(int user_id, int canteen_id) {
+std::vector<Message> MessageDAO::getMessagesByUser(sql::Connection *conn, int user_id, int canteen_id) {
     std::vector<Message> list;
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("SELECT * FROM messageboard WHERE user_id = ? AND canteen_id = ? ORDER BY message_time DESC")
         );
@@ -2474,11 +2309,8 @@ std::vector<Message> MessageDAO::getMessagesByUser(int user_id, int canteen_id) 
     return list;
 }
 
-bool MessageDAO::replyMessage(const Message& message) {
+bool MessageDAO::replyMessage(sql::Connection *conn, const Message& message) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement("UPDATE messageboard SET reply = ?, reply_time = NOW(), status = 1 WHERE id = ?")
         );
@@ -2495,11 +2327,8 @@ bool MessageDAO::replyMessage(const Message& message) {
 /***************************************************************************************
  * CanteenDAO - 财务统计相关方法
  ***************************************************************************************/
-double CanteenDAO::getTodayIncome(int canteen_id) {
+double CanteenDAO::getTodayIncome(sql::Connection *conn, int canteen_id) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND DATE(order_time) = DATE(NOW())"
@@ -2537,11 +2366,9 @@ int OrderCancelDAO::insertCancelApply(sql::Connection *conn, int order_id, const
     }
 }
 
-std::vector<OrderCancelVO> OrderCancelDAO::getCancelAppliesByCanteen(int canteen_id) {
+std::vector<OrderCancelVO> OrderCancelDAO::getCancelAppliesByCanteen(sql::Connection *conn, int canteen_id) {
     std::vector<OrderCancelVO> list;
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(R"(
                 SELECT oc.cancel_id, oc.order_id, oc.cancel_time, oc.cancel_reason, oc.status, 
@@ -2582,10 +2409,8 @@ std::vector<OrderCancelVO> OrderCancelDAO::getCancelAppliesByCanteen(int canteen
     return list;
 }
 
-std::shared_ptr<OrderCancelVO> OrderCancelDAO::getCancelApplyByOrderId(int order_id) {
+std::shared_ptr<OrderCancelVO> OrderCancelDAO::getCancelApplyByOrderId(sql::Connection *conn, int order_id) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(R"(
                 SELECT oc.cancel_id, oc.order_id, oc.cancel_time, oc.cancel_reason, oc.status, 
@@ -2619,10 +2444,8 @@ std::shared_ptr<OrderCancelVO> OrderCancelDAO::getCancelApplyByOrderId(int order
     return nullptr;
 }
 
-std::shared_ptr<OrderCancelVO> OrderCancelDAO::getCancelApplyByCancelId(int cancel_id) {
+std::shared_ptr<OrderCancelVO> OrderCancelDAO::getCancelApplyByCancelId(sql::Connection *conn, int cancel_id) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(R"(
                 SELECT oc.cancel_id, oc.order_id, oc.cancel_time, oc.cancel_reason, oc.status, 
@@ -2669,11 +2492,8 @@ bool OrderCancelDAO::updateCancelStatus(sql::Connection *conn, int cancel_id, in
     }
 }
 
-double CanteenDAO::getTodayExpense(int canteen_id) {
+double CanteenDAO::getTodayExpense(sql::Connection *conn, int canteen_id) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "SELECT COALESCE(SUM(amount), 0) FROM purchase_bill WHERE canteen_id = ? AND DATE(purchase_date) = DATE(NOW())"
@@ -2691,11 +2511,8 @@ double CanteenDAO::getTodayExpense(int canteen_id) {
     return 0.0;
 }
 
-double CanteenDAO::getIncomeByTimeDimension(int canteen_id, const std::string& time_dimension, const std::string& date_str) {
+double CanteenDAO::getIncomeByTimeDimension(sql::Connection *conn, int canteen_id, const std::string& time_dimension, const std::string& date_str) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         std::string sql;
         if (time_dimension == "day") {
             sql = "SELECT COALESCE(SUM(total_price), 0) FROM orders WHERE canteen_id = ? AND DATE(order_time) = ?";
@@ -2720,11 +2537,8 @@ double CanteenDAO::getIncomeByTimeDimension(int canteen_id, const std::string& t
     return 0.0;
 }
 
-double CanteenDAO::getExpenseByTimeDimension(int canteen_id, const std::string& time_dimension, const std::string& date_str) {
+double CanteenDAO::getExpenseByTimeDimension(sql::Connection *conn, int canteen_id, const std::string& time_dimension, const std::string& date_str) {
     try {
-        DBConnectionGuard guard;
-        auto* conn = guard.get();
-
         std::string sql;
         if (time_dimension == "day") {
             sql = "SELECT COALESCE(SUM(amount), 0) FROM purchase_bill WHERE canteen_id = ? AND DATE(purchase_date) = ?";

@@ -12,7 +12,7 @@
 // ================================
 class RegionDAO {
 public:
-    std::vector<Region> getRegionList();
+    std::vector<Region> getRegionList(sql::Connection *conn);
 };
 
 // ================================
@@ -21,13 +21,13 @@ public:
 class UserDAO {
 public:
     int insertUser(sql::Connection *conn, const User& user);
-    bool existsByUsername(const std::string& username);
-    std::shared_ptr<User> getUserByUsernameAndPassword(const std::string&, const std::string&);
-    std::shared_ptr<User> getUserById(int user_id);
+    bool existsByUsername(sql::Connection *conn, const std::string& username);
+    std::shared_ptr<User> getUserByUsernameAndPassword(sql::Connection *conn, const std::string&, const std::string&);
+    std::shared_ptr<User> getUserById(sql::Connection *conn, int user_id);
     bool updateUser(sql::Connection *conn, const DinerCenterVO& user);
-    std::string getUserRole(int user_id);
+    std::string getUserRole(sql::Connection *conn, int user_id);
     bool updateStatus(sql::Connection *conn, int user_id, int status);
-    bool updateStatus(const User& user);
+    bool updateStatus(sql::Connection *conn, const User& user);
 };
 
 // ================================
@@ -37,8 +37,8 @@ class AdminDAO {
 public:
     bool insertAdmin(sql::Connection *conn, int user_id);
     bool insertAdmin(sql::Connection *conn, int user_id, int level_id, int region_id);
-    std::shared_ptr<Admin> getAdminByUserId(int user_id);
-    std::vector<AdminInformation> getAdminList();
+    std::shared_ptr<Admin> getAdminByUserId(sql::Connection *conn, int user_id);
+    std::vector<AdminInformation> getAdminList(sql::Connection *conn);
 };
 
 // ================================
@@ -47,7 +47,7 @@ public:
 class AdminApplyDAO {
 public:
     bool insertApply(sql::Connection *conn, int user_id, int level_id, int region_id);
-    std::vector<AdminApplyVO> getApplyList();
+    std::vector<AdminApplyVO> getApplyList(sql::Connection *conn);
     std::shared_ptr<AdminApplyVO> getApplyById(sql::Connection *conn, int apply_id);
     bool reviewApply(sql::Connection *conn, int apply_id, int reviewer_id, int status);
 };
@@ -58,12 +58,12 @@ public:
 class DinerDAO {
 public:
     bool insertDiner(sql::Connection *conn, int user_id, int region_id);
-    std::shared_ptr<Diner> getDinerByUserId(int user_id);
-    std::shared_ptr<DinerCenterVO> getDinerCenterByUserId(int user_id);
-    std::vector<FamilyMemberVO> getFamilyMembersByUserId(int user_id);
+    std::shared_ptr<Diner> getDinerByUserId(sql::Connection *conn, int user_id);
+    std::shared_ptr<DinerCenterVO> getDinerCenterByUserId(sql::Connection *conn, int user_id);
+    std::vector<FamilyMemberVO> getFamilyMembersByUserId(sql::Connection *conn, int user_id);
     bool updateDiner(sql::Connection *conn, const DinerCenterVO& diner);
     bool updateFamilyId(sql::Connection *conn, int user_id, int family_id);
-    std::vector<DinerInformation> getDinerList();
+    std::vector<DinerInformation> getDinerList(sql::Connection *conn);
 };
 
 // ================================
@@ -81,7 +81,7 @@ public:
 class CanteenManagerApplyDAO {
 public:
     bool insertApply(sql::Connection *conn, int user_id, const std::string& canteen_name, int region_id);
-    std::vector<CanteenManagerApplyVO> getApplyList();
+    std::vector<CanteenManagerApplyVO> getApplyList(sql::Connection *conn);
     std::shared_ptr<CanteenManagerApplyVO> getApplyById(sql::Connection *conn, int apply_id);
     bool reviewApply(sql::Connection *conn, int apply_id, int reviewer_id, int status);
 };
@@ -91,9 +91,9 @@ public:
 // ================================
 class FamilyDAO {
 public:
-    int insertFamily(const Family& family);
-    Family getFamilyByUserId(int user_id);
-    std::vector<Family> getFamilyList();
+    int insertFamily(sql::Connection *conn, const Family& family);
+    Family getFamilyByUserId(sql::Connection *conn, int user_id);
+    std::vector<Family> getFamilyList(sql::Connection *conn);
 };
 
 // ================================
@@ -101,20 +101,20 @@ public:
 // ================================
 class CanteenDAO {
 public:
-    std::vector<Canteen> getAllCanteens();
-    std::shared_ptr<CanteenVO> getCanteenById(int id);
-    int getCanteenIdByUserId(int user_id);
+    std::vector<Canteen> getAllCanteens(sql::Connection *conn);
+    std::shared_ptr<CanteenVO> getCanteenById(sql::Connection *conn, int id);
+    int getCanteenIdByUserId(sql::Connection *conn, int user_id);
     int insertCanteen(sql::Connection *conn, const std::string& canteen_name, int region_id);
-    bool updateCanteenAddress(int canteen_id, const std::string& address);
-    bool updateCanteenStatus(int canteen_id, int status);
-    std::vector<CanteenManagerVO> getCanteensWithManagers();
-    std::vector<PurchaseBill> getPurchaseBillsByCanteen(int canteen_id);
-    int createPurchaseBill(const PurchaseBill& bill);
+    bool updateCanteenAddress(sql::Connection *conn, int canteen_id, const std::string& address);
+    bool updateCanteenStatus(sql::Connection *conn, int canteen_id, int status);
+    std::vector<CanteenManagerVO> getCanteensWithManagers(sql::Connection *conn);
+    std::vector<PurchaseBill> getPurchaseBillsByCanteen(sql::Connection *conn, int canteen_id);
+    int createPurchaseBill(sql::Connection *conn, const PurchaseBill& bill);
     // 财务统计相关方法
-    double getTodayIncome(int canteen_id);
-    double getTodayExpense(int canteen_id);
-    double getIncomeByTimeDimension(int canteen_id, const std::string& time_dimension, const std::string& date_str);
-    double getExpenseByTimeDimension(int canteen_id, const std::string& time_dimension, const std::string& date_str);
+    double getTodayIncome(sql::Connection *conn, int canteen_id);
+    double getTodayExpense(sql::Connection *conn, int canteen_id);
+    double getIncomeByTimeDimension(sql::Connection *conn, int canteen_id, const std::string& time_dimension, const std::string& date_str);
+    double getExpenseByTimeDimension(sql::Connection *conn, int canteen_id, const std::string& time_dimension, const std::string& date_str);
 };
 
 // ================================
@@ -122,10 +122,10 @@ public:
 // ================================
 class DishDAO {
 public:
-    std::vector<Dish> getDishesByCanteen(int canteen_id);
-    bool insertDish(const Dish& dish);
-    bool disableDishByDishId(const int dish_id);
-    bool enableDishByDishId(const int dish_id);
+    std::vector<Dish> getDishesByCanteen(sql::Connection *conn, int canteen_id);
+    bool insertDish(sql::Connection *conn, const Dish& dish);
+    bool disableDishByDishId(sql::Connection *conn, const int dish_id);
+    bool enableDishByDishId(sql::Connection *conn, const int dish_id);
 };
 
 // ================================
@@ -133,11 +133,11 @@ public:
 // ================================
 class MenuDAO {
 public:
-    std::vector<Dish> getMenuByMealType(int canteen_id, const std::string& meal_type);
-    std::vector<CanteenMenuVO> getMenuByCanteen(int canteen_id);
-    bool updateMenu(const MenuCreateDTO& menu);
-    int getMenuIdByCanteenAndMealType(int canteen_id, const std::string& meal_type);
-    bool isDishInMenu(int dish_id);
+    std::vector<Dish> getMenuByMealType(sql::Connection *conn, int canteen_id, const std::string& meal_type);
+    std::vector<CanteenMenuVO> getMenuByCanteen(sql::Connection *conn, int canteen_id);
+    bool updateMenu(sql::Connection *conn, const MenuCreateDTO& menu);
+    int getMenuIdByCanteenAndMealType(sql::Connection *conn, int canteen_id, const std::string& meal_type);
+    bool isDishInMenu(sql::Connection *conn, int dish_id);
 };
 
 // ================================
@@ -146,18 +146,18 @@ public:
 class OrderDAO {
 public:
     int insertOrder(sql::Connection *conn, const Order& order);
-    std::vector<OrderVO> getOrdersByUser(int user_id);
-    std::vector<OrderDetailVO> getOrdersDetailsByUser(int user_id,int order_id);
+    std::vector<OrderVO> getOrdersByUser(sql::Connection *conn, int user_id);
+    std::vector<OrderDetailVO> getOrdersDetailsByUser(sql::Connection *conn, int user_id,int order_id);
     // 获取最近订单
-    std::shared_ptr<RecentOrderVO> getRecentOrder(int user_id, int order_for_user_id, int canteen_id);
+    std::shared_ptr<RecentOrderVO> getRecentOrder(sql::Connection *conn, int user_id, int order_for_user_id, int canteen_id);
     // 用餐偏好相关方法
-    DiningPreferenceSummary getDiningPreferenceSummary(int user_id, const std::string& time_dimension);
-    std::vector<std::pair<std::string, int>> getCanteenConsumptionCount(int user_id, const std::string& time_dimension);
-    std::vector<std::pair<std::string, int>> getDishConsumptionCount(int user_id, const std::string& time_dimension);
+    DiningPreferenceSummary getDiningPreferenceSummary(sql::Connection *conn, int user_id, const std::string& time_dimension);
+    std::vector<std::pair<std::string, int>> getCanteenConsumptionCount(sql::Connection *conn, int user_id, const std::string& time_dimension);
+    std::vector<std::pair<std::string, int>> getDishConsumptionCount(sql::Connection *conn, int user_id, const std::string& time_dimension);
     // 获取食堂订单
-    std::vector<OrderVO> getOrdersByCanteen(int canteen_id);
+    std::vector<OrderVO> getOrdersByCanteen(sql::Connection *conn, int canteen_id);
     // 更新订单状态
-    bool updateOrderStatus(int order_id, int status);
+    bool updateOrderStatus(sql::Connection *conn, int order_id, int status);
 };
 
 // ================================
@@ -166,16 +166,16 @@ public:
 class OrderItemDAO {
 public:
     bool insertOrderItems(sql::Connection *conn, int order_id, const std::vector<OrderItem>& items);
-    std::vector<OrderItem> getOrderItemsByOrderId(int order_id);
+    std::vector<OrderItem> getOrderItemsByOrderId(sql::Connection *conn, int order_id);
 };
 // ================================
 // 评价
 // ================================
 class RatingDAO {
 public:
-    bool insertRating(const Rating& rating);
-    std::vector<Rating> getRatingsByCanteen(int canteen_id);
-    std::vector<CanteenRatingVO> getCanteenRatingDetails(int canteen_id);
+    bool insertRating(sql::Connection *conn, const Rating& rating);
+    std::vector<Rating> getRatingsByCanteen(sql::Connection *conn, int canteen_id);
+    std::vector<CanteenRatingVO> getCanteenRatingDetails(sql::Connection *conn, int canteen_id);
 };
 
 // ================================
@@ -183,10 +183,10 @@ public:
 // ================================
 class ReportDAO {
 public:
-    bool insertReport(const Report& report);
-    std::vector<Report> getReportsByCanteen(int canteen_id);
-    std::vector<ReportVO> getAllReports();
-    bool updateReportStatus(int report_id, int status, int handler_id);
+    bool insertReport(sql::Connection *conn, const Report& report);
+    std::vector<Report> getReportsByCanteen(sql::Connection *conn, int canteen_id);
+    std::vector<ReportVO> getAllReports(sql::Connection *conn);
+    bool updateReportStatus(sql::Connection *conn, int report_id, int status, int handler_id);
 };
 
 // ================================
@@ -194,9 +194,9 @@ public:
 // ================================
 class AnnouncementDAO {
 public:
-    bool insertAnnouncement(const Announcement& announcement);
-    std::vector<AnnouncementVO> getAnnouncementList();
-    bool deleteAnnouncement(int announce_id, int publisher_id);
+    bool insertAnnouncement(sql::Connection *conn, const Announcement& announcement);
+    std::vector<AnnouncementVO> getAnnouncementList(sql::Connection *conn);
+    bool deleteAnnouncement(sql::Connection *conn, int announce_id, int publisher_id);
 };
 
 // ================================
@@ -204,10 +204,10 @@ public:
 // ================================
 class MessageDAO {
 public:
-    bool insertMessage(const Message& message);
-    std::vector<Message> getMessagesByCanteen(int canteen_id);
-    std::vector<Message> getMessagesByUser(int user_id, int canteen_id);
-    bool replyMessage(const Message& message);
+    bool insertMessage(sql::Connection *conn, const Message& message);
+    std::vector<Message> getMessagesByCanteen(sql::Connection *conn, int canteen_id);
+    std::vector<Message> getMessagesByUser(sql::Connection *conn, int user_id, int canteen_id);
+    bool replyMessage(sql::Connection *conn, const Message& message);
 };
 
 // ================================
@@ -216,8 +216,8 @@ public:
 class OrderCancelDAO {
 public:
     int insertCancelApply(sql::Connection *conn, int order_id, const std::string& cancel_reason);
-    std::vector<OrderCancelVO> getCancelAppliesByCanteen(int canteen_id);
-    std::shared_ptr<OrderCancelVO> getCancelApplyByOrderId(int order_id);
-    std::shared_ptr<OrderCancelVO> getCancelApplyByCancelId(int cancel_id);
+    std::vector<OrderCancelVO> getCancelAppliesByCanteen(sql::Connection *conn, int canteen_id);
+    std::shared_ptr<OrderCancelVO> getCancelApplyByOrderId(sql::Connection *conn, int order_id);
+    std::shared_ptr<OrderCancelVO> getCancelApplyByCancelId(sql::Connection *conn, int cancel_id);
     bool updateCancelStatus(sql::Connection *conn, int cancel_id, int status, const std::string& reject_reason = "");
 };

@@ -86,4 +86,6 @@ private:
     // 消息中心
     static void handleGetMessages(const httplib::Request& req, httplib::Response& res);
     static void handleMarkMessageAsRead(const httplib::Request& req, httplib::Response& res);
+    // 修改密码
+    static void handleChangePassword(const httplib::Request& req, httplib::Response& res);
 };

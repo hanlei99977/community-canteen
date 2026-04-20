@@ -151,6 +151,8 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     // 消息中心
     server.Get("/messages", handleGetMessages);
     server.Post("/markMessageAsRead", handleMarkMessageAsRead);
+    // 修改密码
+    server.Post("/changePassword", handleChangePassword);
 }
 
 
@@ -1879,5 +1881,35 @@ void Controller::handleReplyMessage(const httplib::Request& req, httplib::Respon
         }
     } catch (...) {
         res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+// 处理修改密码请求
+void Controller::handleChangePassword(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json body = json::parse(req.body);
+        int user_id = getIntSafe(body, "user_id");
+        std::string old_password = getStringSafe(body, "old_password");
+        std::string new_password = getStringSafe(body, "new_password");
+
+        std::cout << "修改密码请求参数：user_id=" << user_id << std::endl;
+
+        if (user_id <= 0 || old_password.empty() || new_password.empty()) {
+            res.status = 400;
+            res.set_content(Response::error(400, "参数不完整"), "application/json");
+            return;
+        }
+
+        UserService service;
+        if (service.changePassword(user_id, old_password, new_password)) {
+            res.set_content(Response::success(), "application/json");
+            std::cout << "用户 " << user_id << " 密码修改成功" << std::endl;
+        } else {
+            res.set_content(Response::error(400, "旧密码错误或新密码长度不足"), "application/json");
+            std::cout << "用户 " << user_id << " 密码修改失败" << std::endl;
+        }
+
+    } catch (...) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }

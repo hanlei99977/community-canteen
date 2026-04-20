@@ -17,6 +17,7 @@ public:
     bool updateDinerCenter(const DinerCenterVO& diner);
     std::string getUserRole(int user_id);
     bool updateStatus(const User& user);
+    bool changePassword(int user_id, const std::string& old_password, const std::string& new_password);
 };
 
 // ================================

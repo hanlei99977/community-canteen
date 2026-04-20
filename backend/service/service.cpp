@@ -158,6 +158,55 @@ bool UserService::updateStatus(const User& user)
     return dao.updateStatus(conn, user);
 }
 
+
+bool UserService::changePassword(int user_id, const std::string& old_password, const std::string& new_password) {
+    if (user_id <= 0 || old_password.empty() || new_password.empty()) {
+        return false;
+    }
+    
+    // 验证新密码长度
+    if (new_password.length() < 6) {
+        std::cout << "新密码长度不足" << std::endl;
+        return false;
+    }
+    
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    
+    try {
+        TransactionGuard tx(conn);
+        
+        UserDAO userDAO;
+        // 验证旧密码是否正确
+        auto user = userDAO.getUserById(conn, user_id);
+        if (!user || user->getPassword() != old_password) {
+            std::cout << "旧密码错误" << std::endl;
+            return false;
+        }
+        
+        // 更新密码
+        if (!userDAO.updatePassword(conn, user_id, new_password)) {
+            std::cout << "更新密码失败" << std::endl;
+            return false;
+        }
+        
+        // 写入消息中心通知
+        MessageCenterService messageService;
+        MessageNotification message;
+        message.setSenderId(1); // 系统发送
+        message.setReceiverId(user_id);
+        message.setContent("您的账户密码已成功修改。");
+        message.setStatus(0); // 未读
+        messageService.createMessage(message);
+        
+        tx.commit();
+        std::cout << "密码修改成功" << std::endl;
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
 // ================================
 // 管理员服务
 // ================================

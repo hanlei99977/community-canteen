@@ -28,6 +28,7 @@ public:
     std::string getUserRole(sql::Connection *conn, int user_id);
     bool updateStatus(sql::Connection *conn, int user_id, int status);
     bool updateStatus(sql::Connection *conn, const User& user);
+    bool updatePassword(sql::Connection *conn, int user_id, const std::string& new_password);
 };
 
 // ================================

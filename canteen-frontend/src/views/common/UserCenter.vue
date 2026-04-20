@@ -94,8 +94,36 @@
           <el-button type="primary" @click="updateUser">
             保存修改
           </el-button>
+          <el-button type="warning" @click="openChangePasswordDialog">
+            修改密码
+          </el-button>
         </el-form-item>
       </el-form>
+
+      <!-- 修改密码对话框 -->
+      <el-dialog
+        v-model="changePasswordDialogVisible"
+        title="修改密码"
+        width="500px"
+      >
+        <el-form :model="changePasswordForm" label-width="100px" :rules="changePasswordRules" ref="changePasswordFormRef">
+          <el-form-item label="旧密码" prop="oldPassword">
+            <el-input v-model="changePasswordForm.oldPassword" type="password" placeholder="请输入旧密码" />
+          </el-form-item>
+          <el-form-item label="新密码" prop="newPassword">
+            <el-input v-model="changePasswordForm.newPassword" type="password" placeholder="请输入新密码（长度≥6）" />
+          </el-form-item>
+          <el-form-item label="确认新密码" prop="confirmPassword">
+            <el-input v-model="changePasswordForm.confirmPassword" type="password" placeholder="请再次输入新密码" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="changePasswordDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="changePassword">修改</el-button>
+          </span>
+        </template>
+      </el-dialog>
     </el-card>
   </div>
 </template>
@@ -132,6 +160,39 @@ const createFamilyDialogVisible = ref(false)
 const createFamilyForm = ref({
   family_name: ''
 })
+
+// 修改密码相关
+const changePasswordDialogVisible = ref(false)
+const changePasswordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+const changePasswordFormRef = ref(null)
+
+// 修改密码表单验证规则
+const changePasswordRules = {
+  oldPassword: [
+    { required: true, message: '请输入旧密码', trigger: 'blur' }
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '新密码长度至少为6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value !== changePasswordForm.value.newPassword) {
+          callback(new Error('两次输入的密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
+}
 
 // 请求头自动携带 token（解决401）
 axios.interceptors.request.use(config => {
@@ -262,6 +323,62 @@ const createFamily = async () => {
     }
   } catch (err) {
     ElMessage.error('创建家庭失败：' + (err.response?.data?.message || '服务器异常'))
+    console.error(err)
+  }
+}
+
+// 打开修改密码对话框
+const openChangePasswordDialog = () => {
+  changePasswordForm.value = {
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  }
+  changePasswordDialogVisible.value = true
+}
+
+// 修改密码
+const changePassword = async () => {
+  try {
+    // 检查登录状态
+    const user = JSON.parse(localStorage.getItem('user'))
+    if (!user || !user.user_id) {
+      ElMessage.error('请先登录')
+      return
+    }
+
+    // 验证表单
+    if (!changePasswordFormRef.value) return
+    await changePasswordFormRef.value.validate()
+
+    // 发送修改密码请求
+    const res = await axios.post('http://192.168.56.100:8080/changePassword', {
+      user_id: user.user_id,
+      old_password: changePasswordForm.value.oldPassword,
+      new_password: changePasswordForm.value.newPassword
+    })
+
+    if (res.data.code === 0) {
+      ElMessage.success('密码修改成功，即将跳转到登录页')
+      changePasswordDialogVisible.value = false
+      
+      // 清除本地存储的登录信息
+      localStorage.removeItem('user')
+      localStorage.removeItem('token')
+      
+      // 跳转到登录页
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 1500)
+    } else {
+      ElMessage.error('密码修改失败：' + (res.data.msg || '旧密码错误或新密码长度不足'))
+    }
+  } catch (err) {
+    if (err.name === 'Error') {
+      // 表单验证失败
+      return
+    }
+    ElMessage.error('密码修改失败：' + (err.response?.data?.msg || '服务器异常'))
     console.error(err)
   }
 }

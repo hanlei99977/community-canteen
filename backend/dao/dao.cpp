@@ -208,6 +208,7 @@ std::shared_ptr<User> UserDAO::getUserById(sql::Connection *conn, int user_id)
             u->setId(res->getInt("user_id"));
             u->setUsername(res->getString("username"));
             u->setAge(res->getInt("age"));
+            u->setPassword(res->getString("password"));
             u->setPhone(res->getString("phone"));
             u->setIdCard(res->getString("id_card"));
             u->setRegisterTime(res->getString("register_time"));
@@ -306,6 +307,21 @@ bool UserDAO::updateStatus(sql::Connection *conn, const User& user)
 {
     try {
         return updateStatus(conn, user.getId(), user.getStatus());
+    } catch (...) { return false; }
+}
+
+bool UserDAO::updatePassword(sql::Connection *conn, int user_id, const std::string& new_password) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE users SET password = ? WHERE user_id = ?"
+            )
+        );
+
+        stmt->setString(1, new_password);
+        stmt->setInt(2, user_id);
+
+        return stmt->executeUpdate() > 0;
     } catch (...) { return false; }
 }
 

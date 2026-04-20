@@ -101,6 +101,9 @@ void Controller::registerOrderRoutes(httplib::Server& server) {
     // 食堂订单相关
     server.Get("/canteenOrders", handleCanteenOrders);
     server.Post("/updateOrderStatus", handleUpdateOrderStatus);
+    server.Post("/createCancelApply", handleCreateCancelApply);
+    server.Get("/getCancelApplies", handleGetCancelApplies);
+    server.Post("/handleCancelApply", handleHandleCancelApply);
     server.Post("/report", handleReport);
     // 用餐偏好
     server.Get("/diningPreference", handleDiningPreference);
@@ -711,8 +714,71 @@ void Controller::handleRecentOrder(const httplib::Request& req, httplib::Respons
     }
 }
 
-void Controller::handleRating(const httplib::Request& req, httplib::Response& res)
-{
+void Controller::handleCreateCancelApply(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json body = json::parse(req.body);
+        int order_id = getIntSafe(body, "order_id");
+        std::string cancel_reason = body["cancel_reason"].get<std::string>();
+
+        OrderCancelService service;
+        if (service.createCancelApply(order_id, cancel_reason)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "创建取消申请失败"), "application/json");
+        }
+    } catch (const std::exception& e) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleGetCancelApplies(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        OrderCancelService service;
+        auto applies = service.getCancelAppliesByCanteen(canteen_id);
+
+        json applies_json = json::array();
+        for (const auto& apply : applies) {
+            json apply_json;
+            apply_json["cancel_id"] = apply.getCancelId();
+            apply_json["order_id"] = apply.getOrderId();
+            apply_json["cancel_time"] = apply.getCancelTime();
+            apply_json["cancel_reason"] = apply.getCancelReason();
+            apply_json["status"] = apply.getStatus();
+            apply_json["reject_reason"] = apply.getRejectReason();
+            apply_json["handle_time"] = apply.getHandleTime();
+            apply_json["order_for_user_name"] = apply.getOrderForUserName();
+            apply_json["canteen_name"] = apply.getCanteenName();
+            apply_json["total_price"] = apply.getTotalPrice();
+            apply_json["order_time"] = apply.getOrderTime();
+            applies_json.push_back(apply_json);
+        }
+
+        res.set_content(Response::success(applies_json), "application/json");
+    } catch (...) {
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+void Controller::handleHandleCancelApply(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json body = json::parse(req.body);
+        int cancel_id = getIntSafe(body, "cancel_id");
+        int status = getIntSafe(body, "status");
+        std::string reject_reason = body.value("reject_reason", "");
+
+        OrderCancelService service;
+        if (service.handleCancelApply(cancel_id, status, reject_reason)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "处理取消申请失败"), "application/json");
+        }
+    } catch (const std::exception& e) {
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleRating(const httplib::Request& req, httplib::Response& res) {
     try {
         json body = json::parse(req.body);
 
@@ -755,7 +821,7 @@ void Controller::handleReport(const httplib::Request& req, httplib::Response& re
 
         ReportService service;
 
-        if (service.submitReport(report)) {
+        if (service.addReport(report)) {
             res.set_content(Response::success(), "application/json");
         } else {
             res.set_content(Response::error(500, "举报失败"), "application/json");
@@ -1216,7 +1282,7 @@ void Controller::handleReportHandle(const httplib::Request& req, httplib::Respon
         int handler_id = getIntSafe(body, "handler_id");
 
         ReportService service;
-        if (service.handleReport(report_id, status, handler_id)) {
+        if (service.updateReportStatus(report_id, status, handler_id)) {
             res.set_content(Response::success(), "application/json");
         } else {
             res.set_content(Response::error(500, "投诉处理失败"), "application/json");
@@ -1268,7 +1334,7 @@ void Controller::handleMyCanteen(const httplib::Request& req, httplib::Response&
 
         // 获取投诉数量
         ReportService reportService;
-        auto reports = reportService.getReports(canteen_id);
+        auto reports = reportService.getReportsByCanteen(canteen_id);
         int complaint_count = reports.size();
 
         // 构建响应数据

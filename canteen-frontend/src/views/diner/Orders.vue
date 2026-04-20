@@ -30,15 +30,22 @@
       <el-table-column prop="create_time" label="时间" />
       <el-table-column prop="status" label="状态" width="100">
         <template #default="scope">
-          <el-tag :type="scope.row.status === 0 ? 'warning' : 'success'">
-            {{ scope.row.status === 0 ? '未完成' : '已完成' }}
+          <el-tag :type="scope.row.status === 0 ? 'warning' : scope.row.status === 1 ? 'success' : 'danger'">
+            {{ scope.row.status === 0 ? '未完成' : scope.row.status === 1 ? '已完成' : '已取消' }}
           </el-tag>
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="240">
+      <el-table-column label="操作" width="300">
         <template #default="scope">
           <el-button @click="handleExpand(scope.row)">查看详情</el-button>
+          <el-button
+            v-if="!scope.row.has_rating && scope.row.status === 0"
+            type="warning"
+            @click="openCancelDialog(scope.row)"
+          >
+            取消订单
+          </el-button>
           <el-button
             v-if="!scope.row.has_rating"
             type="success"
@@ -57,6 +64,35 @@
       </el-table-column>
 
     </el-table>
+
+    <!-- 取消订单弹窗 -->
+    <el-dialog
+      v-model="cancelDialogVisible"
+      title="取消订单"
+      width="400px"
+    >
+      <el-form :model="cancelForm" label-width="80px">
+        <el-form-item label="订单ID">
+          <span>{{ currentOrder?.order_id }}</span>
+        </el-form-item>
+        <el-form-item label="取消原因">
+          <el-input
+            v-model="cancelForm.cancel_reason"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入取消原因"
+            maxlength="200"
+            show-word-limit
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="cancelDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitCancelApply">提交</el-button>
+        </span>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="ratingDialogVisible" :title="ratingDialogTitle" width="520px">
       <el-form label-width="90px">
@@ -99,11 +135,15 @@ import { ElMessage } from 'element-plus'
 const orders = ref([])
 const tableRef = ref()
 const ratingDialogVisible = ref(false)
+const cancelDialogVisible = ref(false)
 const ratingReadonly = ref(false)
 const currentOrder = ref(null)
 const ratingForm = reactive({
   score: 0,
   comment: ''
+})
+const cancelForm = reactive({
+  cancel_reason: ''
 })
 
 const handleExpand = async (row) => {
@@ -217,6 +257,40 @@ const submitRating = async () => {
     }
   } catch (e) {
     ElMessage.error('评价失败，可能该订单已评价')
+  }
+}
+
+const openCancelDialog = (order) => {
+  currentOrder.value = order
+  cancelForm.cancel_reason = ''
+  cancelDialogVisible.value = true
+}
+
+const submitCancelApply = async () => {
+  if (!currentOrder.value) {
+    return
+  }
+  if (!cancelForm.cancel_reason.trim()) {
+    ElMessage.warning('请输入取消原因')
+    return
+  }
+
+  try {
+    const res = await axios.post('http://192.168.56.100:8080/createCancelApply', {
+      order_id: currentOrder.value.order_id,
+      cancel_reason: cancelForm.cancel_reason
+    })
+
+    if (res.data.code === 0) {
+      ElMessage.success('取消申请提交成功')
+      cancelDialogVisible.value = false
+      // 刷新订单列表
+      loadOrders()
+    } else {
+      ElMessage.error(res.data.message || '取消申请提交失败')
+    }
+  } catch (e) {
+    ElMessage.error('取消申请提交失败')
   }
 }
 

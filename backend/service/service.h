@@ -149,10 +149,17 @@ public:
 // ================================
 class ReportService {
 public:
-    bool submitReport(const Report& report);
-    std::vector<Report> getReports(int canteen_id);
+    bool addReport(const Report& report);
+    std::vector<Report> getReportsByCanteen(int canteen_id);
     std::vector<ReportVO> getAllReports();
-    bool handleReport(int report_id, int status, int handler_id);
+    bool updateReportStatus(int report_id, int status, int handler_id);
+};
+
+class OrderCancelService {
+public:
+    bool createCancelApply(int order_id, const std::string& cancel_reason);
+    std::vector<OrderCancelVO> getCancelAppliesByCanteen(int canteen_id);
+    bool handleCancelApply(int cancel_id, int status, const std::string& reject_reason = "");
 };
 
 // ================================

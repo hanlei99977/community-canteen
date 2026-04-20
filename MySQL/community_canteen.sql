@@ -280,6 +280,22 @@ CREATE TABLE messageboard (
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
+-- 创建订单取消表
+CREATE TABLE order_cancel (
+    cancel_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    cancel_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    cancel_reason TEXT NOT NULL,
+    status TINYINT NOT NULL DEFAULT 0 COMMENT '0: 申请取消, 1: 已取消, 2: 拒绝取消',
+    reject_reason TEXT COMMENT '拒绝取消的原因',
+    handle_time DATETIME COMMENT '处理时间',
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
+);
+
+-- 添加索引
+CREATE INDEX idx_order_id ON order_cancel(order_id);
+CREATE INDEX idx_status ON order_cancel(status);
+
 -- ================================
 --  索引优化
 -- ================================

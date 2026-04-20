@@ -911,7 +911,7 @@ std::vector<CanteenRatingVO> RatingService::getCanteenRatingDetails(int canteen_
 /**********************************************
  * ReportService
  *********************************************/
-bool ReportService::submitReport(const Report& report) {
+bool ReportService::addReport(const Report& report) {
     ReportDAO dao;
 
     if (report.getContent().empty()) return false;
@@ -919,7 +919,7 @@ bool ReportService::submitReport(const Report& report) {
     return dao.insertReport(report);
 }
 
-std::vector<Report> ReportService::getReports(int canteen_id) {
+std::vector<Report> ReportService::getReportsByCanteen(int canteen_id) {
     ReportDAO dao;
     return dao.getReportsByCanteen(canteen_id);
 }
@@ -929,7 +929,7 @@ std::vector<ReportVO> ReportService::getAllReports() {
     return dao.getAllReports();
 }
 
-bool ReportService::handleReport(int report_id, int status, int handler_id) {
+bool ReportService::updateReportStatus(int report_id, int status, int handler_id) {
     if (report_id <= 0 || handler_id <= 0) {
         return false;
     }
@@ -998,4 +998,53 @@ bool MessageService::replyMessage(const Message& message) {
     }
     MessageDAO dao;
     return dao.replyMessage(message);
+}
+
+/**********************************************
+ * OrderCancelService
+ *********************************************/
+bool OrderCancelService::createCancelApply(int order_id, const std::string& cancel_reason) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        
+        OrderCancelDAO dao;
+        int cancel_id = dao.insertCancelApply(conn, order_id, cancel_reason);
+        return cancel_id > 0;
+    } catch (const std::exception& e) {
+        std::cerr << "创建取消申请失败: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::vector<OrderCancelVO> OrderCancelService::getCancelAppliesByCanteen(int canteen_id) {
+    OrderCancelDAO dao;
+    return dao.getCancelAppliesByCanteen(canteen_id);
+}
+
+bool OrderCancelService::handleCancelApply(int cancel_id, int status, const std::string& reject_reason) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        OrderCancelDAO dao;
+        if (dao.updateCancelStatus(conn, cancel_id, status, reject_reason)) {
+            // 如果同意取消，更新订单状态为已取消
+            if (status == 1) {
+                OrderDAO order_dao;
+                OrderCancelDAO cancel_dao;
+                // 获取订单ID
+                auto cancel_apply = cancel_dao.getCancelApplyByCancelId(cancel_id);
+                if (cancel_apply) {
+                    int order_id = cancel_apply->getOrderId();
+                    // 更新订单状态为已取消
+                    order_dao.updateOrderStatus(order_id, 2);
+                }
+            }
+            return true;
+        }
+        return false;
+    } catch (const std::exception& e) {
+        std::cerr << "处理取消申请失败: " << e.what() << std::endl;
+        return false;
+    }
 }

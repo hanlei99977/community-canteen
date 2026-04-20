@@ -209,3 +209,15 @@ public:
     std::vector<Message> getMessagesByUser(int user_id, int canteen_id);
     bool replyMessage(const Message& message);
 };
+
+// ================================
+// 订单取消
+// ================================
+class OrderCancelDAO {
+public:
+    int insertCancelApply(sql::Connection *conn, int order_id, const std::string& cancel_reason);
+    std::vector<OrderCancelVO> getCancelAppliesByCanteen(int canteen_id);
+    std::shared_ptr<OrderCancelVO> getCancelApplyByOrderId(int order_id);
+    std::shared_ptr<OrderCancelVO> getCancelApplyByCancelId(int cancel_id);
+    bool updateCancelStatus(sql::Connection *conn, int cancel_id, int status, const std::string& reject_reason = "");
+};

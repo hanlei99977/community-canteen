@@ -36,6 +36,9 @@ private:
     // 食堂订单相关
     static void handleCanteenOrders(const httplib::Request& req, httplib::Response& res);
     static void handleUpdateOrderStatus(const httplib::Request& req, httplib::Response& res);
+    static void handleCreateCancelApply(const httplib::Request& req, httplib::Response& res);
+    static void handleGetCancelApplies(const httplib::Request& req, httplib::Response& res);
+    static void handleHandleCancelApply(const httplib::Request& req, httplib::Response& res);
 
     static void handleRating(const httplib::Request& req, httplib::Response& res);
     static void handleReport(const httplib::Request& req, httplib::Response& res);

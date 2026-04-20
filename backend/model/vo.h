@@ -674,6 +674,58 @@ public:
     void setStatus(int s) { status = s; }
 };
 
+// ================================
+// 订单取消申请 VO
+// ================================
+class OrderCancelVO {
+private:
+    int cancel_id;
+    int order_id;
+    std::string cancel_time;
+    std::string cancel_reason;
+    int status;
+    std::string reject_reason;
+    std::string handle_time;
+    std::string order_for_user_name;
+    std::string canteen_name;
+    double total_price;
+    std::string order_time;
+
+public:
+    int getCancelId() const { return cancel_id; }
+    void setCancelId(int id) { cancel_id = id; }
+
+    int getOrderId() const { return order_id; }
+    void setOrderId(int id) { order_id = id; }
+
+    std::string getCancelTime() const { return cancel_time; }
+    void setCancelTime(const std::string& time) { cancel_time = time; }
+
+    std::string getCancelReason() const { return cancel_reason; }
+    void setCancelReason(const std::string& reason) { cancel_reason = reason; }
+
+    int getStatus() const { return status; }
+    void setStatus(int s) { status = s; }
+
+    std::string getRejectReason() const { return reject_reason; }
+    void setRejectReason(const std::string& reason) { reject_reason = reason; }
+
+    std::string getHandleTime() const { return handle_time; }
+    void setHandleTime(const std::string& time) { handle_time = time; }
+
+    std::string getOrderForUserName() const { return order_for_user_name; }
+    void setOrderForUserName(const std::string& name) { order_for_user_name = name; }
+
+    std::string getCanteenName() const { return canteen_name; }
+    void setCanteenName(const std::string& name) { canteen_name = name; }
+
+    double getTotalPrice() const { return total_price; }
+    void setTotalPrice(double price) { total_price = price; }
+
+    std::string getOrderTime() const { return order_time; }
+    void setOrderTime(const std::string& time) { order_time = time; }
+};
+
 
 // 财务统计相关 VO
 // 今日财务统计

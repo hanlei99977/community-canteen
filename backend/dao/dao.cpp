@@ -2517,6 +2517,158 @@ double CanteenDAO::getTodayIncome(int canteen_id) {
     return 0.0;
 }
 
+// ================================
+// 订单取消
+// ================================
+
+int OrderCancelDAO::insertCancelApply(sql::Connection *conn, int order_id, const std::string& cancel_reason) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("INSERT INTO order_cancel (order_id, cancel_reason) VALUES (?, ?)")
+        );
+        stmt->setInt(1, order_id);
+        stmt->setString(2, cancel_reason);
+        stmt->executeUpdate();
+        // 由于 getGeneratedKeys 方法不可用，我们返回 1 表示成功
+        return 1;
+    } catch (const std::exception& e) {
+        std::cerr << "创建取消申请失败: " << e.what() << std::endl;
+        return -1;
+    }
+}
+
+std::vector<OrderCancelVO> OrderCancelDAO::getCancelAppliesByCanteen(int canteen_id) {
+    std::vector<OrderCancelVO> list;
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(R"(
+                SELECT oc.cancel_id, oc.order_id, oc.cancel_time, oc.cancel_reason, oc.status, 
+                       oc.reject_reason, oc.handle_time, u.username AS order_for_user_name, 
+                       c.name AS canteen_name, o.total_price, o.order_time
+                FROM order_cancel oc
+                JOIN orders o ON oc.order_id = o.order_id
+                JOIN canteen c ON o.canteen_id = c.canteen_id
+                JOIN users u ON o.order_for_user_id = u.user_id
+                WHERE o.canteen_id = ?
+                ORDER BY oc.status ASC, oc.cancel_time DESC
+            )")
+        );
+        stmt->setInt(1, canteen_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            OrderCancelVO vo;
+            vo.setCancelId(res->getInt("cancel_id"));
+            vo.setOrderId(res->getInt("order_id"));
+            vo.setCancelTime(res->getString("cancel_time"));
+            vo.setCancelReason(res->getString("cancel_reason"));
+            vo.setStatus(res->getInt("status"));
+            if (!res->isNull("reject_reason")) {
+                vo.setRejectReason(res->getString("reject_reason"));
+            }
+            if (!res->isNull("handle_time")) {
+                vo.setHandleTime(res->getString("handle_time"));
+            }
+            vo.setOrderForUserName(res->getString("order_for_user_name"));
+            vo.setCanteenName(res->getString("canteen_name"));
+            vo.setTotalPrice(std::stod(res->getString("total_price")));
+            vo.setOrderTime(res->getString("order_time"));
+            list.push_back(vo);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "获取取消申请失败: " << e.what() << std::endl;
+    }
+    return list;
+}
+
+std::shared_ptr<OrderCancelVO> OrderCancelDAO::getCancelApplyByOrderId(int order_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(R"(
+                SELECT oc.cancel_id, oc.order_id, oc.cancel_time, oc.cancel_reason, oc.status, 
+                       oc.reject_reason, oc.handle_time
+                FROM order_cancel oc
+                WHERE oc.order_id = ?
+                ORDER BY oc.cancel_time DESC
+                LIMIT 1
+            )")
+        );
+        stmt->setInt(1, order_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            auto vo = std::make_shared<OrderCancelVO>();
+            vo->setCancelId(res->getInt("cancel_id"));
+            vo->setOrderId(res->getInt("order_id"));
+            vo->setCancelTime(res->getString("cancel_time"));
+            vo->setCancelReason(res->getString("cancel_reason"));
+            vo->setStatus(res->getInt("status"));
+            if (!res->isNull("reject_reason")) {
+                vo->setRejectReason(res->getString("reject_reason"));
+            }
+            if (!res->isNull("handle_time")) {
+                vo->setHandleTime(res->getString("handle_time"));
+            }
+            return vo;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "获取取消申请失败: " << e.what() << std::endl;
+    }
+    return nullptr;
+}
+
+std::shared_ptr<OrderCancelVO> OrderCancelDAO::getCancelApplyByCancelId(int cancel_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(R"(
+                SELECT oc.cancel_id, oc.order_id, oc.cancel_time, oc.cancel_reason, oc.status, 
+                       oc.reject_reason, oc.handle_time
+                FROM order_cancel oc
+                WHERE oc.cancel_id = ?
+            )")
+        );
+        stmt->setInt(1, cancel_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            auto vo = std::make_shared<OrderCancelVO>();
+            vo->setCancelId(res->getInt("cancel_id"));
+            vo->setOrderId(res->getInt("order_id"));
+            vo->setCancelTime(res->getString("cancel_time"));
+            vo->setCancelReason(res->getString("cancel_reason"));
+            vo->setStatus(res->getInt("status"));
+            if (!res->isNull("reject_reason")) {
+                vo->setRejectReason(res->getString("reject_reason"));
+            }
+            if (!res->isNull("handle_time")) {
+                vo->setHandleTime(res->getString("handle_time"));
+            }
+            return vo;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "获取取消申请失败: " << e.what() << std::endl;
+    }
+    return nullptr;
+}
+
+bool OrderCancelDAO::updateCancelStatus(sql::Connection *conn, int cancel_id, int status, const std::string& reject_reason) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("UPDATE order_cancel SET status = ?, reject_reason = ?, handle_time = NOW() WHERE cancel_id = ?")
+        );
+        stmt->setInt(1, status);
+        stmt->setString(2, reject_reason);
+        stmt->setInt(3, cancel_id);
+        return stmt->executeUpdate() > 0;
+    } catch (const std::exception& e) {
+        std::cerr << "更新取消申请状态失败: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 double CanteenDAO::getTodayExpense(int canteen_id) {
     try {
         DBConnectionGuard guard;

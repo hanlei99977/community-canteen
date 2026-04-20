@@ -159,6 +159,7 @@ class OrderCancelService {
 public:
     bool createCancelApply(int order_id, const std::string& cancel_reason);
     std::vector<OrderCancelVO> getCancelAppliesByCanteen(int canteen_id);
+    std::shared_ptr<OrderCancelVO> getCancelApplyByOrderId(int order_id);
     bool handleCancelApply(int cancel_id, int status, const std::string& reject_reason = "");
 };
 

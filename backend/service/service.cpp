@@ -1154,3 +1154,15 @@ bool OrderCancelService::handleCancelApply(int cancel_id, int status, const std:
         return false;
     }
 }
+
+std::shared_ptr<OrderCancelVO> OrderCancelService::getCancelApplyByOrderId(int order_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        OrderCancelDAO dao;
+        return dao.getCancelApplyByOrderId(conn, order_id);
+    } catch (const std::exception& e) {
+        std::cerr << "获取取消申请失败: " << e.what() << std::endl;
+        return nullptr;
+    }
+}

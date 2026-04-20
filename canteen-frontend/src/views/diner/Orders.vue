@@ -3,7 +3,19 @@
 
     <h2>我的订单</h2>
 
-    <el-table ref="tableRef" :data="orders" style="width: 100%">
+    <el-tabs v-model="activeStatusTab" @tab-click="handleStatusTabChange" style="margin-bottom: 20px">
+      <el-tab-pane label="未完成" name="0" />
+      <el-tab-pane label="已完成" name="1" />
+      <el-tab-pane label="已取消" name="2" />
+    </el-tabs>
+
+    <el-tabs v-if="activeStatusTab === '1'" v-model="activeRatingTab" @tab-click="handleRatingTabChange" style="margin-bottom: 20px">
+      <el-tab-pane label="全部" name="all" />
+      <el-tab-pane label="未评价" name="unrated" />
+      <el-tab-pane label="已评价" name="rated" />
+    </el-tabs>
+
+    <el-table ref="tableRef" :data="filteredOrders" style="width: 100%">
 
       <!-- 展开行 -->
       <el-table-column type="expand">
@@ -36,30 +48,41 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="300">
+      <el-table-column label="操作" width="400">
         <template #default="scope">
           <el-button @click="handleExpand(scope.row)">查看详情</el-button>
+          
+          <!-- 未完成订单 -->
           <el-button
-            v-if="!scope.row.has_rating && scope.row.status === 0"
+            v-if="scope.row.status === 0"
             type="warning"
             @click="openCancelDialog(scope.row)"
           >
             取消订单
           </el-button>
-          <el-button
-            v-if="!scope.row.has_rating"
-            type="success"
-            @click="openRatingDialog(scope.row)"
-          >
-            评价
-          </el-button>
-          <el-button
-            v-else
-            type="info"
-            @click="viewMyRating(scope.row)"
-          >
-            查看评价
-          </el-button>
+          
+          <!-- 已取消订单 -->
+          <template v-else-if="scope.row.status === 2">
+            <el-button type="info" @click="viewCancelReason(scope.row)">查看取消原因</el-button>
+          </template>
+          
+          <!-- 已完成订单 -->
+          <template v-else-if="scope.row.status === 1">
+            <el-button
+              v-if="!scope.row.has_rating"
+              type="success"
+              @click="openRatingDialog(scope.row)"
+            >
+              评价
+            </el-button>
+            <el-button
+              v-else
+              type="info"
+              @click="viewMyRating(scope.row)"
+            >
+              查看评价
+            </el-button>
+          </template>
         </template>
       </el-table-column>
 
@@ -90,6 +113,30 @@
         <span class="dialog-footer">
           <el-button @click="cancelDialogVisible = false">取消</el-button>
           <el-button type="primary" @click="submitCancelApply">提交</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 查看取消原因弹窗 -->
+    <el-dialog
+      v-model="cancelReasonDialogVisible"
+      title="取消原因"
+      width="400px"
+    >
+      <el-form label-width="80px">
+        <el-form-item label="订单ID">
+          <span>{{ currentOrder?.order_id }}</span>
+        </el-form-item>
+        <el-form-item label="取消原因">
+          <span>{{ currentOrder?.cancel_reason || '-' }}</span>
+        </el-form-item>
+        <el-form-item label="取消时间">
+          <span>{{ currentOrder?.cancel_time || '-' }}</span>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="cancelReasonDialogVisible = false">关闭</el-button>
         </span>
       </template>
     </el-dialog>
@@ -136,8 +183,11 @@ const orders = ref([])
 const tableRef = ref()
 const ratingDialogVisible = ref(false)
 const cancelDialogVisible = ref(false)
+const cancelReasonDialogVisible = ref(false)
 const ratingReadonly = ref(false)
 const currentOrder = ref(null)
+const activeStatusTab = ref('0') // 默认显示未完成订单
+const activeRatingTab = ref('all')
 const ratingForm = reactive({
   score: 0,
   comment: ''
@@ -145,6 +195,40 @@ const ratingForm = reactive({
 const cancelForm = reactive({
   cancel_reason: ''
 })
+
+// 筛选订单
+const filteredOrders = computed(() => {
+  let result = orders.value
+  
+  // 按状态筛选
+  if (activeStatusTab.value !== '') {
+    result = result.filter(order => order.status === Number(activeStatusTab.value))
+  }
+  
+  // 已完成订单按评价状态筛选
+  if (activeStatusTab.value === '1') {
+    if (activeRatingTab.value === 'unrated') {
+      result = result.filter(order => !order.has_rating)
+    } else if (activeRatingTab.value === 'rated') {
+      result = result.filter(order => order.has_rating)
+    }
+  }
+  
+  return result
+})
+
+// 处理状态标签切换
+const handleStatusTabChange = () => {
+  // 当切换到已完成标签时，重置评价状态标签为全部
+  if (activeStatusTab.value === '1') {
+    activeRatingTab.value = 'all'
+  }
+}
+
+// 处理评价状态标签切换
+const handleRatingTabChange = () => {
+  // 评价状态标签切换时无需额外操作
+}
 
 const handleExpand = async (row) => {
   await loadDetails(row)
@@ -291,6 +375,35 @@ const submitCancelApply = async () => {
     }
   } catch (e) {
     ElMessage.error('取消申请提交失败')
+  }
+}
+
+// 查看取消原因
+const viewCancelReason = async (order) => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/getCancelApplyByOrderId', {
+      params: {
+        order_id: order.order_id
+      }
+    })
+    
+    if (res.data.code === 0 && res.data.data) {
+      const cancelApply = res.data.data
+      order.cancel_reason = cancelApply.cancel_reason
+      order.cancel_time = cancelApply.cancel_time
+    } else {
+      order.cancel_reason = '暂无取消原因'
+      order.cancel_time = '未知'
+    }
+    
+    currentOrder.value = order
+    cancelReasonDialogVisible.value = true
+  } catch (e) {
+    console.error('获取取消原因失败', e)
+    order.cancel_reason = '获取失败'
+    order.cancel_time = '未知'
+    currentOrder.value = order
+    cancelReasonDialogVisible.value = true
   }
 }
 

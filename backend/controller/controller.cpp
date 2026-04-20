@@ -103,6 +103,7 @@ void Controller::registerOrderRoutes(httplib::Server& server) {
     server.Post("/updateOrderStatus", handleUpdateOrderStatus);
     server.Post("/createCancelApply", handleCreateCancelApply);
     server.Get("/getCancelApplies", handleGetCancelApplies);
+    server.Get("/getCancelApplyByOrderId", handleGetCancelApplyByOrderId);
     server.Post("/handleCancelApply", handleHandleCancelApply);
     server.Post("/report", handleReport);
     // 用餐偏好
@@ -775,6 +776,33 @@ void Controller::handleHandleCancelApply(const httplib::Request& req, httplib::R
         }
     } catch (const std::exception& e) {
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleGetCancelApplyByOrderId(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int order_id = std::stoi(req.get_param_value("order_id"));
+        std::cout << "order_id=" << order_id << std::endl;
+        
+        OrderCancelService service;
+        auto cancel_apply = service.getCancelApplyByOrderId(order_id);
+        
+        if (cancel_apply) {
+            json data = {
+                {"cancel_id", cancel_apply->getCancelId()},
+                {"order_id", cancel_apply->getOrderId()},
+                {"cancel_reason", cancel_apply->getCancelReason()},
+                {"cancel_time", cancel_apply->getCancelTime()},
+                {"status", cancel_apply->getStatus()},
+                {"reject_reason", cancel_apply->getRejectReason()}
+            };
+            res.set_content(Response::success(data), "application/json");
+            std::cout << "申请数据成功" << std::endl;
+        } else {
+            res.set_content(Response::success(json::array()), "application/json");
+        }
+    } catch (const std::exception& e) {
+        res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
 

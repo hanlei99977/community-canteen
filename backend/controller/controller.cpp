@@ -1822,11 +1822,11 @@ void Controller::handleGetUserMessages(const httplib::Request& req, httplib::Res
             arr.push_back({
                 {"id", msg.getId()},
                 {"canteen_id", msg.getCanteenId()},
-                {"message_time", msg.getMessageTime()},
+                {"create_time", msg.getCreateTime()},
                 {"reply_time", msg.getReplyTime()},
                 {"user_id", msg.getUserId()},
                 {"content", msg.getContent()},
-                {"reply", msg.getReply()},
+                {"reply_content", msg.getReplyContent()},
                 {"status", msg.getStatus()}
             });
         }
@@ -1840,7 +1840,7 @@ void Controller::handleGetUserMessages(const httplib::Request& req, httplib::Res
 void Controller::handleGetCanteenMessages(const httplib::Request& req, httplib::Response& res) {
     try {
         int canteen_id = std::stoi(req.get_param_value("canteen_id"));
-
+        std::cout << "获取食堂ID为" << canteen_id << "的留言" << std::endl;
         MessageService service;
         auto messages = service.getMessagesByCanteen(canteen_id);
 
@@ -1849,15 +1849,15 @@ void Controller::handleGetCanteenMessages(const httplib::Request& req, httplib::
             arr.push_back({
                 {"id", msg.getId()},
                 {"canteen_id", msg.getCanteenId()},
-                {"message_time", msg.getMessageTime()},
+                {"create_time", msg.getCreateTime()},
                 {"reply_time", msg.getReplyTime()},
                 {"user_id", msg.getUserId()},
                 {"content", msg.getContent()},
-                {"reply", msg.getReply()},
+                {"reply_content", msg.getReplyContent()},
                 {"status", msg.getStatus()}
             });
         }
-
+        std::cout << "获取到 " << messages.size() << " 条留言" << std::endl;
         res.set_content(Response::success(arr), "application/json");
     } catch (...) {
         res.set_content(Response::error(400, "参数错误"), "application/json");
@@ -1869,7 +1869,9 @@ void Controller::handleReplyMessage(const httplib::Request& req, httplib::Respon
         json body = json::parse(req.body);
         Message message;
         message.setId(getIntSafe(body, "id"));
-        message.setReply(getStringSafe(body, "reply"));
+        message.setReplyContent(getStringSafe(body, "reply_content"));
+
+
 
         MessageService service;
         bool success = service.replyMessage(message);

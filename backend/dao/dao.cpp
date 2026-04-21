@@ -2315,7 +2315,7 @@ bool AnnouncementDAO::deleteAnnouncement(sql::Connection *conn, int announce_id,
 bool MessageDAO::insertMessage(sql::Connection *conn, const Message& message) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("INSERT INTO messageboard(canteen_id, message_time, user_id, content, status) VALUES (?, NOW(), ?, ?, 0)")
+            conn->prepareStatement("INSERT INTO messageboard(canteen_id, create_time, user_id, content, status) VALUES (?, NOW(), ?, ?, 0)")
         );
 
         stmt->setInt(1, message.getCanteenId());
@@ -2332,7 +2332,7 @@ std::vector<Message> MessageDAO::getMessagesByCanteen(sql::Connection *conn, int
     std::vector<Message> list;
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("SELECT * FROM messageboard WHERE canteen_id = ? ORDER BY status ASC, message_time DESC")
+            conn->prepareStatement("SELECT * FROM messageboard WHERE canteen_id = ? ORDER BY status ASC, create_time DESC")
         );
 
         stmt->setInt(1, canteen_id);
@@ -2341,13 +2341,13 @@ std::vector<Message> MessageDAO::getMessagesByCanteen(sql::Connection *conn, int
 
         while (res->next()) {
             Message msg;
-            msg.setId(res->getInt("id"));
+            msg.setId(res->getInt("message_id"));
             msg.setCanteenId(res->getInt("canteen_id"));
-            msg.setMessageTime(res->getString("message_time"));
+            msg.setCreateTime(res->getString("create_time"));
             msg.setReplyTime(res->getString("reply_time"));
             msg.setUserId(res->getInt("user_id"));
             msg.setContent(res->getString("content"));
-            msg.setReply(res->getString("reply"));
+            msg.setReplyContent(res->getString("reply_content"));
             msg.setStatus(res->getInt("status"));
             list.push_back(msg);
         }
@@ -2360,7 +2360,7 @@ std::vector<Message> MessageDAO::getMessagesByUser(sql::Connection *conn, int us
     std::vector<Message> list;
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("SELECT * FROM messageboard WHERE user_id = ? AND canteen_id = ? ORDER BY message_time DESC")
+            conn->prepareStatement("SELECT * FROM messageboard WHERE user_id = ? AND canteen_id = ? ORDER BY create_time DESC")
         );
 
         stmt->setInt(1, user_id);
@@ -2370,13 +2370,13 @@ std::vector<Message> MessageDAO::getMessagesByUser(sql::Connection *conn, int us
 
         while (res->next()) {
             Message msg;
-            msg.setId(res->getInt("id"));
+            msg.setId(res->getInt("message_id"));
             msg.setCanteenId(res->getInt("canteen_id"));
-            msg.setMessageTime(res->getString("message_time"));
+            msg.setCreateTime(res->getString("create_time"));
             msg.setReplyTime(res->getString("reply_time"));
             msg.setUserId(res->getInt("user_id"));
             msg.setContent(res->getString("content"));
-            msg.setReply(res->getString("reply"));
+            msg.setReplyContent(res->getString("reply_content"));
             msg.setStatus(res->getInt("status"));
             list.push_back(msg);
         }
@@ -2391,7 +2391,7 @@ bool MessageDAO::replyMessage(sql::Connection *conn, const Message& message) {
             conn->prepareStatement("UPDATE messageboard SET reply = ?, reply_time = NOW(), status = 1 WHERE id = ?")
         );
 
-        stmt->setString(1, message.getReply());
+        stmt->setString(1, message.getReplyContent());
         stmt->setInt(2, message.getId());
 
         return stmt->executeUpdate() > 0;

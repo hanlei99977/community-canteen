@@ -359,10 +359,9 @@ CREATE INDEX idx_dish_type ON dish(type);
 
 -- daily_menu
 CREATE INDEX idx_menu_canteen ON daily_menu(canteen_id);
-CREATE INDEX idx_menu_date ON daily_menu(date);
 CREATE INDEX idx_menu_meal_type ON daily_menu(meal_type);
 CREATE UNIQUE INDEX idx_menu_unique 
-ON daily_menu(canteen_id,date,meal_type);
+ON daily_menu(canteen_id,meal_type);
 
 -- menu_dish
 CREATE INDEX idx_menu_dish_dish ON menu_dish(dish_id);

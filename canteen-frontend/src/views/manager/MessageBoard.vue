@@ -6,8 +6,8 @@
       <el-table-column prop="id" label="ID" width="100" />
       <el-table-column prop="user_id" label="留言人ID" width="120" />
       <el-table-column prop="content" label="留言内容" min-width="300" />
-      <el-table-column prop="message_time" label="留言时间" width="180" />
-      <el-table-column prop="reply" label="回复内容" min-width="300" />
+      <el-table-column prop="create_time" label="留言时间" width="180" />
+      <el-table-column prop="reply_content" label="回复内容" min-width="300" />
       <el-table-column prop="reply_time" label="回复时间" width="180" />
       <el-table-column label="状态" width="100">
         <template #default="scope">

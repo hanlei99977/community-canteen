@@ -1161,7 +1161,7 @@ std::vector<Message> MessageService::getMessagesByUser(int user_id, int canteen_
 }
 
 bool MessageService::replyMessage(const Message& message) {
-    if (message.getId() <= 0 || message.getReply().empty()) {
+    if (message.getId() <= 0 || message.getReplyContent().empty()) {
         return false;
     }
     MessageDAO dao;

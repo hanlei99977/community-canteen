@@ -296,11 +296,11 @@ class Message {
 private:
     int id;
     int canteen_id;
-    std::string message_time;
+    std::string create_time;
     std::string reply_time;
     int user_id;
     std::string content;
-    std::string reply;
+    std::string reply_content;
     int status;
 
 public:
@@ -310,8 +310,8 @@ public:
     int getCanteenId() const { return canteen_id; }
     void setCanteenId(int cid) { canteen_id = cid; }
 
-    std::string getMessageTime() const { return message_time; }
-    void setMessageTime(const std::string& mt) { message_time = mt; }
+    std::string getCreateTime() const { return create_time; }
+    void setCreateTime(const std::string& ct) { create_time = ct; }
 
     std::string getReplyTime() const { return reply_time; }
     void setReplyTime(const std::string& rt) { reply_time = rt; }
@@ -322,8 +322,8 @@ public:
     std::string getContent() const { return content; }
     void setContent(const std::string& c) { content = c; }
 
-    std::string getReply() const { return reply; }
-    void setReply(const std::string& r) { reply = r; }
+    std::string getReplyContent() const { return reply_content; }
+    void setReplyContent(const std::string& r) { reply_content = r; }
 
     int getStatus() const { return status; }
     void setStatus(int s) { status = s; }

@@ -6,7 +6,7 @@
 #include "../model/dto.h"
 #include "../../MySQL/ConnectionPool.h"
 
-
+/************************用户权限类DAO*******************************/
 // ================================
 // 区域
 // ================================
@@ -97,6 +97,7 @@ public:
     std::vector<Family> getFamilyList(sql::Connection *conn);
 };
 
+/************************食堂运营类DAO*******************************/
 // ================================
 // 食堂
 // ================================
@@ -143,6 +144,7 @@ public:
     bool isDishInMenu(sql::Connection *conn, int dish_id);
 };
 
+/************************点餐订单类DAO*******************************/
 // ================================
 // 订单
 // ================================
@@ -172,6 +174,20 @@ public:
     bool insertOrderItems(sql::Connection *conn, int order_id, const std::vector<OrderItem>& items);
     std::vector<OrderItem> getOrderItemsByOrderId(sql::Connection *conn, int order_id);
 };
+
+// ================================
+// 订单取消
+// ================================
+class OrderCancelDAO {
+public:
+    int insertCancelApply(sql::Connection *conn, int order_id, const std::string& cancel_reason);
+    std::vector<OrderCancelVO> getCancelAppliesByCanteen(sql::Connection *conn, int canteen_id);
+    std::shared_ptr<OrderCancelVO> getCancelApplyByOrderId(sql::Connection *conn, int order_id);
+    std::shared_ptr<OrderCancelVO> getCancelApplyByCancelId(sql::Connection *conn, int cancel_id);
+    bool updateCancelStatus(sql::Connection *conn, int cancel_id, int status, const std::string& reject_reason = "");
+};
+
+/************************监督反馈类DAO*******************************/
 // ================================
 // 评价
 // ================================
@@ -193,6 +209,7 @@ public:
     bool updateReportStatus(sql::Connection *conn, int report_id, int status, int handler_id);
 };
 
+/************************内容消息类DAO*******************************/
 // ================================
 // 公告
 // ================================
@@ -214,6 +231,9 @@ public:
     bool replyMessage(sql::Connection *conn, const Message& message);
 };
 
+// ================================
+// 消息中心
+// ================================
 class MessageCenterDAO {
 public:
     int createMessage(sql::Connection *conn, const MessageNotification& message);
@@ -221,14 +241,4 @@ public:
     bool updateMessageStatus(sql::Connection *conn, int message_id, int status);
 };
 
-// ================================
-// 订单取消
-// ================================
-class OrderCancelDAO {
-public:
-    int insertCancelApply(sql::Connection *conn, int order_id, const std::string& cancel_reason);
-    std::vector<OrderCancelVO> getCancelAppliesByCanteen(sql::Connection *conn, int canteen_id);
-    std::shared_ptr<OrderCancelVO> getCancelApplyByOrderId(sql::Connection *conn, int order_id);
-    std::shared_ptr<OrderCancelVO> getCancelApplyByCancelId(sql::Connection *conn, int cancel_id);
-    bool updateCancelStatus(sql::Connection *conn, int cancel_id, int status, const std::string& reject_reason = "");
-};
+

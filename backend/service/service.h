@@ -5,19 +5,25 @@
 #include <unordered_map>
 #include "../dao/dao.h"
 
+/*******************************用户权限模块*******************************/
 // ================================
 // 用户服务
 // ================================
 class UserService {
 public:
+    // 注册用户
     bool registerUser(const User& user, int role=1, int region_id=0);
-    bool isUsernameTaken(const std::string& username);
+    bool isUsernameTaken(const std::string& username);// 检查用户名是否已被注册
+    // 登录用户
     std::shared_ptr<User> login(std::string& username, std::string& password);
+    // 用户信息获取及更新
     std::shared_ptr<DinerCenterVO> getDinerCenterByUserId(int user_id);
     bool updateDinerCenter(const DinerCenterVO& diner);
+    bool changePassword(int user_id, const std::string& old_password, const std::string& new_password);
+    // 用户状态更新
     std::string getUserRole(int user_id);
     bool updateStatus(const User& user);
-    bool changePassword(int user_id, const std::string& old_password, const std::string& new_password);
+    
 };
 
 // ================================
@@ -28,6 +34,7 @@ public:
     bool submitAdminApply(const User& user, int level_id, int region_id);
     std::vector<AdminInformation> getAdminList();
     std::vector<AdminApplyVO> getAdminApplyList();
+    // 管理员审核申请
     bool reviewAdminApply(int apply_id, int reviewer_id, int status);
 };
 
@@ -58,7 +65,7 @@ public:
     std::vector<Region> getRegionList();
 };
 
-
+/*******************************家庭模块*******************************/
 // ================================
 // 家庭服务
 // ================================
@@ -69,18 +76,24 @@ public:
     bool createFamily(int user_id, const std::string& family_name);
 };
 
+/*******************************食堂模块*******************************/
 // ================================
 // 食堂服务
 // ================================
 class CanteenService {
 public:
+    // 获取所有食堂
     std::vector<Canteen> getAllCanteens();
     std::shared_ptr<CanteenVO> getCanteenById(int id);
     int getCanteenIdByUserId(int user_id);
+    // 更新食堂
     bool updateCanteenAddress(int canteen_id, const std::string& address);
     bool updateCanteenStatus(int canteen_id, int status);
+
+    // 获取食堂详情
     std::shared_ptr<CanteenVO> getCanteenDetails(int canteen_id);
     std::vector<CanteenManagerVO> getCanteensWithManagers();
+    // 日常采购
     std::vector<PurchaseBill> getPurchaseBills(int canteen_id);
     int createPurchaseBill(const PurchaseBill& bill);
     bool updatePurchaseBill(const PurchaseBill& bill);
@@ -90,6 +103,7 @@ public:
     FinancialData getFinancialData(int canteen_id, const std::string& time_dimension, const std::string& stats_type);
 };
 
+/*******************************菜品&&菜单模块*******************************/
 // ================================
 // 菜单服务
 // ================================
@@ -110,6 +124,7 @@ public:
     bool enableDishByDishId(const int dish_id);
 };
 
+/*******************************订单模块*******************************/
 // ================================
 // 订单服务（🔥重点）
 // ================================
@@ -119,7 +134,9 @@ public:
                     int canteen_id,
                     int order_for_user_id,
                     const std::vector<OrderItem>& items);
+    // 获取订单目标用户
     std::vector<FamilyMemberVO> getOrderTargetsByUser(int user_id);
+    // 获取用户订单
     std::vector<OrderVO> getOrdersByUser(int user_id);
     std::vector<OrderDetailVO> getOrdersDetailsByOrderId(int order_id);
     // 用餐偏好相关方法
@@ -138,6 +155,18 @@ private:
 };
 
 // ================================
+// 订单取消服务
+// ================================
+class OrderCancelService {
+public:
+    bool createCancelApply(int order_id, const std::string& cancel_reason);
+    std::vector<OrderCancelVO> getCancelAppliesByCanteen(int canteen_id);
+    std::shared_ptr<OrderCancelVO> getCancelApplyByOrderId(int order_id);
+    bool handleCancelApply(int cancel_id, int status, const std::string& reject_reason = "");
+};
+
+/*******************************评价&&投诉模块*******************************/
+// ================================
 // 评价服务
 // ================================
 class RatingService {
@@ -148,7 +177,7 @@ public:
 };
 
 // ================================
-// 举报服务
+// 投诉服务
 // ================================
 class ReportService {
 public:
@@ -158,14 +187,7 @@ public:
     bool updateReportStatus(int report_id, int status, int handler_id);
 };
 
-class OrderCancelService {
-public:
-    bool createCancelApply(int order_id, const std::string& cancel_reason);
-    std::vector<OrderCancelVO> getCancelAppliesByCanteen(int canteen_id);
-    std::shared_ptr<OrderCancelVO> getCancelApplyByOrderId(int order_id);
-    bool handleCancelApply(int cancel_id, int status, const std::string& reject_reason = "");
-};
-
+/*******************************公告模块*******************************/
 // ================================
 // 公告服务
 // ================================
@@ -176,6 +198,7 @@ public:
     bool deleteAnnouncement(int announce_id, int publisher_id);
 };
 
+/*******************************消息互动模块*******************************/
 // ================================
 // 留言板服务
 // ================================
@@ -187,6 +210,9 @@ public:
     bool replyMessage(const Message& message);
 };
 
+// ================================
+// 消息中心服务
+// ================================
 class MessageCenterService {
 public:
     int createMessage(const MessageNotification& message);

@@ -14,6 +14,8 @@ COLLATE utf8mb4_general_ci;
 
 USE community_canteen;
 
+
+-- ##################### 基础表 #####################
 -- ================================
 --  地区  
 -- ================================
@@ -41,6 +43,7 @@ CREATE TABLE family (
     family_name VARCHAR(50)
 );
 
+-- ##################### 用户表 #####################
 -- ===============================
 -- 用户信息
 -- ===============================
@@ -78,6 +81,14 @@ CREATE TABLE diner(
     FOREIGN KEY (family_id) REFERENCES family(family_id)
 );
 
+-- 食堂管理者表
+CREATE TABLE canteen_manager (
+    user_id INT PRIMARY KEY,
+    canteen_id INT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
+);
+-- ##################### 权限申请表 #####################
 -- 管理员申请表
 CREATE TABLE admin_apply (
     apply_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -107,6 +118,7 @@ CREATE TABLE canteen_manager_apply (
     FOREIGN KEY (region_id) REFERENCES region(region_id)
 );
 
+-- ##################### 内容消息表 #####################
 -- 公告表
 CREATE TABLE announcement (
     announce_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -117,7 +129,19 @@ CREATE TABLE announcement (
     FOREIGN KEY (publisher_id) REFERENCES admin(user_id)
 );
 
+-- 消息表
+CREATE TABLE message (
+    message_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '消息ID',
+    sender_id INT NOT NULL COMMENT '发送人ID',
+    receiver_id INT NOT NULL COMMENT '接收人ID',
+    content TEXT NOT NULL COMMENT '发送内容',
+    status INT DEFAULT 0 COMMENT '状态：0未读，1已读',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+    FOREIGN KEY (sender_id) REFERENCES users(user_id),
+    FOREIGN KEY (receiver_id) REFERENCES users(user_id)
+) COMMENT '消息表';
 
+-- ##################### 食堂运营相关表 #####################
 -- ================================
 --  社区食堂相关
 -- ================================
@@ -131,16 +155,6 @@ CREATE TABLE canteen (
     status INT DEFAULT 1,
     FOREIGN KEY (region_id) REFERENCES region(region_id)
 );
-
-CREATE TABLE canteen_manager (
-    user_id INT PRIMARY KEY,
-    canteen_id INT,
-    FOREIGN KEY (user_id) REFERENCES users(user_id),
-    FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
-);
--- ================================
---  菜品与餐单
--- ================================
 
 -- 菜品表
 CREATE TABLE dish (
@@ -172,10 +186,7 @@ CREATE TABLE menu_dish (
     FOREIGN KEY (dish_id) REFERENCES dish(dish_id)
 );
 
--- ================================
---  点餐与消费
--- ================================
-
+-- ##################### 点餐订单相关表 #####################
 -- 订单表
 CREATE TABLE orders (
     order_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -210,9 +221,20 @@ CREATE TABLE order_item (
     FOREIGN KEY (dish_id) REFERENCES dish(dish_id)
 );
 
--- ================================
---  评价与监督
--- ================================
+-- 创建订单取消表
+CREATE TABLE order_cancel (
+    cancel_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    cancel_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    cancel_reason TEXT NOT NULL,
+    status TINYINT NOT NULL DEFAULT 0 COMMENT '0: 申请取消, 1: 已取消, 2: 拒绝取消',
+    reject_reason TEXT COMMENT '拒绝取消的原因',
+    handle_time DATETIME COMMENT '处理时间',
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
+);
+
+
+-- ##################### 互动反馈相关表 #####################
 -- 评价表
 CREATE TABLE rating (
     user_id INT,
@@ -227,23 +249,7 @@ CREATE TABLE rating (
     FOREIGN KEY (order_id) REFERENCES orders(order_id)
 );
 
--- ================================
---  财务与统计
--- ================================
-
--- 进货账单表
-CREATE TABLE purchase_bill (
-    bill_id INT PRIMARY KEY AUTO_INCREMENT,
-    canteen_id INT NOT NULL,
-    amount DECIMAL(8,2) NOT NULL,   -- 进货金额
-    purchase_date DATE NOT NULL,    -- 进货日期
-    remark TEXT,            -- 备注
-    FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
-);
-
--- ================================
 --  投诉与反馈
--- ================================
 CREATE TABLE report (
     report_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -259,9 +265,7 @@ CREATE TABLE report (
     FOREIGN KEY (handler_id) REFERENCES users(user_id)
 );
 
--- ================================
 --  留言板
--- ================================
 CREATE TABLE messageboard (
     message_id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
 
@@ -280,31 +284,16 @@ CREATE TABLE messageboard (
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
--- 创建订单取消表
-CREATE TABLE order_cancel (
-    cancel_id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id INT NOT NULL,
-    cancel_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    cancel_reason TEXT NOT NULL,
-    status TINYINT NOT NULL DEFAULT 0 COMMENT '0: 申请取消, 1: 已取消, 2: 拒绝取消',
-    reject_reason TEXT COMMENT '拒绝取消的原因',
-    handle_time DATETIME COMMENT '处理时间',
-    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE
+-- ##################### 财务与统计相关表 #####################
+-- 进货账单表
+CREATE TABLE purchase_bill (
+    bill_id INT PRIMARY KEY AUTO_INCREMENT,
+    canteen_id INT NOT NULL,
+    amount DECIMAL(8,2) NOT NULL,   -- 进货金额
+    purchase_date DATE NOT NULL,    -- 进货日期
+    remark TEXT,            -- 备注
+    FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
 );
-
--- ================================
---  消息表
--- ================================
-CREATE TABLE message (
-    message_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '消息ID',
-    sender_id INT NOT NULL COMMENT '发送人ID',
-    receiver_id INT NOT NULL COMMENT '接收人ID',
-    content TEXT NOT NULL COMMENT '发送内容',
-    status INT DEFAULT 0 COMMENT '状态：0未读，1已读',
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
-    FOREIGN KEY (sender_id) REFERENCES users(user_id),
-    FOREIGN KEY (receiver_id) REFERENCES users(user_id)
-) COMMENT '消息表';
 
 
 -- 添加索引

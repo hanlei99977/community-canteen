@@ -152,7 +152,7 @@ public:
     std::vector<HistoryMenu> getHistoryMenusByCanteen(sql::Connection *conn, int canteen_id);
     std::vector<Dish> getHistoryMenuDishes(sql::Connection *conn, int history_menu_id);
     int getHistoryMenuIdByCanteenIdAndMealType(sql::Connection *conn, int canteen_id, const std::string& meal_type);
-    bool updateHistoryMenuEndTime(sql::Connection *conn, int history_menu_id, int canteen_id, const std::string& meal_type, const std::string& end_time);
+    bool updateHistoryMenuEndTime(sql::Connection *conn, int history_menu_id, int canteen_id, const std::string& meal_type);
 };
 
 /************************点餐订单类DAO*******************************/

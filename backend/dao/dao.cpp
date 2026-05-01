@@ -2840,20 +2840,22 @@ int HistoryMenuDAO::getHistoryMenuIdByCanteenIdAndMealType(sql::Connection *conn
     } catch (...) { return -1; }
 }
 
-bool HistoryMenuDAO::updateHistoryMenuEndTime(sql::Connection *conn, int history_menu_id, int canteen_id, const std::string& meal_type, const std::string& end_time) {
+bool HistoryMenuDAO::updateHistoryMenuEndTime(sql::Connection *conn, int history_menu_id, int canteen_id, const std::string& meal_type) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "UPDATE history_menu SET end_time = ? "
+                "UPDATE history_menu SET end_time = NOW() "
                 "WHERE history_menu_id = ? AND canteen_id = ? AND meal_type = ? AND end_time IS NULL"
             )
         );
         
-        stmt->setString(1, end_time);
-        stmt->setInt(2, history_menu_id);
-        stmt->setInt(3, canteen_id);
-        stmt->setString(4, meal_type);
+        stmt->setInt(1, history_menu_id);
+        stmt->setInt(2, canteen_id);
+        stmt->setString(3, meal_type);
         
         return stmt->executeUpdate() > 0;
-    } catch (...) { return false; }
+    } catch (sql::SQLException &e) {
+        std::cout << "SQL Error: " << e.what() << std::endl;
+        return false;
+    }
 }

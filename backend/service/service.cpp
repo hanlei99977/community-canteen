@@ -747,15 +747,13 @@ bool MenuService::updateMenu(const MenuCreateDTO& menu) {
             if (menu_id == -1) {
                 std::cout << "获取当前餐单ID失败" <<"canteen_id:"<<menu.getCanteenId() <<" meal_type:"<<menu.getMealType() << std::endl;
             }
-            // 更新之前的历史记录的结束时间
-            std::string currentTime = "CURRENT_TIMESTAMP";
 
             // 获取当前餐单的history_menu_id
             int history_menu_id = historyMenuDAO.getHistoryMenuIdByCanteenIdAndMealType(conn, menu.getCanteenId(), menu.getMealType());
             if (history_menu_id == -1) {
                 std::cout << "获取历史餐单ID失败" <<"canteen_id:"<<menu.getCanteenId() <<" meal_type:"<<menu.getMealType() << std::endl;
             }
-            else if(!historyMenuDAO.updateHistoryMenuEndTime(conn, history_menu_id, menu.getCanteenId(), menu.getMealType(), currentTime)) {
+            else if(!historyMenuDAO.updateHistoryMenuEndTime(conn, history_menu_id, menu.getCanteenId(), menu.getMealType())) {
                 std::cout << "更新历史餐单结束时间失败" <<"history_menu_id:"<<history_menu_id <<" canteen_id:"<<menu.getCanteenId() <<" meal_type:"<<menu.getMealType() << std::endl;
                 return false;
             }

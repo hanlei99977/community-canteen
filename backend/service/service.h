@@ -112,6 +112,8 @@ public:
     std::vector<Dish> getMenuByMealType(int canteen_id, const std::string& meal_type);
     std::vector<CanteenMenuVO> getMenuByCanteen(int canteen_id);
     bool updateMenu(const MenuCreateDTO& menu);
+    std::vector<HistoryMenu> getHistoryMenusByCanteen(int canteen_id);
+    std::vector<Dish> getHistoryMenuDishes(int history_menu_id);
 };
 // ================================
 // 菜品服务

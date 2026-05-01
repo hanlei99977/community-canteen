@@ -117,6 +117,7 @@ void Controller::registerCanteenRoutes(httplib::Server& server) {
     server.Get("/menu", handleMenu);
     server.Get("/getMenus", handleGetCanteenMenus);
     server.Post("/menuUpdate", handleUpdateMenu);
+    server.Get("/historyMenus", handleGetHistoryMenus);
     //菜品
     server.Get("/getDishes", handleGetDishes);
     server.Post("/dishCreate", handleCreateDish);
@@ -542,6 +543,50 @@ void Controller::handleEnableDish(const httplib::Request& req, httplib::Response
     } catch (const std::exception& e) {
         std::cerr << "上架菜品失败: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleGetHistoryMenus(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        std::cout << "请求历史餐单参数：canteen_id=" << canteen_id << std::endl;
+
+        MenuService menuService;
+        
+        // 获取历史餐单列表
+        auto historyMenus = menuService.getHistoryMenusByCanteen(canteen_id);
+        std::cout << "查询到历史餐单数量：" << historyMenus.size() << std::endl;
+
+        json arr = json::array();
+
+        for (const auto& menu : historyMenus) {
+            // 获取历史餐单的菜品
+            auto dishes = menuService.getHistoryMenuDishes(menu.getHistoryMenuId());
+            
+            json dishes_json = json::array();
+            for (const auto& dish : dishes) {
+                dishes_json.push_back({
+                    {"dish_id", dish.getId()},
+                    {"name", dish.getName()},
+                    {"price", dish.getPrice()}
+                });
+            }
+
+            arr.push_back({
+                {"history_menu_id", menu.getHistoryMenuId()},
+                {"meal_type", menu.getMealType()},
+                {"start_time", menu.getStartTime()},
+                {"end_time", menu.getEndTime()},
+                {"dishes", dishes_json}
+            });
+        }
+
+        res.set_content(Response::success(arr), "application/json");
+
+    } catch (const std::exception& e) {
+        std::cerr << "获取历史餐单失败: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
 

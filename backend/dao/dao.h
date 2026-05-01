@@ -144,6 +144,17 @@ public:
     bool isDishInMenu(sql::Connection *conn, int dish_id);
 };
 
+// 历史餐单
+class HistoryMenuDAO {
+public:
+    int saveHistoryMenu(sql::Connection *conn, const HistoryMenu& historyMenu);
+    bool saveHistoryMenuDishes(sql::Connection *conn, int historyMenuId, const std::vector<int>& dishIds);
+    std::vector<HistoryMenu> getHistoryMenusByCanteen(sql::Connection *conn, int canteen_id);
+    std::vector<Dish> getHistoryMenuDishes(sql::Connection *conn, int history_menu_id);
+    int getHistoryMenuIdByCanteenIdAndMealType(sql::Connection *conn, int canteen_id, const std::string& meal_type);
+    bool updateHistoryMenuEndTime(sql::Connection *conn, int history_menu_id, int canteen_id, const std::string& meal_type, const std::string& end_time);
+};
+
 /************************点餐订单类DAO*******************************/
 // ================================
 // 订单

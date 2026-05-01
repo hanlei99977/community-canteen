@@ -290,6 +290,54 @@ public:
 };
 
 // ================================
+// HistoryMenu
+// ================================
+class HistoryMenu {
+private:
+    int history_menu_id;
+    int menu_id;
+    int canteen_id;
+    std::string meal_type;
+    std::string start_time;
+    std::string end_time;
+
+public:
+    int getHistoryMenuId() const { return history_menu_id; }
+    void setHistoryMenuId(int id) { history_menu_id = id; }
+
+    int getMenuId() const { return menu_id; }
+    void setMenuId(int id) { menu_id = id; }
+
+    int getCanteenId() const { return canteen_id; }
+    void setCanteenId(int id) { canteen_id = id; }
+
+    std::string getMealType() const { return meal_type; }
+    void setMealType(const std::string& m) { meal_type = m; }
+
+    std::string getStartTime() const { return start_time; }
+    void setStartTime(const std::string& s) { start_time = s; }
+
+    std::string getEndTime() const { return end_time; }
+    void setEndTime(const std::string& e) { end_time = e; }
+};
+
+// ================================
+// HistoryMenuDish
+// ================================
+class HistoryMenuDish {
+private:
+    int history_menu_id;
+    int dish_id;
+
+public:
+    int getHistoryMenuId() const { return history_menu_id; }
+    void setHistoryMenuId(int id) { history_menu_id = id; }
+
+    int getDishId() const { return dish_id; }
+    void setDishId(int id) { dish_id = id; }
+};
+
+// ================================
 // Message
 // ================================
 class Message {

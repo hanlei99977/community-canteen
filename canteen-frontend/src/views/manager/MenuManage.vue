@@ -6,30 +6,58 @@
       <h2>每日餐单管理</h2>
     </div>
 
-    <!-- ================= 餐单列表 ================= -->
-    <el-table :data="menuList" border>
+    <!-- 标签页 -->
+    <el-tabs v-model="activeTab" style="margin-bottom: 20px;">
+      <el-tab-pane label="当前餐单" name="current">
+        <!-- ================= 餐单列表 ================= -->
+        <el-table :data="menuList" border>
 
-      <el-table-column prop="meal_type" label="餐别" width="100"/>
+          <el-table-column prop="meal_type" label="餐别" width="100"/>
 
-      <el-table-column label="餐单菜品">        <template #default="scope">
-          <span v-if="scope.row.dishes && scope.row.dishes.length">
-            <span v-for="d in scope.row.dishes" :key="d.dish_id">
-              {{ d.name }}（{{ d.price }}元）、
+          <el-table-column label="餐单菜品">        <template #default="scope">
+            <span v-if="scope.row.dishes && scope.row.dishes.length">
+              <span v-for="d in scope.row.dishes" :key="d.dish_id">
+                {{ d.name }}（{{ d.price }}元）、
+              </span>
             </span>
-          </span>
-          <span v-else>该餐暂无菜品</span>
-        </template>
-      </el-table-column>
+            <span v-else>该餐暂无菜品</span>
+          </template>
+          </el-table-column>
 
-      <el-table-column label="操作" width="120">
-        <template #default="scope">
-          <el-button type="primary" size="small" @click="openDialog(scope.row)">
-            修改
-          </el-button>
-        </template>
-      </el-table-column>
+          <el-table-column label="操作" width="120">
+            <template #default="scope">
+              <el-button type="primary" size="small" @click="openDialog(scope.row)">
+                修改
+              </el-button>
+            </template>
+          </el-table-column>
 
-    </el-table>
+        </el-table>
+      </el-tab-pane>
+      <el-tab-pane label="历史餐单" name="history">
+        <!-- ================= 历史餐单列表 ================= -->
+        <el-table :data="historyMenuList" border>
+
+          <el-table-column prop="meal_type" label="餐别" width="100"/>
+
+          <el-table-column label="餐单菜品">
+            <template #default="scope">
+              <span v-if="scope.row.dishes && scope.row.dishes.length">
+                <span v-for="d in scope.row.dishes" :key="d.dish_id">
+                  {{ d.name }}（{{ d.price }}元）、
+                </span>
+              </span>
+              <span v-else>该餐暂无菜品</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="start_time" label="开始时间" width="200"/>
+
+          <el-table-column prop="end_time" label="结束时间" width="200"/>
+
+        </el-table>
+      </el-tab-pane>
+    </el-tabs>
 
     <!-- ================= 修改弹窗 ================= -->
     <el-dialog v-model="dialogVisible" title="修改餐单" width="500px">
@@ -87,8 +115,10 @@ const availableDishList = computed(() =>
 
 // ================= 数据 =================
 const menuList = ref([])
+const historyMenuList = ref([])
 const dishList = ref([])
 const dialogVisible = ref(false)
+const activeTab = ref('current')
 
 // 表单
 const form = ref({
@@ -106,6 +136,17 @@ const getMenus = async () => {
   })
 
   menuList.value = res.data.data
+}
+
+// ================= 获取历史餐单 =================
+const getHistoryMenus = async () => {
+  const user = getUser()
+
+  const res = await axios.get('http://192.168.56.100:8080/historyMenus', {
+    params: { canteen_id: user.canteen_id }
+  })
+
+  historyMenuList.value = res.data.data
 }
 
 // ================= 获取所有菜品 =================
@@ -182,5 +223,6 @@ const submit = async () => {
 onMounted(() => {
   getMenus()
   getDishes()
+  getHistoryMenus()
 })
 </script>

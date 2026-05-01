@@ -186,6 +186,26 @@ CREATE TABLE menu_dish (
     FOREIGN KEY (dish_id) REFERENCES dish(dish_id)
 );
 
+-- 历史餐单表
+CREATE TABLE history_menu (
+    history_menu_id INT AUTO_INCREMENT PRIMARY KEY,
+    menu_id INT,
+    canteen_id INT,
+    meal_type VARCHAR(10),  -- 早餐 / 午餐 / 晚餐
+    start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    end_time DATETIME NULL,
+    FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
+);
+
+-- 历史餐单-菜品关系表
+CREATE TABLE history_menu_dish (
+    history_menu_id INT,
+    dish_id INT,
+    PRIMARY KEY (history_menu_id, dish_id),
+    FOREIGN KEY (history_menu_id) REFERENCES history_menu(history_menu_id),
+    FOREIGN KEY (dish_id) REFERENCES dish(dish_id)
+);
+
 -- ##################### 点餐订单相关表 #####################
 -- 订单表
 CREATE TABLE orders (
@@ -354,6 +374,15 @@ ON daily_menu(canteen_id,meal_type);
 
 -- menu_dish
 CREATE INDEX idx_menu_dish_dish ON menu_dish(dish_id);
+
+-- history_menu
+CREATE INDEX idx_history_menu_canteen ON history_menu(canteen_id);
+CREATE INDEX idx_history_menu_meal_type ON history_menu(meal_type);
+CREATE INDEX idx_history_menu_start_time ON history_menu(start_time);
+CREATE INDEX idx_history_menu_end_time ON history_menu(end_time);
+
+-- history_menu_dish
+CREATE INDEX idx_history_menu_dish_dish ON history_menu_dish(dish_id);
 
 -- orders
 CREATE INDEX idx_orders_user ON orders(user_id);

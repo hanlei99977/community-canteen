@@ -52,6 +52,7 @@ private:
     static void handleMenu(const httplib::Request& req, httplib::Response& res);
     static void handleGetCanteenMenus(const httplib::Request& req, httplib::Response& res);
     static void handleUpdateMenu(const httplib::Request& req, httplib::Response& res);
+    static void handleGetHistoryMenus(const httplib::Request& req, httplib::Response& res);
     // 菜品管理
     static void handleGetDishes(const httplib::Request& req, httplib::Response& res);
     static void handleCreateDish(const httplib::Request& req, httplib::Response& res);

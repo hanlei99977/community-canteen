@@ -2705,3 +2705,155 @@ double CanteenDAO::getExpenseByTimeDimension(sql::Connection *conn, int canteen_
 
     return 0.0;
 }
+
+/***************************************************************************************
+ * HistoryMenuDao
+ ***************************************************************************************/
+int HistoryMenuDAO::saveHistoryMenu(sql::Connection *conn, const HistoryMenu& historyMenu) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO history_menu(menu_id, canteen_id, meal_type, start_time, end_time) "
+                "VALUES (?, ?, ?, NOW(), NULL)"
+            )
+        );
+        
+        stmt->setInt(1, historyMenu.getMenuId());
+        stmt->setInt(2, historyMenu.getCanteenId());
+        stmt->setString(3, historyMenu.getMealType());
+        
+        if (stmt->executeUpdate() == 0) {
+            return -1;
+        }
+        
+        // 获取自增ID
+        std::unique_ptr<sql::Statement> cstmt(conn->createStatement());
+        std::unique_ptr<sql::ResultSet> rs(
+            cstmt->executeQuery("SELECT LAST_INSERT_ID()")
+        );
+        
+        int history_menu_id = -1;
+        if (rs->next()) {
+            history_menu_id = rs->getInt(1);
+        }
+        
+        return history_menu_id;
+    } catch (...) { return -1; }
+}
+
+bool HistoryMenuDAO::saveHistoryMenuDishes(sql::Connection *conn, int historyMenuId, const std::vector<int>& dishIds) {
+    try {
+        for (int dish_id : dishIds) {
+            auto stmt = std::unique_ptr<sql::PreparedStatement>(
+                conn->prepareStatement(
+                    "INSERT INTO history_menu_dish(history_menu_id, dish_id) "
+                    "VALUES (?, ?)"
+                )
+            );
+            
+            stmt->setInt(1, historyMenuId);
+            stmt->setInt(2, dish_id);
+            stmt->executeUpdate();
+        }
+        return true;
+    } catch (...) { return false; }
+}
+
+std::vector<HistoryMenu> HistoryMenuDAO::getHistoryMenusByCanteen(sql::Connection *conn, int canteen_id) {
+    std::vector<HistoryMenu> list;
+    
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT * FROM history_menu WHERE canteen_id = ? ORDER BY start_time DESC"
+            )
+        );
+        
+        stmt->setInt(1, canteen_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        
+        while (res->next()) {
+            HistoryMenu hm;
+            hm.setHistoryMenuId(res->getInt("history_menu_id"));
+            hm.setMenuId(res->getInt("menu_id"));
+            hm.setCanteenId(res->getInt("canteen_id"));
+            hm.setMealType(res->getString("meal_type"));
+            hm.setStartTime(res->getString("start_time"));
+            hm.setEndTime(res->getString("end_time"));
+            list.push_back(hm);
+        }
+    } catch (...) {}
+    
+    return list;
+}
+
+std::vector<Dish> HistoryMenuDAO::getHistoryMenuDishes(sql::Connection *conn, int history_menu_id) {
+    std::vector<Dish> list;
+    
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT d.* FROM dish d "
+                "JOIN history_menu_dish hmd ON d.dish_id = hmd.dish_id "
+                "WHERE hmd.history_menu_id = ?"
+            )
+        );
+        
+        stmt->setInt(1, history_menu_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        
+        while (res->next()) {
+            Dish d;
+            d.setId(res->getInt("dish_id"));
+            d.setCanteenId(res->getInt("canteen_id"));
+            d.setName(res->getString("name"));
+            d.setType(res->getString("type"));
+            d.setPrice(res->getDouble("price"));
+            d.setCalories(res->getInt("calories"));
+            d.setNutritionInfo(res->getString("nutrition_info"));
+            d.setStatus(res->getInt("status"));
+            list.push_back(d);
+        }
+    } catch (...) {}
+    
+    return list;
+}
+
+int HistoryMenuDAO::getHistoryMenuIdByCanteenIdAndMealType(sql::Connection *conn, int canteen_id, const std::string& meal_type) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT history_menu_id FROM history_menu WHERE canteen_id = ? AND meal_type = ? AND `end_time` IS NULL"
+            )
+        );
+        
+        stmt->setInt(1, canteen_id);
+        stmt->setString(2, meal_type);  
+        
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        
+        if (res->next()) {
+            return res->getInt("history_menu_id");
+        }
+        
+        return -1;
+    } catch (...) { return -1; }
+}
+
+bool HistoryMenuDAO::updateHistoryMenuEndTime(sql::Connection *conn, int history_menu_id, int canteen_id, const std::string& meal_type, const std::string& end_time) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE history_menu SET end_time = ? "
+                "WHERE history_menu_id = ? AND canteen_id = ? AND meal_type = ? AND end_time IS NULL"
+            )
+        );
+        
+        stmt->setString(1, end_time);
+        stmt->setInt(2, history_menu_id);
+        stmt->setInt(3, canteen_id);
+        stmt->setString(4, meal_type);
+        
+        return stmt->executeUpdate() > 0;
+    } catch (...) { return false; }
+}

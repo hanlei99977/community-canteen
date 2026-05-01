@@ -43,6 +43,12 @@ CREATE TABLE family (
     family_name VARCHAR(50)
 );
 
+-- 标签表
+CREATE TABLE tag (
+    tag_id INT PRIMARY KEY AUTO_INCREMENT,
+    tag_name VARCHAR(50) UNIQUE
+);
+
 -- ##################### 用户表 #####################
 -- ===============================
 -- 用户信息
@@ -167,6 +173,15 @@ CREATE TABLE dish (
     nutrition_info VARCHAR(100),  -- 营养成分信息
     status INT DEFAULT 1,
     FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
+);
+
+-- 菜品-标签关系表
+CREATE TABLE dish_tag (
+    dish_id INT,
+    tag_id INT,
+    PRIMARY KEY (dish_id, tag_id),
+    FOREIGN KEY (dish_id) REFERENCES dish(dish_id),
+    FOREIGN KEY (tag_id) REFERENCES tag(tag_id)
 );
 
 -- 每日餐单表
@@ -315,8 +330,16 @@ CREATE TABLE purchase_bill (
     FOREIGN KEY (canteen_id) REFERENCES canteen(canteen_id)
 );
 
-
--- 添加索引
+--  用户用餐偏好表
+CREATE TABLE diner_preference (
+    user_id INT,
+    tag_id INT,
+    score INT DEFAULT 0,
+    PRIMARY KEY (user_id, tag_id),
+    FOREIGN KEY (user_id) REFERENCES diner(user_id),
+    FOREIGN KEY (tag_id) REFERENCES tag(tag_id)
+);
+--##################### 添加索引 #####################
 CREATE INDEX idx_order_id ON order_cancel(order_id);
 CREATE INDEX idx_status ON order_cancel(status);
 

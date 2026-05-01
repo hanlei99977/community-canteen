@@ -1304,7 +1304,7 @@ std::vector<Dish> DishDAO::getDishesByCanteen(sql::Connection *conn, int canteen
     return list;
 }
 
-bool DishDAO::insertDish(sql::Connection *conn, const Dish& dish){
+int DishDAO::insertDish(sql::Connection *conn, const Dish& dish){
     try {
         auto stmt1 = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -1321,13 +1321,23 @@ bool DishDAO::insertDish(sql::Connection *conn, const Dish& dish){
         stmt1->setString(6, dish.getNutritionInfo());    // 6: nutrition_info (string)
 
         if (stmt1->executeUpdate() == 0) {
-            return false;
+            return -1;
         }
 
-        return true;
+        std::unique_ptr<sql::Statement> cstmt(conn->createStatement());
+        std::unique_ptr<sql::ResultSet> rs(
+            cstmt->executeQuery("SELECT LAST_INSERT_ID()")
+        );
+
+        int dish_id = -1;
+        if (rs->next()) {
+            dish_id = rs->getInt(1);
+        }
+
+        return dish_id;
     } catch (const std::exception& e) {
         std::cerr << "插入菜品失败: " << e.what() << std::endl;
-        return false;
+        return -1;
     }
 
 }
@@ -1350,6 +1360,25 @@ bool DishDAO::disableDishByDishId(sql::Connection *conn, const int dish_id){
         return false;
     }
 
+}
+
+int DishDAO::updateDish(sql::Connection *conn, int dish_id, double price, int calories, const std::string& nutrition_info) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "UPDATE dish SET price = ?, calories = ?, nutrition_info = ? WHERE dish_id = ?"
+            )
+        );
+        stmt->setDouble(1, price);
+        stmt->setInt(2, calories);
+        stmt->setString(3, nutrition_info);
+        stmt->setInt(4, dish_id);
+
+        return stmt->executeUpdate();
+    } catch (const std::exception& e) {
+        std::cerr << "更新菜品失败: " << e.what() << std::endl;
+        return -1;
+    }
 }
 
 bool DishDAO::enableDishByDishId(sql::Connection *conn, const int dish_id){
@@ -3013,4 +3042,140 @@ bool HistoryMenuDAO::updateHistoryMenuEndTime(sql::Connection *conn, int history
         std::cout << "SQL Error: " << e.what() << std::endl;
         return false;
     }
+}
+
+/***************************************************************************************
+ * TagDAO
+ ***************************************************************************************/
+std::vector<Tag> TagDAO::getAllTags(sql::Connection *conn) {
+    std::vector<Tag> list;
+
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT tag_id, tag_name FROM tag")
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            Tag tag;
+            tag.setId(res->getInt("tag_id"));
+            tag.setName(res->getString("tag_name"));
+            list.push_back(tag);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[TagDAO::getAllTags] Error: " << e.what() << std::endl;
+    }
+
+    return list;
+}
+
+std::vector<Tag> TagDAO::getTagsByDishId(sql::Connection *conn, int dish_id) {
+    std::vector<Tag> list;
+
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT t.tag_id, t.tag_name FROM tag t "
+                "JOIN dish_tag dt ON t.tag_id = dt.tag_id "
+                "WHERE dt.dish_id = ?"
+            )
+        );
+
+        stmt->setInt(1, dish_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            Tag tag;
+            tag.setId(res->getInt("tag_id"));
+            tag.setName(res->getString("tag_name"));
+            list.push_back(tag);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[TagDAO::getTagsByDishId] Error: " << e.what() << std::endl;
+    }
+
+    return list;
+}
+
+/***************************************************************************************
+ * DishTagDAO
+ ***************************************************************************************/
+bool DishTagDAO::insertDishTag(sql::Connection *conn, int dish_id, int tag_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO dish_tag(dish_id, tag_id) VALUES (?, ?)"
+            )
+        );
+
+        stmt->setInt(1, dish_id);
+        stmt->setInt(2, tag_id);
+        stmt->executeUpdate();
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[DishTagDAO::insertDishTag] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool DishTagDAO::deleteDishTag(sql::Connection *conn, int dish_id, int tag_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "DELETE FROM dish_tag WHERE dish_id = ? AND tag_id = ?"
+            )
+        );
+
+        stmt->setInt(1, dish_id);
+        stmt->setInt(2, tag_id);
+        stmt->executeUpdate();
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[DishTagDAO::deleteDishTag] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool DishTagDAO::deleteDishTagsByDishId(sql::Connection *conn, int dish_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "DELETE FROM dish_tag WHERE dish_id = ?"
+            )
+        );
+
+        stmt->setInt(1, dish_id);
+        stmt->executeUpdate();
+
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[DishTagDAO::deleteDishTagsByDishId] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::vector<int> DishTagDAO::getTagIdsByDishId(sql::Connection *conn, int dish_id) {
+    std::vector<int> list;
+
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT tag_id FROM dish_tag WHERE dish_id = ?"
+            )
+        );
+
+        stmt->setInt(1, dish_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            list.push_back(res->getInt("tag_id"));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DishTagDAO::getTagIdsByDishId] Error: " << e.what() << std::endl;
+    }
+
+    return list;
 }

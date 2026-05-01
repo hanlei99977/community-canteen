@@ -127,7 +127,8 @@ public:
 class DishDAO {
 public:
     std::vector<Dish> getDishesByCanteen(sql::Connection *conn, int canteen_id);
-    bool insertDish(sql::Connection *conn, const Dish& dish);
+    int insertDish(sql::Connection *conn, const Dish& dish);
+    int updateDish(sql::Connection *conn, int dish_id, double price, int calories, const std::string& nutrition_info);
     bool disableDishByDishId(sql::Connection *conn, const int dish_id);
     bool enableDishByDishId(sql::Connection *conn, const int dish_id);
 };
@@ -250,6 +251,26 @@ public:
     int createMessage(sql::Connection *conn, const MessageNotification& message);
     std::vector<MessageNotification> getMessagesByReceiver(sql::Connection *conn, int receiver_id);
     bool updateMessageStatus(sql::Connection *conn, int message_id, int status);
+};
+
+// ================================
+// 标签
+// ================================
+class TagDAO {
+public:
+    std::vector<Tag> getAllTags(sql::Connection *conn);
+    std::vector<Tag> getTagsByDishId(sql::Connection *conn, int dish_id);
+};
+
+// ================================
+// 菜品标签关联
+// ================================
+class DishTagDAO {
+public:
+    bool insertDishTag(sql::Connection *conn, int dish_id, int tag_id);
+    bool deleteDishTag(sql::Connection *conn, int dish_id, int tag_id);
+    bool deleteDishTagsByDishId(sql::Connection *conn, int dish_id);
+    std::vector<int> getTagIdsByDishId(sql::Connection *conn, int dish_id);
 };
 
 

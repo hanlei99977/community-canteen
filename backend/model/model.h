@@ -589,3 +589,35 @@ public:
     std::string getCreateTime() const { return create_time; }
     void setCreateTime(const std::string& time) { create_time = time; }
 };
+
+// ================================
+// Tag
+// ================================
+class Tag {
+private:
+    int tag_id;
+    std::string tag_name;
+
+public:
+    int getId() const { return tag_id; }
+    void setId(int id) { tag_id = id; }
+
+    std::string getName() const { return tag_name; }
+    void setName(const std::string& name) { tag_name = name; }
+};
+
+// ================================
+// DishTag
+// ================================
+class DishTag {
+private:
+    int dish_id;
+    int tag_id;
+
+public:
+    int getDishId() const { return dish_id; }
+    void setDishId(int id) { dish_id = id; }
+
+    int getTagId() const { return tag_id; }
+    void setTagId(int id) { tag_id = id; }
+};

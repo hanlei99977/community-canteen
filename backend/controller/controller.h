@@ -101,4 +101,8 @@ private:
     static void handleReport(const httplib::Request& req, httplib::Response& res);
     /*************************************数据统计**************************************/
     static void handleFinancialStatistics(const httplib::Request& req, httplib::Response& res);
+    /*************************************标签相关**************************************/
+    static void handleGetAllTags(const httplib::Request& req, httplib::Response& res);
+    static void handleGetDishTags(const httplib::Request& req, httplib::Response& res);
+    static void handleUpdateDish(const httplib::Request& req, httplib::Response& res);
 };

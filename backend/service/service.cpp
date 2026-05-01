@@ -829,11 +829,45 @@ std::vector<Dish> DishService::getDishsByCanteen(int canteen_id) {
     return dao.getDishesByCanteen(conn, canteen_id);
 }
 
-bool DishService::insertDish(const Dish& dish) {
+int DishService::insertDish(const Dish& dish, const std::vector<int>& tag_ids) {
     DishDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.insertDish(conn, dish);
+
+    TransactionGuard tx(conn);
+
+    int dish_id = dao.insertDish(conn, dish);
+    if (dish_id <= 0) {
+        return -1;
+    }
+
+    if (!tag_ids.empty()) {
+        DishTagService dishTagService;
+        dishTagService.updateDishTags(dish_id, tag_ids);
+    }
+
+    tx.commit();
+    return dish_id;
+}
+
+bool DishService::updateDish(int dish_id, double price, int calories, const std::string& nutrition_info, const std::vector<int>& tag_ids) {
+    DishDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    TransactionGuard tx(conn);
+
+    if (dao.updateDish(conn, dish_id, price, calories, nutrition_info) == -1) {
+        std::cout << "更新菜品失败" << std::endl;
+        return false;
+    }
+
+    DishTagService dishTagService;
+    if (!dishTagService.updateDishTags(dish_id, tag_ids)) {
+        std::cout << "更新菜品标签失败" << std::endl;
+        return false;
+    }
+    tx.commit();
+    return true;
 }
 
 bool DishService::disableDishByDishId(const int dish_id) {
@@ -1397,5 +1431,68 @@ std::shared_ptr<OrderCancelVO> OrderCancelService::getCancelApplyByOrderId(int o
     } catch (const std::exception& e) {
         std::cerr << "获取取消申请失败: " << e.what() << std::endl;
         return nullptr;
+    }
+}
+
+/***************************************************************************************
+ * TagService
+ ***************************************************************************************/
+std::vector<Tag> TagService::getAllTags() {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        TagDAO dao;
+        return dao.getAllTags(conn);
+    } catch (const std::exception& e) {
+        std::cerr << "获取所有标签失败: " << e.what() << std::endl;
+        return {};
+    }
+}
+
+std::vector<Tag> TagService::getTagsByDishId(int dish_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        TagDAO dao;
+        return dao.getTagsByDishId(conn, dish_id);
+    } catch (const std::exception& e) {
+        std::cerr << "获取菜品标签失败: " << e.what() << std::endl;
+        return {};
+    }
+}
+
+/***************************************************************************************
+ * DishTagService
+ ***************************************************************************************/
+bool DishTagService::updateDishTags(int dish_id, const std::vector<int>& tag_ids) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        TransactionGuard tx(conn);
+
+        DishTagDAO dishTagDao;
+        dishTagDao.deleteDishTagsByDishId(conn, dish_id);
+
+        for (int tag_id : tag_ids) {
+            dishTagDao.insertDishTag(conn, dish_id, tag_id);
+        }
+
+        tx.commit();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "更新菜品标签失败: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::vector<int> DishTagService::getTagIdsByDishId(int dish_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        DishTagDAO dao;
+        return dao.getTagIdsByDishId(conn, dish_id);
+    } catch (const std::exception& e) {
+        std::cerr << "获取菜品标签ID失败: " << e.what() << std::endl;
+        return {};
     }
 }

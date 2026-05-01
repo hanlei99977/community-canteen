@@ -121,7 +121,8 @@ public:
 class DishService{
 public:
     std::vector<Dish> getDishsByCanteen(int canteen_id);
-    bool insertDish(const Dish& dish );
+    int insertDish(const Dish& dish, const std::vector<int>& tag_ids);
+    bool updateDish(int dish_id, double price, int calories, const std::string& nutrition_info, const std::vector<int>& tag_ids);
     bool disableDishByDishId(const int dish_id);
     bool enableDishByDishId(const int dish_id);
 };
@@ -220,4 +221,23 @@ public:
     int createMessage(const MessageNotification& message);
     std::vector<MessageNotification> getMessagesByReceiver(int receiver_id);
     bool updateMessageStatus(int message_id, int status);
+};
+
+/*******************************标签模块*******************************/
+// ================================
+// 标签服务
+// ================================
+class TagService {
+public:
+    std::vector<Tag> getAllTags();
+    std::vector<Tag> getTagsByDishId(int dish_id);
+};
+
+// ================================
+// 菜品标签服务
+// ================================
+class DishTagService {
+public:
+    bool updateDishTags(int dish_id, const std::vector<int>& tag_ids);
+    std::vector<int> getTagIdsByDishId(int dish_id);
 };

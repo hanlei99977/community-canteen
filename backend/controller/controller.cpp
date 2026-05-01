@@ -124,6 +124,10 @@ void Controller::registerCanteenRoutes(httplib::Server& server) {
     server.Post("/dishCreate", handleCreateDish);
     server.Post("/dishDisable", handleDisableDish);
     server.Post("/dishEnable", handleEnableDish);
+    server.Post("/dishUpdate", handleUpdateDish);
+    //标签
+    server.Get("/getAllTags", handleGetAllTags);
+    server.Get("/getDishTags", handleGetDishTags);
     // 留言板
     server.Post("/messageCreate", handleCreateMessage);
     server.Get("/userMessages", handleGetUserMessages);
@@ -484,23 +488,25 @@ void Controller::handleCreateDish(const httplib::Request& req, httplib::Response
     try {
         json body = json::parse(req.body);
         Dish dish;
-        // 1. 食堂ID（int类型，对应canteen_id字段）
         dish.setCanteenId(getIntSafe(body, "canteen_id"));
-        // 2. 菜品名称（string类型，对应name字段）
         dish.setName(getStringSafe(body, "name"));
-        // 3. 菜品类型（荤/素，对应type字段）
         dish.setType(getStringSafe(body, "type"));
-        // 4. 菜品价格（decimal类型，用getDoubleSafe读取）
         dish.setPrice(body["price"].get<double>());
-        // 5. 菜品热量（int类型，对应calories字段）
         dish.setCalories(getIntSafe(body, "calories"));
-        // 6. 营养信息（string类型，对应nutrition_info字段）
         dish.setNutritionInfo(getStringSafe(body, "nutrition_info"));
 
-       DishService service;
+        std::vector<int> tag_ids;
+        if (body.contains("tag_ids") && body["tag_ids"].is_array()) {
+            for (const auto& id : body["tag_ids"]) {
+                tag_ids.push_back(id.get<int>());
+            }
+        }
 
-        if (service.insertDish(dish)) {
-            res.set_content(Response::success(), "application/json");
+        DishService service;
+        int dish_id = service.insertDish(dish, tag_ids);
+
+        if (dish_id > 0) {
+            res.set_content(Response::success({{"dish_id", dish_id}}), "application/json");
         } else {
             res.set_content(Response::error(500, "创建菜品失败"), "application/json");
         }
@@ -2002,6 +2008,86 @@ void Controller::handleChangePassword(const httplib::Request& req, httplib::Resp
 
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleChangePassword] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleGetAllTags(const httplib::Request& req, httplib::Response& res) {
+    try {
+        TagService service;
+        auto tags = service.getAllTags();
+
+        json arr = json::array();
+        for (const auto& tag : tags) {
+            arr.push_back({
+                {"tag_id", tag.getId()},
+                {"tag_name", tag.getName()}
+            });
+        }
+
+        res.set_content(Response::success(arr), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetAllTags] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "获取标签失败"), "application/json");
+    }
+}
+
+void Controller::handleGetDishTags(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int dish_id = std::stoi(req.get_param_value("dish_id"));
+        std::cout << "获取菜品标签参数：dish_id=" << dish_id << std::endl;
+
+        TagService tagService;
+        DishTagService dishTagService;
+
+        auto tags = tagService.getTagsByDishId(dish_id);
+        auto tag_ids = dishTagService.getTagIdsByDishId(dish_id);
+
+        json arr = json::array();
+        for (const auto& tag : tags) {
+            arr.push_back({
+                {"tag_id", tag.getId()},
+                {"tag_name", tag.getName()}
+            });
+        }
+
+        res.set_content(Response::success({
+            {"tags", arr},
+            {"tag_ids", tag_ids}
+        }), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetDishTags] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "获取菜品标签失败"), "application/json");
+    }
+}
+
+void Controller::handleUpdateDish(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json body = json::parse(req.body);
+        int dish_id = getIntSafe(body, "dish_id");
+        double price = body["price"].get<double>();
+        int calories = getIntSafe(body, "calories");
+        std::string nutrition_info = getStringSafe(body, "nutrition_info");
+        std::vector<int> tag_ids;
+
+        if (body.contains("tag_ids") && body["tag_ids"].is_array()) {
+            for (const auto& id : body["tag_ids"]) {
+                tag_ids.push_back(id.get<int>());
+            }
+        }
+
+        std::cout << "更新菜品参数：dish_id=" << dish_id << ", price=" << price
+                  << ", calories=" << calories << ", nutrition_info=" << nutrition_info << ", tag_ids数量=" << tag_ids.size() << std::endl;
+
+        DishService dishService;
+
+        if (dishService.updateDish(dish_id, price, calories, nutrition_info, tag_ids)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "更新菜品失败"), "application/json");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleUpdateDish] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }

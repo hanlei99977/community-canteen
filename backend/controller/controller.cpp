@@ -22,8 +22,9 @@ int getIntSafe(const json& body, const std::string& key, int defaultVal = 0) {
     if (body[key].is_string()) {
         try {
             return std::stoi(body[key].get<std::string>());
-        } catch (...) {
-            return defaultVal;// 转换失败返回默认值
+        } catch (const std::exception& e) {
+            std::cerr << "[getIntSafe] Error converting " << key << ": " << e.what() << std::endl;
+            return defaultVal;
         }
     }
 
@@ -202,9 +203,10 @@ void Controller::handleLogin(const httplib::Request& req, httplib::Response& res
         res.status = 200;
         res.set_content(Response::success(data), "application/json");
 
-        std::cout << "用户 " << username << "role" << role << " canteen_id " << canteen_id << " 登录成功" << std::endl; 
+        std::cout << "用户 " << username << "role" << role << " canteen_id " << canteen_id << " 登录成功" << std::endl;
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleLogin] Error: " << e.what() << std::endl;
         res.status = 500;
         res.set_content(Response::error(500, "服务器错误"), "application/json");
     }
@@ -288,7 +290,8 @@ void Controller::handleRegister(const httplib::Request& req, httplib::Response& 
             res.set_content(Response::error(500, "注册失败"), "application/json");
         }
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleRegister] Error: " << e.what() << std::endl;
         res.set_content(Response::error(500, "JSON解析失败"), "application/json");
     }
 }
@@ -364,7 +367,8 @@ void Controller::handleMenu(const httplib::Request& req, httplib::Response& res)
 
         res.set_content(Response::success(arr), "application/json");
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleMenu] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -468,7 +472,8 @@ void Controller::handleGetDishes(const httplib::Request& req, httplib::Response&
         std::cout << "菜品数量：" << dishes.size() << std::endl;
         res.set_content(Response::success(arr), "application/json");
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetDishes] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -623,7 +628,8 @@ void Controller::handlePlaceOrder(const httplib::Request& req, httplib::Response
             res.set_content(Response::error(500, "下单失败"), "application/json");
         }
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handlePlaceOrder] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -646,7 +652,8 @@ void Controller::handleOrderTargets(const httplib::Request& req, httplib::Respon
         }
 
         res.set_content(Response::success(arr), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleOrderTargets] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -687,7 +694,8 @@ void Controller::handleGetOrders(const httplib::Request& req, httplib::Response&
 
         res.set_content(Response::success(arr), "application/json");
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetOrders] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -715,7 +723,8 @@ void Controller::handleOrderDetails(const httplib::Request& req, httplib::Respon
 
         res.set_content(Response::success(arr), "application/json");
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleOrderDetails] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -760,7 +769,8 @@ void Controller::handleRecentOrder(const httplib::Request& req, httplib::Respons
             res.set_content(Response::success(nullptr), "application/json");
         }
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleRecentOrder] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -806,7 +816,8 @@ void Controller::handleGetCancelApplies(const httplib::Request& req, httplib::Re
         }
 
         res.set_content(Response::success(applies_json), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetCancelApplies] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -878,7 +889,8 @@ void Controller::handleRating(const httplib::Request& req, httplib::Response& re
             res.set_content(Response::error(500, "评价失败"), "application/json");
         }
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleRating] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -905,7 +917,8 @@ void Controller::handleReport(const httplib::Request& req, httplib::Response& re
             res.set_content(Response::error(500, "举报失败"), "application/json");
         }
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleReport] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -942,7 +955,8 @@ void Controller::handleUserCenter(const httplib::Request& req, httplib::Response
             res.set_content(Response::error(404, "用户未找到"), "application/json");
         }
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleUserCenter] Error: " << e.what() << std::endl;
         res.status = 500;
         res.set_content(Response::error(500, "服务器错误"), "application/json");
     }
@@ -1012,7 +1026,8 @@ void Controller::handleFamilyList(const httplib::Request& req, httplib::Response
             std::cout << "家庭列表项：family_id=" << f.getId() << ", family_name=" << f.getName() << std::endl;
         }
         res.set_content(Response::success(arr), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleFamilyList] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
 
     }
@@ -1038,7 +1053,8 @@ void Controller::handleRegionList(const httplib::Request& req, httplib::Response
             });
         }
         res.set_content(Response::success(arr), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleRegionList] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
 
     }
@@ -1067,7 +1083,8 @@ void Controller::handleCreateFamily(const httplib::Request& req, httplib::Respon
             res.set_content(Response::error(500, "创建家庭失败"), "application/json");
         }
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleCreateFamily] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1097,7 +1114,8 @@ void Controller::handleAdminList(const httplib::Request& req, httplib::Response&
             });
         }
         res.set_content(Response::success(arr), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleAdminList] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
 
     }
@@ -1127,7 +1145,8 @@ void Controller::handleDinerList(const httplib::Request& req, httplib::Response&
             });
         }
         res.set_content(Response::success(arr), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleDinerList] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
 
     }
@@ -1161,7 +1180,8 @@ void Controller::handleAdminApplyList(const httplib::Request& req, httplib::Resp
             });
         }
         res.set_content(Response::success(arr), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleAdminApplyList] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
 
     }
@@ -1181,7 +1201,8 @@ void Controller::handleAdminApplyReview(const httplib::Request& req, httplib::Re
         } else {
             res.set_content(Response::error(500, "审核失败"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleAdminApplyReview] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1213,7 +1234,8 @@ void Controller::handleManagerApplyList(const httplib::Request& req, httplib::Re
             });
         }
         res.set_content(Response::success(arr), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleManagerApplyList] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1232,7 +1254,8 @@ void Controller::handleManagerApplyReview(const httplib::Request& req, httplib::
         } else {
             res.set_content(Response::error(500, "审核失败"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleManagerApplyReview] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1254,7 +1277,8 @@ void Controller::handleUpdateStatus(const httplib::Request& req, httplib::Respon
             res.set_content(Response::error(500, "用户状态更新失败"), "application/json");
         }
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleUpdateStatus] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1278,7 +1302,8 @@ void Controller::handleAnnouncementList(const httplib::Request& req, httplib::Re
         }
 
         res.set_content(Response::success(arr), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleAnnouncementList] Error: " << e.what() << std::endl;
         res.set_content(Response::error(500, "获取公告失败"), "application/json");
     }
 }
@@ -1298,7 +1323,8 @@ void Controller::handleAnnouncementPublish(const httplib::Request& req, httplib:
         } else {
             res.set_content(Response::error(500, "发布公告失败"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleAnnouncementPublish] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1316,7 +1342,8 @@ void Controller::handleAnnouncementDelete(const httplib::Request& req, httplib::
         } else {
             res.set_content(Response::error(403, "只能删除自己发布的公告"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleAnnouncementDelete] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1346,7 +1373,8 @@ void Controller::handleReportList(const httplib::Request& req, httplib::Response
         }
 
         res.set_content(Response::success(arr), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleReportList] Error: " << e.what() << std::endl;
         res.set_content(Response::error(500, "获取投诉列表失败"), "application/json");
     }
 }
@@ -1365,7 +1393,8 @@ void Controller::handleReportHandle(const httplib::Request& req, httplib::Respon
         } else {
             res.set_content(Response::error(500, "投诉处理失败"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleReportHandle] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1428,7 +1457,8 @@ void Controller::handleMyCanteen(const httplib::Request& req, httplib::Response&
 
         std::cout<< " data 是 " << data.dump(2)<<std::endl;
         res.set_content(Response::success(data), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleMyCanteen] Error: " << e.what() << std::endl;
         res.set_content(Response::error(500, "获取食堂信息失败"), "application/json");
     }
 }
@@ -1454,7 +1484,8 @@ void Controller::handleUpdateCanteenAddress(const httplib::Request& req, httplib
         } else {
             res.set_content(Response::error(500, "更新地址失败"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleUpdateCanteenAddress] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1484,7 +1515,8 @@ void Controller::handleCanteenList(const httplib::Request& req, httplib::Respons
         }
 
         res.set_content(Response::success(data), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleCanteenList] Error: " << e.what() << std::endl;
         res.set_content(Response::error(500, "获取食堂列表失败"), "application/json");
     }
 }
@@ -1510,7 +1542,8 @@ void Controller::handleUpdateCanteenStatus(const httplib::Request& req, httplib:
         } else {
             res.set_content(Response::error(500, "更新状态失败"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleUpdateCanteenStatus] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1541,7 +1574,8 @@ void Controller::handlePurchaseList(const httplib::Request& req, httplib::Respon
         }
 
         res.set_content(Response::success(data), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handlePurchaseList] Error: " << e.what() << std::endl;
         res.set_content(Response::error(500, "获取采购记录失败"), "application/json");
     }
 }
@@ -1571,7 +1605,8 @@ void Controller::handleCreatePurchase(const httplib::Request& req, httplib::Resp
         } else {
             res.set_content(Response::error(500, "创建采购记录失败"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleCreatePurchase] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1600,7 +1635,8 @@ void Controller::handleUpdatePurchase(const httplib::Request& req, httplib::Resp
         } else {
             res.set_content(Response::error(500, "更新采购记录失败"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleUpdatePurchase] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1625,7 +1661,8 @@ void Controller::handleDeletePurchase(const httplib::Request& req, httplib::Resp
         } else {
             res.set_content(Response::error(500, "删除采购记录失败"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleDeletePurchase] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1670,7 +1707,8 @@ void Controller::handleFinancialStatistics(const httplib::Request& req, httplib:
         res.status = 200;
         res.set_content(Response::success(data), "application/json");
         
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleFinancialStatistics] Error: " << e.what() << std::endl;
         res.status = 500;
         res.set_content(Response::error(500, "服务器错误"), "application/json");
     }
@@ -1766,7 +1804,8 @@ void Controller::handleDiningPreference(const httplib::Request& req, httplib::Re
         res.status = 200;
         res.set_content(Response::success(data), "application/json");
         
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetMessages] Error: " << e.what() << std::endl;
         res.status = 500;
         res.set_content(Response::error(500, "服务器错误"), "application/json");
     }
@@ -1804,7 +1843,8 @@ void Controller::handleCanteenOrders(const httplib::Request& req, httplib::Respo
         
         res.set_content(Response::success(orders_json), "application/json");
         
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleCanteenOrders] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -1849,7 +1889,8 @@ void Controller::handleCreateMessage(const httplib::Request& req, httplib::Respo
         } else {
             res.set_content(Response::error(400, "创建留言失败"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleCreateMessage] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -1877,7 +1918,8 @@ void Controller::handleGetUserMessages(const httplib::Request& req, httplib::Res
         }
 
         res.set_content(Response::success(arr), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetUserMessages] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -1904,7 +1946,8 @@ void Controller::handleGetCanteenMessages(const httplib::Request& req, httplib::
         }
         std::cout << "获取到 " << messages.size() << " 条留言" << std::endl;
         res.set_content(Response::success(arr), "application/json");
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetCanteenMessages] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -1926,7 +1969,8 @@ void Controller::handleReplyMessage(const httplib::Request& req, httplib::Respon
         } else {
             res.set_content(Response::error(400, "回复留言失败"), "application/json");
         }
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleReplyMessage] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
@@ -1956,7 +2000,8 @@ void Controller::handleChangePassword(const httplib::Request& req, httplib::Resp
             std::cout << "用户 " << user_id << " 密码修改失败" << std::endl;
         }
 
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleChangePassword] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }

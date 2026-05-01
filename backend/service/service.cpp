@@ -68,7 +68,8 @@ bool UserService::registerUser(const User& user, int role, int region_id) {
         tx.commit(); // 提交事务
         return true;
     }
-    catch (...) {
+    catch (const std::exception& e) {
+        std::cerr << "[UserService::registerUser] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -202,7 +203,8 @@ bool UserService::changePassword(int user_id, const std::string& old_password, c
         tx.commit();
         std::cout << "密码修改成功" << std::endl;
         return true;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[UserService::changePassword] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -241,7 +243,8 @@ bool AdminService::submitAdminApply(const User& user, int level_id, int region_i
 
         tx.commit();
         return true;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminService::submitAdminApply] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -300,7 +303,8 @@ bool AdminService::reviewAdminApply(int apply_id, int reviewer_id, int status)
 
         tx.commit();
         return true;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminService::reviewAdminApply] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -336,7 +340,8 @@ bool ManagerService::submitManagerApply(const User& user, const std::string& can
 
         tx.commit();
         return true;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[ManagerService::submitManagerApply] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -394,7 +399,8 @@ bool ManagerService::reviewManagerApply(int apply_id, int reviewer_id, int statu
 
         tx.commit();
         return true;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[ManagerService::reviewManagerApply] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -489,17 +495,14 @@ bool FamilyService::createFamily(int user_id, const std::string& family_name) {
         std::cout << "创建家庭成功，user_id=" << user_id << ", family_name=" << family_name << std::endl;
         return true;
     } catch (const std::exception& e) {
-        std::cout << "创建家庭异常：" << e.what() << std::endl;
-        return false;
-    } catch (...) {
-        std::cout << "创建家庭未知异常" << std::endl;
+        std::cerr << "[FamilyService::createFamily] Error: " << e.what() << std::endl;
         return false;
     }
 }
 
 /**********************************************
  * CanteenService
- *********************************************/
+ **********************************************/
 std::vector<Canteen> CanteenService::getAllCanteens() {
     CanteenDAO dao;
     DBConnectionGuard guard;
@@ -783,7 +786,8 @@ bool MenuService::updateMenu(const MenuCreateDTO& menu) {
         
         tx.commit();
         return true;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[MenuService::updateMenu] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -796,7 +800,8 @@ std::vector<HistoryMenu> MenuService::getHistoryMenusByCanteen(int canteen_id) {
         // 获取历史餐单列表
         HistoryMenuDAO historyMenuDAO;
         return historyMenuDAO.getHistoryMenusByCanteen(conn, canteen_id);
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[MenuService::getHistoryMenusByCanteen] Error: " << e.what() << std::endl;
         return std::vector<HistoryMenu>();
     }
 }
@@ -808,7 +813,8 @@ std::vector<Dish> MenuService::getHistoryMenuDishes(int history_menu_id) {
     try {
         HistoryMenuDAO historyMenuDAO;
         return historyMenuDAO.getHistoryMenuDishes(conn, history_menu_id);
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[MenuService::getHistoryMenuDishesByHistoryMenuId] Error: " << e.what() << std::endl;
         return std::vector<Dish>();
     }
 }
@@ -1016,8 +1022,9 @@ bool OrderService::placeOrder(int user_id,
         std::cout << "事务提交成功" << std::endl;
         return true;
         
-    }catch (...) {
-            return false;
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderService::placeOrder] Error: " << e.what() << std::endl;
+        return false;
         }
 }
 

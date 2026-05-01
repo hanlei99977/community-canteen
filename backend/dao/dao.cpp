@@ -26,7 +26,9 @@ std::vector<Region> RegionDAO::getRegionList(sql::Connection *conn) {
 
             list.push_back(r);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[RegionDAO::getRegionList] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -67,7 +69,10 @@ int UserDAO::insertUser(sql::Connection *conn, const User& user)
         }
 
         return user_id;
-    } catch (...) { return -1; }
+    } catch (const std::exception& e) {
+        std::cerr << "[UserDAO::insertUser] Error: " << e.what() << std::endl;
+        return -1;
+    }
 }
 
 bool UserDAO::existsByUsername(sql::Connection *conn, const std::string& username)
@@ -80,7 +85,8 @@ bool UserDAO::existsByUsername(sql::Connection *conn, const std::string& usernam
 
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
         return res->next();
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[UserDAO::existsByUsername] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -102,7 +108,10 @@ bool DinerDAO::insertDiner(sql::Connection *conn, int user_id, int region_id)
         }
 
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[DinerDAO::insertDiner] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool AdminDAO::insertAdmin(sql::Connection *conn, int user_id)
@@ -121,7 +130,10 @@ bool AdminDAO::insertAdmin(sql::Connection *conn, int user_id)
         }
 
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminDAO::insertAdmin] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool ManagerDAO::insertManager(sql::Connection *conn, int user_id)
@@ -140,7 +152,10 @@ bool ManagerDAO::insertManager(sql::Connection *conn, int user_id)
         }
 
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[ManagerDAO::insertManager(int)] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool ManagerDAO::insertManager(sql::Connection *conn, int user_id, int canteen_id)
@@ -160,7 +175,10 @@ bool ManagerDAO::insertManager(sql::Connection *conn, int user_id, int canteen_i
         }
 
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[ManagerDAO::insertManager(int, int)] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(sql::Connection *conn, const std::string& username, const std::string& password)
@@ -188,7 +206,9 @@ std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(sql::Connection *con
             u->setStatus(res->getInt("status"));
             return u;
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[UserDAO::getUserByUsernameAndPassword] Error: " << e.what() << std::endl;
+    }
     return nullptr;
 }
 std::shared_ptr<User> UserDAO::getUserById(sql::Connection *conn, int user_id)
@@ -215,7 +235,9 @@ std::shared_ptr<User> UserDAO::getUserById(sql::Connection *conn, int user_id)
             u->setStatus(res->getInt("status"));
             return u;
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[UserDAO::getUserById] Error: " << e.what() << std::endl;
+    }
     return nullptr;
 }
 
@@ -237,7 +259,10 @@ bool UserDAO::updateUser(sql::Connection *conn, const DinerCenterVO& user) {
         }
         
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[UserDAO::updateUser] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::string UserDAO::getUserRole(sql::Connection *conn, int user_id)
@@ -300,14 +325,20 @@ bool UserDAO::updateStatus(sql::Connection *conn, int user_id, int status)
         }
 
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[UserDAO::updateStatus(int, int)] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool UserDAO::updateStatus(sql::Connection *conn, const User& user)
 {
     try {
         return updateStatus(conn, user.getId(), user.getStatus());
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[UserDAO::updateStatus(const User&)] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool UserDAO::updatePassword(sql::Connection *conn, int user_id, const std::string& new_password) {
@@ -322,7 +353,10 @@ bool UserDAO::updatePassword(sql::Connection *conn, int user_id, const std::stri
         stmt->setInt(2, user_id);
 
         return stmt->executeUpdate() > 0;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[UserDAO::updatePassword] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool AdminDAO::insertAdmin(sql::Connection *conn, int user_id, int level_id, int region_id)
@@ -343,7 +377,10 @@ bool AdminDAO::insertAdmin(sql::Connection *conn, int user_id, int level_id, int
         }
 
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminDAO::insertAdmin(int, int, int)] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 
@@ -365,7 +402,9 @@ std::shared_ptr<Admin> AdminDAO::getAdminByUserId(sql::Connection *conn, int use
             a->setRegionId(res->getInt("region_id"));
             return a;
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminDAO::getAdminByUserId] Error: " << e.what() << std::endl;
+    }
     return nullptr;
 }
 
@@ -400,7 +439,9 @@ std::vector<AdminInformation> AdminDAO::getAdminList(sql::Connection *conn)
 
             list.push_back(adminInfo);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminDAO::getAdminList] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -420,7 +461,10 @@ bool AdminApplyDAO::insertApply(sql::Connection *conn, int user_id, int level_id
         stmt->setInt(3, region_id);
 
         return stmt->executeUpdate() > 0;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminApplyDAO::insertApply] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::vector<AdminApplyVO> AdminApplyDAO::getApplyList(sql::Connection *conn)
@@ -462,7 +506,9 @@ std::vector<AdminApplyVO> AdminApplyDAO::getApplyList(sql::Connection *conn)
 
             list.push_back(vo);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminApplyDAO::getApplyList] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -487,7 +533,9 @@ std::shared_ptr<AdminApplyVO> AdminApplyDAO::getApplyById(sql::Connection *conn,
             vo->setStatus(res->getInt("status"));
             return vo;
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminApplyDAO::getApplyById] Error: " << e.what() << std::endl;
+    }
 
     return nullptr;
 }
@@ -506,7 +554,10 @@ bool AdminApplyDAO::reviewApply(sql::Connection *conn, int apply_id, int reviewe
         stmt->setInt(3, apply_id);
 
         return stmt->executeUpdate() > 0;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[AdminApplyDAO::reviewApply] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool CanteenManagerApplyDAO::insertApply(sql::Connection *conn, int user_id, const std::string& canteen_name, int region_id)
@@ -523,7 +574,10 @@ bool CanteenManagerApplyDAO::insertApply(sql::Connection *conn, int user_id, con
         stmt->setString(2, canteen_name);
         stmt->setInt(3, region_id);
         return stmt->executeUpdate() > 0;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenManagerApplyDAO::insertApply] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::vector<CanteenManagerApplyVO> CanteenManagerApplyDAO::getApplyList(sql::Connection *conn)
@@ -562,7 +616,9 @@ std::vector<CanteenManagerApplyVO> CanteenManagerApplyDAO::getApplyList(sql::Con
 
             list.push_back(vo);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenManagerApplyDAO::getApplyList] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -588,7 +644,9 @@ std::shared_ptr<CanteenManagerApplyVO> CanteenManagerApplyDAO::getApplyById(sql:
             vo->setStatus(res->getInt("status"));
             return vo;
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenManagerApplyDAO::getApplyById] Error: " << e.what() << std::endl;
+    }
     return nullptr;
 }
 
@@ -606,7 +664,10 @@ bool CanteenManagerApplyDAO::reviewApply(sql::Connection *conn, int apply_id, in
         stmt->setInt(3, apply_id);
 
         return stmt->executeUpdate() > 0;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenManagerApplyDAO::reviewApply] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::shared_ptr<Diner> DinerDAO::getDinerByUserId(sql::Connection *conn, int user_id)
@@ -629,7 +690,9 @@ std::shared_ptr<Diner> DinerDAO::getDinerByUserId(sql::Connection *conn, int use
             d->setTastePreference(res->getString("taste_preference"));
             return d;
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[DinerDAO::getDinerByUserId] Error: " << e.what() << std::endl;
+    }
     return nullptr;
 }
 
@@ -664,7 +727,9 @@ std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(sql::Connection 
             vo->setTastePreference(res->getString("taste_preference"));
             return vo;
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[DinerDAO::getDinerCenterByUserId] Error: " << e.what() << std::endl;
+    }
     return nullptr;
 }
 
@@ -698,7 +763,9 @@ std::vector<FamilyMemberVO> DinerDAO::getFamilyMembersByUserId(sql::Connection *
             member.setUsername(res->getString("username"));
             list.push_back(member);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[DinerDAO::getFamilyMembersByUserId] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -722,7 +789,10 @@ bool DinerDAO::updateDiner(sql::Connection *conn, const DinerCenterVO& diner) {
         }
 
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[DinerDAO::updateDiner] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool DinerDAO::updateFamilyId(sql::Connection *conn, int user_id, int family_id) {
@@ -741,7 +811,10 @@ bool DinerDAO::updateFamilyId(sql::Connection *conn, int user_id, int family_id)
         }
 
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[DinerDAO::updateFamilyId] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::vector<DinerInformation> DinerDAO::getDinerList(sql::Connection *conn)
@@ -774,7 +847,9 @@ std::vector<DinerInformation> DinerDAO::getDinerList(sql::Connection *conn)
 
             list.push_back(dinerInfo);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[DinerDAO::getDinerList] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -807,7 +882,10 @@ int FamilyDAO::insertFamily(sql::Connection *conn, const Family& family) {
         }
 
         return family_id;
-    } catch (...) { return -1; }
+    } catch (const std::exception& e) {
+        std::cerr << "[FamilyDAO::insertFamily] Error: " << e.what() << std::endl;
+        return -1;
+    }
 }
 
 Family FamilyDAO::getFamilyByUserId(sql::Connection *conn, int user_id) {
@@ -828,7 +906,9 @@ Family FamilyDAO::getFamilyByUserId(sql::Connection *conn, int user_id) {
             family.setId(res->getInt("family_id"));
             family.setName(res->getString("family_name"));
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[FamilyDAO::getFamilyByUserId] Error: " << e.what() << std::endl;
+    }
 
     return family;
 }
@@ -851,7 +931,9 @@ std::vector<Family> FamilyDAO::getFamilyList(sql::Connection *conn) {
             f.setName(res->getString("family_name"));
             list.push_back(f);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[FamilyDAO::getFamilyList] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -875,7 +957,9 @@ std::vector<Canteen> CanteenDAO::getAllCanteens(sql::Connection *conn) {
             c.setName(res->getString("name"));
             list.push_back(c);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::getAllCanteens] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -903,7 +987,9 @@ std::shared_ptr<CanteenVO> CanteenDAO::getCanteenById(sql::Connection *conn, int
             c->setStatus(res->getInt("status"));
             return c;
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::getCanteenById] Error: " << e.what() << std::endl;
+    }
 
     return nullptr;
 }
@@ -922,7 +1008,9 @@ int CanteenDAO::getCanteenIdByUserId(sql::Connection *conn, int user_id) {
         if (res->next()) {
             return res->getInt("canteen_id");
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::getCanteenIdByUserId] Error: " << e.what() << std::endl;
+    }
 
     return -1;
 }
@@ -964,7 +1052,9 @@ int CanteenDAO::insertCanteen(sql::Connection *conn, const std::string& canteen_
         }
 
         return canteen_id;
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::insertCanteen] Error: " << e.what() << std::endl;
+    }
     return -1;
 }
 
@@ -984,7 +1074,10 @@ bool CanteenDAO::updateCanteenAddress(sql::Connection *conn, int canteen_id, con
         }
 
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::updateCanteenAddress] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool CanteenDAO::updateCanteenStatus(sql::Connection *conn, int canteen_id, int status) {
@@ -1033,7 +1126,10 @@ bool CanteenDAO::updateCanteenStatus(sql::Connection *conn, int canteen_id, int 
         tx.commit();
 
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::updateCanteenStatus] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::vector<CanteenManagerVO> CanteenDAO::getCanteensWithManagers(sql::Connection *conn) {
@@ -1088,8 +1184,8 @@ std::vector<CanteenManagerVO> CanteenDAO::getCanteensWithManagers(sql::Connectio
                 canteen.setComplaintCount(complaintRes->getInt("count"));
             }
         }
-    } catch (...) {
-        // 异常处理
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::getCanteensWithManagers] Error: " << e.what() << std::endl;
     }
     return canteens;
 }
@@ -1112,8 +1208,8 @@ std::vector<PurchaseBill> CanteenDAO::getPurchaseBillsByCanteen(sql::Connection 
             bill.setRemark(res->getString("remark"));
             bills.push_back(bill);
         }
-    } catch (...) {
-        // 异常处理
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::getPurchaseBillsByCanteen] Error: " << e.what() << std::endl;
     }
     return bills;
 }
@@ -1136,8 +1232,8 @@ int CanteenDAO::createPurchaseBill(sql::Connection *conn, const PurchaseBill& bi
         if (res->next()) {
             return res->getInt(1);
         }
-    } catch (...) {
-        // 异常处理
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::createPurchaseBill] Error: " << e.what() << std::endl;
     }
     return -1;
 }
@@ -1154,8 +1250,8 @@ bool CanteenDAO::updatePurchaseBill(sql::Connection *conn, const PurchaseBill& b
 
         int affected_rows = stmt->executeUpdate();
         return affected_rows > 0;
-    } catch (...) {
-        // 异常处理
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::updatePurchaseBill] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -1169,8 +1265,8 @@ bool CanteenDAO::deletePurchaseBill(sql::Connection *conn, int bill_id) {
 
         int affected_rows = stmt->executeUpdate();
         return affected_rows > 0;
-    } catch (...) {
-        // 异常处理
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::deletePurchaseBill] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -1308,7 +1404,9 @@ std::vector<Dish> MenuDAO::getMenuByMealType(sql::Connection *conn, int canteen_
             d.setNutritionInfo(res->getString("nutrition_info"));
             list.push_back(d);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[DishDAO::getDishesByCanteen] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -1553,7 +1651,9 @@ std::vector<OrderVO> OrderDAO::getOrdersByUser(sql::Connection *conn, int user_i
 
             list.push_back(o);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderDAO::getOrdersByUser] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -1612,7 +1712,9 @@ std::vector<OrderVO> OrderDAO::getOrdersByCanteen(sql::Connection *conn, int can
 
             list.push_back(o);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderDAO::getOrdersByCanteen] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -2004,7 +2106,10 @@ bool OrderItemDAO::insertOrderItems(sql::Connection *conn, int order_id, const s
             }
         }
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderDAO::insertOrder] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 /***************************************************************************************
@@ -2034,7 +2139,10 @@ bool RatingDAO::insertRating(sql::Connection *conn, const Rating& rating) {
         stmt->setInt(10, rating.getOrderId());
 
         return stmt->executeUpdate() > 0;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[RatingDAO::insertRating] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
  std::vector<Rating> RatingDAO::getRatingsByCanteen(sql::Connection *conn, int canteen_id)
@@ -2061,7 +2169,9 @@ bool RatingDAO::insertRating(sql::Connection *conn, const Rating& rating) {
             r.setTime(res->getString("time"));
             list.push_back(r);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[RatingDAO::getRatingsByCanteen] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -2118,7 +2228,9 @@ std::vector<CanteenRatingVO> RatingDAO::getCanteenRatingDetails(sql::Connection 
         for (auto& [_, vo] : grouped) {
             list.push_back(vo);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[RatingDAO::getCanteenRatingDetails] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -2141,7 +2253,10 @@ bool ReportDAO::insertReport(sql::Connection *conn, const Report& report) {
         stmt->setString(4, report.getContent());
 
         return stmt->executeUpdate() > 0;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[ReportDAO::insertReport] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::vector<Report> ReportDAO::getReportsByCanteen(sql::Connection *conn, int canteen_id)
@@ -2168,7 +2283,9 @@ std::vector<Report> ReportDAO::getReportsByCanteen(sql::Connection *conn, int ca
             r.setCreateTime(res->getString("create_time"));
             list.push_back(r);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[ReportDAO::getReportsByCanteen] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -2224,7 +2341,9 @@ std::vector<ReportVO> ReportDAO::getAllReports(sql::Connection *conn)
             }
             list.push_back(vo);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[ReportDAO::getAllReports] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -2243,7 +2362,10 @@ bool ReportDAO::updateReportStatus(sql::Connection *conn, int report_id, int sta
         stmt->setInt(2, handler_id);
         stmt->setInt(3, report_id);
         return stmt->executeUpdate() > 0;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[ReportDAO::updateReportStatus] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 /***************************************************************************************
@@ -2263,7 +2385,10 @@ bool AnnouncementDAO::insertAnnouncement(sql::Connection *conn, const Announceme
         stmt->setInt(3, announcement.getPublisherId());
 
         return stmt->executeUpdate() > 0;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[AnnouncementDAO::insertAnnouncement] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::vector<AnnouncementVO> AnnouncementDAO::getAnnouncementList(sql::Connection *conn) {
@@ -2289,7 +2414,9 @@ std::vector<AnnouncementVO> AnnouncementDAO::getAnnouncementList(sql::Connection
             vo.setPublisherName(res->getString("username"));
             list.push_back(vo);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[AnnouncementDAO::getAnnouncementList] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -2304,7 +2431,8 @@ bool AnnouncementDAO::deleteAnnouncement(sql::Connection *conn, int announce_id,
         stmt->setInt(2, publisher_id);
 
         return stmt->executeUpdate() > 0;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[AnnouncementDAO::deleteAnnouncement] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -2323,7 +2451,8 @@ bool MessageDAO::insertMessage(sql::Connection *conn, const Message& message) {
         stmt->setString(3, message.getContent());
 
         return stmt->executeUpdate() > 0;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[MessageDAO::insertMessage] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -2351,7 +2480,9 @@ std::vector<Message> MessageDAO::getMessagesByCanteen(sql::Connection *conn, int
             msg.setStatus(res->getInt("status"));
             list.push_back(msg);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[MessageDAO::getMessagesByCanteen] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -2380,7 +2511,9 @@ std::vector<Message> MessageDAO::getMessagesByUser(sql::Connection *conn, int us
             msg.setStatus(res->getInt("status"));
             list.push_back(msg);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[MessageDAO::getMessagesByUser] Error: " << e.what() << std::endl;
+    }
 
     return list;
 }
@@ -2395,7 +2528,8 @@ bool MessageDAO::replyMessage(sql::Connection *conn, const Message& message) {
         stmt->setInt(2, message.getId());
 
         return stmt->executeUpdate() > 0;
-    } catch (...) {
+    } catch (const std::exception& e) {
+        std::cerr << "[MessageDAO::replyMessage] Error: " << e.what() << std::endl;
         return false;
     }
 }
@@ -2484,7 +2618,9 @@ double CanteenDAO::getTodayIncome(sql::Connection *conn, int canteen_id) {
         if (res->next()) {
             return res->getDouble(1);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::getTodayRevenue] Error: " << e.what() << std::endl;
+    }
 
     return 0.0;
 }
@@ -2649,7 +2785,9 @@ double CanteenDAO::getTodayExpense(sql::Connection *conn, int canteen_id) {
         if (res->next()) {
             return res->getDouble(1);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::getTodayExpense] Error: " << e.what() << std::endl;
+    }
 
     return 0.0;
 }
@@ -2675,7 +2813,9 @@ double CanteenDAO::getIncomeByTimeDimension(sql::Connection *conn, int canteen_i
         if (res->next()) {
             return res->getDouble(1);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::getExpenseByTimeDimension] Error: " << e.what() << std::endl;
+    }
 
     return 0.0;
 }
@@ -2701,7 +2841,9 @@ double CanteenDAO::getExpenseByTimeDimension(sql::Connection *conn, int canteen_
         if (res->next()) {
             return res->getDouble(1);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenDAO::getIncomeByTimeDimension] Error: " << e.what() << std::endl;
+    }
 
     return 0.0;
 }
@@ -2738,7 +2880,10 @@ int HistoryMenuDAO::saveHistoryMenu(sql::Connection *conn, const HistoryMenu& hi
         }
         
         return history_menu_id;
-    } catch (...) { return -1; }
+    } catch (const std::exception& e) {
+        std::cerr << "[HistoryMenuDAO::saveHistoryMenu] Error: " << e.what() << std::endl;
+        return -1;
+    }
 }
 
 bool HistoryMenuDAO::saveHistoryMenuDishes(sql::Connection *conn, int historyMenuId, const std::vector<int>& dishIds) {
@@ -2756,7 +2901,10 @@ bool HistoryMenuDAO::saveHistoryMenuDishes(sql::Connection *conn, int historyMen
             stmt->executeUpdate();
         }
         return true;
-    } catch (...) { return false; }
+    } catch (const std::exception& e) {
+        std::cerr << "[HistoryMenuDAO::saveHistoryMenuDishes] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 std::vector<HistoryMenu> HistoryMenuDAO::getHistoryMenusByCanteen(sql::Connection *conn, int canteen_id) {
@@ -2782,8 +2930,10 @@ std::vector<HistoryMenu> HistoryMenuDAO::getHistoryMenusByCanteen(sql::Connectio
             hm.setEndTime(res->getString("end_time"));
             list.push_back(hm);
         }
-    } catch (...) {}
-    
+    } catch (sql::SQLException& e){
+        std::cout << "获取历史餐单失败: " << e.what() << std::endl;
+    }
+   
     return list;
 }
 
@@ -2814,7 +2964,9 @@ std::vector<Dish> HistoryMenuDAO::getHistoryMenuDishes(sql::Connection *conn, in
             d.setStatus(res->getInt("status"));
             list.push_back(d);
         }
-    } catch (...) {}
+    } catch (const std::exception& e) {
+        std::cerr << "[HistoryMenuDAO::getHistoryMenuDishes] Error: " << e.what() << std::endl;
+    }
     
     return list;
 }
@@ -2837,7 +2989,10 @@ int HistoryMenuDAO::getHistoryMenuIdByCanteenIdAndMealType(sql::Connection *conn
         }
         
         return -1;
-    } catch (...) { return -1; }
+    } catch (const std::exception& e) {
+        std::cerr << "[HistoryMenuDAO::getHistoryMenuIdByCanteenIdAndMealType] Error: " << e.what() << std::endl;
+        return -1;
+    }
 }
 
 bool HistoryMenuDAO::updateHistoryMenuEndTime(sql::Connection *conn, int history_menu_id, int canteen_id, const std::string& meal_type) {

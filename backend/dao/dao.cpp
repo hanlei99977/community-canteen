@@ -1105,13 +1105,13 @@ int CanteenDAO::insertCanteen(sql::Connection *conn, const std::string& canteen_
             canteen_id = rs->getInt(1);
         }
 
-        // 插入早午晚三餐餐单
+        // 插入午晚餐单
         auto menu_stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
                 "INSERT INTO daily_menu(canteen_id, meal_type) VALUES (?, ?)"
             )
         );
-        std::vector<std::string> meal_types = {"早餐", "午餐", "晚餐"};
+        std::vector<std::string> meal_types = {"午餐", "晚餐"};
         for (const auto& meal_type : meal_types) {
             menu_stmt->setInt(1, canteen_id);
             menu_stmt->setString(2, meal_type);

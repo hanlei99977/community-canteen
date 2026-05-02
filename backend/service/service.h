@@ -239,5 +239,6 @@ public:
 class DishTagService {
 public:
     bool updateDishTags(int dish_id, const std::vector<int>& tag_ids);
+    bool updateDishTags(sql::Connection *conn, int dish_id, const std::vector<int>& tag_ids);
     std::vector<int> getTagIdsByDishId(int dish_id);
 };

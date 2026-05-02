@@ -857,7 +857,7 @@ int DishService::insertDish(const Dish& dish, const std::vector<int>& tag_ids) {
 
     if (!tag_ids.empty()) {
         DishTagService dishTagService;
-        dishTagService.updateDishTags(dish_id, tag_ids);
+        dishTagService.updateDishTags(conn, dish_id, tag_ids);
     }
 
     tx.commit();
@@ -876,7 +876,7 @@ bool DishService::updateDish(int dish_id, double price, int calories, const std:
     }
 
     DishTagService dishTagService;
-    if (!dishTagService.updateDishTags(dish_id, tag_ids)) {
+    if (!dishTagService.updateDishTags(conn, dish_id, tag_ids)) {
         std::cout << "更新菜品标签失败" << std::endl;
         return false;
     }
@@ -1514,6 +1514,44 @@ bool DishTagService::updateDishTags(int dish_id, const std::vector<int>& tag_ids
         }
 
         tx.commit();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "更新菜品标签失败: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool DishTagService::updateDishTags(sql::Connection *conn, int dish_id, const std::vector<int>& tag_ids) {
+    try {
+        DishTagDAO dishTagDao;
+        // 获取当前菜品的所有标签ID
+        std::vector<int> old_tag_ids = dishTagDao.getTagIdsByDishId(conn, dish_id);
+
+        std::vector<int> to_add;
+        std::vector<int> to_remove;
+
+        // 对比新旧标签ID，确定需要添加和删除的标签ID
+        for (int new_id : tag_ids) {
+            if (std::find(old_tag_ids.begin(), old_tag_ids.end(), new_id) == old_tag_ids.end()) {
+                to_add.push_back(new_id);
+            }
+        }
+
+        for (int old_id : old_tag_ids) {
+            if (std::find(tag_ids.begin(), tag_ids.end(), old_id) == tag_ids.end()) {
+                to_remove.push_back(old_id);
+            }
+        }
+
+        // 更新菜品标签
+        for (int tag_id : to_remove) {
+            dishTagDao.deleteDishTag(conn, dish_id, tag_id);
+        }
+
+        for (int tag_id : to_add) {
+            dishTagDao.insertDishTag(conn, dish_id, tag_id);
+        }
+
         return true;
     } catch (const std::exception& e) {
         std::cerr << "更新菜品标签失败: " << e.what() << std::endl;

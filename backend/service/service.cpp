@@ -1,6 +1,7 @@
 #include "service.h"
 #include <iostream>
 #include <map>
+#include <algorithm>
 #include "../../MySQL/ConnectionPool.h"
 #include "../model/vo.h"
 
@@ -728,62 +729,75 @@ std::vector<CanteenMenuVO> MenuService::getMenuByCanteen(int canteen_id) {
 bool MenuService::updateMenu(const MenuCreateDTO& menu) {
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    
+
     try {
         TransactionGuard tx(conn);
-       
-        HistoryMenuDAO historyMenuDAO;
-        //  获取当前餐单的菜品列表
-        MenuDAO menuDAO;
-        auto currentDishes = menuDAO.getMenuByMealType(conn, menu.getCanteenId(), menu.getMealType());
-        
-        // 提取当前餐单的菜品ID
-        std::vector<int> currentDishIds;
-        for (const auto& dish : currentDishes) {
-            currentDishIds.push_back(dish.getId());
-        }
-        
-        // 如果当前餐单有菜品，保存历史记录
-        if (!currentDishIds.empty()) {
-            // 获取当前餐单的menu_id
-            int menu_id = menuDAO.getMenuIdByCanteenAndMealType(conn, menu.getCanteenId(), menu.getMealType());
-            if (menu_id == -1) {
-                std::cout << "获取当前餐单ID失败" <<"canteen_id:"<<menu.getCanteenId() <<" meal_type:"<<menu.getMealType() << std::endl;
-            }
 
-            // 获取当前餐单的history_menu_id
+        HistoryMenuDAO historyMenuDAO;
+        MenuDAO menuDAO;
+
+        // 获取当前餐单的menu_id
+        int menu_id = menuDAO.getMenuIdByCanteenAndMealType(conn, menu.getCanteenId(), menu.getMealType());
+        if (menu_id == -1) {
+            std::cout << "获取当前餐单ID失败" << "canteen_id:" << menu.getCanteenId() << " meal_type:" << menu.getMealType() << std::endl;
+            return false;
+        }
+
+        std::vector<int> currentDishIds = menuDAO.getMenuDishIds(conn, menu_id);
+        std::vector<int> newDishIds = menu.getDishIds();
+
+        if (!currentDishIds.empty()) {
+            // 找到当前餐厅的对应餐单的上一个历史餐单ID
             int history_menu_id = historyMenuDAO.getHistoryMenuIdByCanteenIdAndMealType(conn, menu.getCanteenId(), menu.getMealType());
             if (history_menu_id == -1) {
-                std::cout << "获取历史餐单ID失败" <<"canteen_id:"<<menu.getCanteenId() <<" meal_type:"<<menu.getMealType() << std::endl;
-            }
-            else if(!historyMenuDAO.updateHistoryMenuEndTime(conn, history_menu_id, menu.getCanteenId(), menu.getMealType())) {
-                std::cout << "更新历史餐单结束时间失败" <<"history_menu_id:"<<history_menu_id <<" canteen_id:"<<menu.getCanteenId() <<" meal_type:"<<menu.getMealType() << std::endl;
+                // 如果没有历史餐单，直接创建新的历史餐单
+                std::cout << "获取历史餐单ID失败" << "canteen_id:" << menu.getCanteenId() << " meal_type:" << menu.getMealType() << std::endl;
+            } else if (!historyMenuDAO.updateHistoryMenuEndTime(conn, history_menu_id, menu.getCanteenId(), menu.getMealType())) {
+                std::cout << "更新历史餐单结束时间失败" << "history_menu_id:" << history_menu_id << " canteen_id:" << menu.getCanteenId() << " meal_type:" << menu.getMealType() << std::endl;
                 return false;
             }
 
-            // 创建新的历史餐单记录
             HistoryMenu historyMenu;
             historyMenu.setMenuId(menu_id);
             historyMenu.setCanteenId(menu.getCanteenId());
             historyMenu.setMealType(menu.getMealType());
-            
+
             // 保存历史餐单
             int historyMenuId = historyMenuDAO.saveHistoryMenu(conn, historyMenu);
             if (historyMenuId == -1) {
                 return false;
             }
-            
-            // 保存历史餐单菜品
+
             if (!historyMenuDAO.saveHistoryMenuDishes(conn, historyMenuId, currentDishIds)) {
                 return false;
             }
         }
-        
-        // 更新当前餐单      
-        if (!menuDAO.updateMenu(conn, menu)) {
-            return false;
+
+        // 对比新旧菜品列表，确定需要添加和删除的菜品ID
+        std::vector<int> to_add;
+        std::vector<int> to_remove;
+
+        for (int dish_id : newDishIds) {
+            if (std::find(currentDishIds.begin(), currentDishIds.end(), dish_id) == currentDishIds.end()) {
+                to_add.push_back(dish_id);
+            }
+        }
+
+        for (int dish_id : currentDishIds) {
+            if (std::find(newDishIds.begin(), newDishIds.end(), dish_id) == newDishIds.end()) {
+                to_remove.push_back(dish_id);
+            }
+        }
+
+        // 更新menu_dish表
+        for (int dish_id : to_remove) {
+            menuDAO.deleteMenuDish(conn, menu_id, dish_id);
         }
         
+        for (int dish_id : to_add) {
+            menuDAO.insertMenuDish(conn, menu_id, dish_id);
+        }
+
         tx.commit();
         return true;
     } catch (const std::exception& e) {
@@ -1471,9 +1485,31 @@ bool DishTagService::updateDishTags(int dish_id, const std::vector<int>& tag_ids
         TransactionGuard tx(conn);
 
         DishTagDAO dishTagDao;
-        dishTagDao.deleteDishTagsByDishId(conn, dish_id);
+        // 获取当前菜品的所有标签ID
+        std::vector<int> old_tag_ids = dishTagDao.getTagIdsByDishId(conn, dish_id);
 
-        for (int tag_id : tag_ids) {
+        std::vector<int> to_add;
+        std::vector<int> to_remove;
+
+        // 对比新旧标签ID，确定需要添加和删除的标签ID
+        for (int new_id : tag_ids) {
+            if (std::find(old_tag_ids.begin(), old_tag_ids.end(), new_id) == old_tag_ids.end()) {
+                to_add.push_back(new_id);
+            }
+        }
+
+        for (int old_id : old_tag_ids) {
+            if (std::find(tag_ids.begin(), tag_ids.end(), old_id) == tag_ids.end()) {
+                to_remove.push_back(old_id);
+            }
+        }
+
+        // 更新菜品标签
+        for (int tag_id : to_remove) {
+            dishTagDao.deleteDishTag(conn, dish_id, tag_id);
+        }
+
+        for (int tag_id : to_add) {
             dishTagDao.insertDishTag(conn, dish_id, tag_id);
         }
 

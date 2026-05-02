@@ -1538,48 +1538,52 @@ bool MenuDAO::isDishInMenu(sql::Connection *conn, int dish_id) {
     }
 }
 
-bool MenuDAO::updateMenu(sql::Connection *conn, const MenuCreateDTO& menu) {
+bool MenuDAO::deleteMenuDish(sql::Connection *conn, int menu_id, int dish_id) {
     try {
-        // 获取餐单 ID
-        int menu_id = getMenuIdByCanteenAndMealType(conn, menu.getCanteenId(), menu.getMealType());
-        if (menu_id == -1) {
-            return false;
-        }
-
-        TransactionGuard tx(conn);
-        // 1️⃣ 删除 menu_dish 表中的旧数据
-        auto stmt1 = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement(
-                "DELETE FROM menu_dish WHERE menu_id = ?"
-            )
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("DELETE FROM menu_dish WHERE menu_id = ? AND dish_id = ?")
         );
-
-        stmt1->setInt(1, menu_id);
-        stmt1->executeUpdate();
-
-        // 2️⃣ 插入新的菜品
-        for (int dish_id : menu.getDishIds()) {
-            auto stmt2 = std::unique_ptr<sql::PreparedStatement>(
-                conn->prepareStatement(
-                    "INSERT INTO menu_dish(menu_id, dish_id) VALUES (?, ?)"
-                )
-            );
-
-            stmt2->setInt(1, menu_id);
-            stmt2->setInt(2, dish_id);
-
-            if (stmt2->executeUpdate() == 0) {
-                return false;
-            }
-        }
-
-        tx.commit();
+        stmt->setInt(1, menu_id);
+        stmt->setInt(2, dish_id);
+        stmt->executeUpdate();
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "更新餐单失败: " << e.what() << std::endl;
+        std::cerr << "删除餐单菜品关联失败: " << e.what() << std::endl;
         return false;
     }
 }
+
+bool MenuDAO::insertMenuDish(sql::Connection *conn, int menu_id, int dish_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("INSERT INTO menu_dish(menu_id, dish_id) VALUES (?, ?)")
+        );
+        stmt->setInt(1, menu_id);
+        stmt->setInt(2, dish_id);
+        return stmt->executeUpdate() > 0;
+    } catch (const std::exception& e) {
+        std::cerr << "插入餐单菜品失败: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::vector<int> MenuDAO::getMenuDishIds(sql::Connection *conn, int menu_id) {
+    std::vector<int> dish_ids;
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT dish_id FROM menu_dish WHERE menu_id = ?")
+        );
+        stmt->setInt(1, menu_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            dish_ids.push_back(res->getInt("dish_id"));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "获取餐单菜品ID失败: " << e.what() << std::endl;
+    }
+    return dish_ids;
+}
+
 /***************************************************************************************
  * OrderDao
  ***************************************************************************************/
@@ -3135,24 +3139,6 @@ bool DishTagDAO::deleteDishTag(sql::Connection *conn, int dish_id, int tag_id) {
         return true;
     } catch (const std::exception& e) {
         std::cerr << "[DishTagDAO::deleteDishTag] Error: " << e.what() << std::endl;
-        return false;
-    }
-}
-
-bool DishTagDAO::deleteDishTagsByDishId(sql::Connection *conn, int dish_id) {
-    try {
-        auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement(
-                "DELETE FROM dish_tag WHERE dish_id = ?"
-            )
-        );
-
-        stmt->setInt(1, dish_id);
-        stmt->executeUpdate();
-
-        return true;
-    } catch (const std::exception& e) {
-        std::cerr << "[DishTagDAO::deleteDishTagsByDishId] Error: " << e.what() << std::endl;
         return false;
     }
 }

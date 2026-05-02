@@ -140,9 +140,11 @@ class MenuDAO {
 public:
     std::vector<Dish> getMenuByMealType(sql::Connection *conn, int canteen_id, const std::string& meal_type);
     std::vector<CanteenMenuVO> getMenuByCanteen(sql::Connection *conn, int canteen_id);
-    bool updateMenu(sql::Connection *conn, const MenuCreateDTO& menu);
     int getMenuIdByCanteenAndMealType(sql::Connection *conn, int canteen_id, const std::string& meal_type);
     bool isDishInMenu(sql::Connection *conn, int dish_id);
+    bool deleteMenuDish(sql::Connection *conn, int menu_id, int dish_id);
+    bool insertMenuDish(sql::Connection *conn, int menu_id, int dish_id);
+    std::vector<int> getMenuDishIds(sql::Connection *conn, int menu_id);
 };
 
 // 历史餐单
@@ -269,7 +271,6 @@ class DishTagDAO {
 public:
     bool insertDishTag(sql::Connection *conn, int dish_id, int tag_id);
     bool deleteDishTag(sql::Connection *conn, int dish_id, int tag_id);
-    bool deleteDishTagsByDishId(sql::Connection *conn, int dish_id);
     std::vector<int> getTagIdsByDishId(sql::Connection *conn, int dish_id);
 };
 

@@ -288,56 +288,6 @@ public:
     void addItem(const RecentOrderItemVO& item) { items.push_back(item); }
 };
 
-//Diner个人中心VO
-class DinerCenterVO {
-private:
-    int user_id;
-    std::string username;
-    int age;
-    std::string phone;
-    std::string id_card;
-    int regionId;
-    std::string regionName;
-    int familyId;
-    std::string familyName;
-    std::string diseaseHistory;
-    std::string tastePreference;
-public:
-    int getUserId() const { return user_id; }
-    void setUserId(int id) { user_id = id; }
-
-    std::string getUsername() const { return username; }
-    void setUsername(const std::string& name) { username = name; }
-
-    int getAge() const { return age; }
-    void setAge(int a) { age = a; }
-
-    std::string getPhone() const { return phone; }
-    void setPhone(const std::string& p) { phone = p; }
-
-    std::string getIdCard() const { return id_card; }
-    void setIdCard(const std::string& id) { id_card = id; }
-    
-    int getRegionId() const { return regionId; }
-    void setRegionId(int id) { regionId = id; }
-
-    std::string getRegionName() const { return regionName; }
-    void setRegionName(const std::string& addr) { regionName = addr; }
-
-    int getFamilyId() const { return familyId; }
-    void setFamilyId(int id) { familyId = id; }
-    
-    std::string getFamilyName() const { return familyName; }
-    void setFamilyName(const std::string& name) { familyName = name; }
-
-    std::string getDiseaseHistory() const { return diseaseHistory; }
-    void setDiseaseHistory(const std::string& history) { diseaseHistory = history; }
-
-    std::string getTastePreference() const { return tastePreference; }
-    void setTastePreference(const std::string& pref) { tastePreference = pref; }
-
-};
-
 //通用用户中心VO
 class UserCenterVO {
 private:

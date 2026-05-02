@@ -14,6 +14,8 @@ class RegionDAO {
 public:
     std::vector<Region> getRegionList(sql::Connection *conn);
     std::shared_ptr<Region> getRegionById(sql::Connection *conn, int region_id);
+    std::vector<Region> getDistrictRegions(sql::Connection *conn);
+    bool isDistrictLevel(sql::Connection *conn, int region_id);
 };
 
 // ================================

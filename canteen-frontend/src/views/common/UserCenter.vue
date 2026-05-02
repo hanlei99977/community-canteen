@@ -295,7 +295,12 @@ const getFamilyList = async () => {
 
 const getRegionList = async () => {
   try {
-    const res = await axios.get('http://192.168.56.100:8080/regionList')
+    let res
+    if (user.value.role === 'diner') {
+      res = await axios.get('http://192.168.56.100:8080/districtRegionList')
+    } else {
+      res = await axios.get('http://192.168.56.100:8080/regionList')
+    }
     regionList.value = res.data.data || []
   } catch (err) {
     ElMessage.error('获取区域失败')
@@ -306,6 +311,7 @@ const updateUser = async () => {
   try {
     await axios.post('http://192.168.56.100:8080/userCenterUpdate', {
       user_id: form.value.user_id,
+      role: user.value.role,
       age: form.value.age,
       phone: form.value.phone,
       address: form.value.address,

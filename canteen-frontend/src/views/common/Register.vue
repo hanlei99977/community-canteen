@@ -41,7 +41,7 @@
           <el-form-item label="管理区域">
             <el-select v-model="form.region_id" placeholder="请选择管理区域" style="width: 100%">
               <el-option
-                v-for="region in regionOptions"
+                v-for="region in adminRegionOptions"
                 :key="region.region_id"
                 :label="region.region_name"
                 :value="region.region_id"
@@ -96,7 +96,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
@@ -114,14 +114,43 @@ const form = reactive({
   canteen_name: ''
 })
 const regionOptions = ref([])
+const adminRegionOptions = ref([])
 
-onMounted(async () => {
+const loadRegions = async () => {
+  if (form.role === 'admin') {
+    try {
+      const res = await axios.get('http://192.168.56.100:8080/regionList')
+      if (res.data.code === 0) {
+        regionOptions.value = res.data.data
+      }
+    } catch (e) {}
+  } else {
+    try {
+      const res = await axios.get('http://192.168.56.100:8080/districtRegionList')
+      if (res.data.code === 0) {
+        regionOptions.value = res.data.data
+      }
+    } catch (e) {}
+  }
+}
+
+const loadAdminRegions = async () => {
   try {
     const res = await axios.get('http://192.168.56.100:8080/regionList')
     if (res.data.code === 0) {
-      regionOptions.value = res.data.data
+      adminRegionOptions.value = res.data.data
     }
   } catch (e) {}
+}
+
+watch(() => form.role, () => {
+  form.region_id = null
+  loadRegions()
+})
+
+onMounted(async () => {
+  await loadAdminRegions()
+  await loadRegions()
 })
 
 const handleRegister = async () => {

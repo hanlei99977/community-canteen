@@ -19,6 +19,7 @@ public:
     // 用户信息获取及更新
     std::shared_ptr<UserCenterVO> getUserCenterByUserId(int user_id);
     bool updateUserCenter(const UserCenterVO& diner);
+    bool validateDistrictRegion(int region_id);// 区域校验
     bool changePassword(int user_id, const std::string& old_password, const std::string& new_password);
     // 用户状态更新
     std::string getUserRole(int user_id);
@@ -44,6 +45,7 @@ public:
 class ManagerService {
 public:
     bool submitManagerApply(const User& user, const std::string& canteen_name, int region_id);
+    bool validateDistrictRegion(int region_id);
     std::vector<CanteenManagerApplyVO> getManagerApplyList();
     bool reviewManagerApply(int apply_id, int reviewer_id, int status);
 };
@@ -63,6 +65,7 @@ public:
 class RegionService {
 public:
     std::vector<Region> getRegionList();
+    std::vector<Region> getDistrictRegionList();
 };
 
 /*******************************家庭模块*******************************/

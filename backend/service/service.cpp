@@ -23,7 +23,17 @@ std::shared_ptr<std::mutex> OrderService::getUserOrderMutex(int user_id) {
 
 /**********************************************
  * UserService
- *********************************************/
+ **********************************************/
+bool UserService::validateDistrictRegion(int region_id) {
+    if (region_id <= 0) {
+        return false;
+    }
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    RegionDAO regionDAO;
+    return regionDAO.isDistrictLevel(conn, region_id);
+}
+
 bool UserService::registerUser(const User& user, int role, int region_id) {
     UserDAO dao;
     DBConnectionGuard guard;
@@ -45,7 +55,7 @@ bool UserService::registerUser(const User& user, int role, int region_id) {
 
         switch (role) {
             case 1: // diner
-                if (region_id <= 0) {
+                if (region_id <= 0 || !validateDistrictRegion(region_id)) {
                     return false;
                 }
                 DinerDAO dinerDAO;
@@ -180,6 +190,14 @@ std::shared_ptr<UserCenterVO> UserService::getUserCenterByUserId(int user_id) {
 bool UserService::updateUserCenter(const UserCenterVO& diner) {
     DBConnectionGuard guard;
     auto* conn = guard.get();
+
+    std::string role = diner.getRole();
+    if (role == "diner") {
+        if (!validateDistrictRegion(diner.getRegionId())) {
+            std::cout << "用餐者所在区域必须是区级" << std::endl;
+            return false;
+        }
+    }
 
    try{
         TransactionGuard tx(conn);
@@ -377,9 +395,24 @@ bool AdminService::reviewAdminApply(int apply_id, int reviewer_id, int status)
 // ================================
 // 食堂管理者服务
 // ================================
+bool ManagerService::validateDistrictRegion(int region_id) {
+    if (region_id <= 0) {
+        return false;
+    }
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    RegionDAO regionDAO;
+    return regionDAO.isDistrictLevel(conn, region_id);
+}
+
 bool ManagerService::submitManagerApply(const User& user, const std::string& canteen_name, int region_id)
 {
     if (user.getUsername().empty() || user.getPassword().empty() || canteen_name.empty() || region_id <= 0) {
+        return false;
+    }
+
+    if (!validateDistrictRegion(region_id)) {
+        std::cout << "食堂管理者所在区域必须是区级" << std::endl;
         return false;
     }
 
@@ -497,6 +530,13 @@ std::vector<Region> RegionService::getRegionList() {
     DBConnectionGuard guard;
     auto* conn = guard.get();
     return dao.getRegionList(conn);
+}
+
+std::vector<Region> RegionService::getDistrictRegionList() {
+    RegionDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getDistrictRegions(conn);
 }
 
 /**********************************************

@@ -57,6 +57,49 @@ std::shared_ptr<Region> RegionDAO::getRegionById(sql::Connection *conn, int regi
     return nullptr;
 }
 
+std::vector<Region> RegionDAO::getDistrictRegions(sql::Connection *conn) {
+    std::vector<Region> list;
+
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT region_id, region_name, region_level, parent_id FROM region WHERE region_level = '区级'"
+            )
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            Region r;
+            r.setId(res->getInt("region_id"));
+            r.setName(res->getString("region_name"));
+            r.setLevel(res->getString("region_level"));
+            r.setParentId(res->getInt("parent_id"));
+            list.push_back(r);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[RegionDAO::getDistrictRegions] Error: " << e.what() << std::endl;
+    }
+
+    return list;
+}
+
+bool RegionDAO::isDistrictLevel(sql::Connection *conn, int region_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT region_level FROM region WHERE region_id = ? AND region_level = '区级'"
+            )
+        );
+        stmt->setInt(1, region_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        return res->next();
+    } catch (const std::exception& e) {
+        std::cerr << "[RegionDAO::isDistrictLevel] Error: " << e.what() << std::endl;
+    }
+    return false;
+}
+
 
 /***************************************************************************************
  * UserDao

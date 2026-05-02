@@ -17,8 +17,8 @@ public:
     // 登录用户
     std::shared_ptr<User> login(std::string& username, std::string& password);
     // 用户信息获取及更新
-    std::shared_ptr<DinerCenterVO> getDinerCenterByUserId(int user_id);
-    bool updateDinerCenter(const DinerCenterVO& diner);
+    std::shared_ptr<UserCenterVO> getUserCenterByUserId(int user_id);
+    bool updateUserCenter(const UserCenterVO& diner);
     bool changePassword(int user_id, const std::string& old_password, const std::string& new_password);
     // 用户状态更新
     std::string getUserRole(int user_id);

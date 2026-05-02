@@ -936,7 +936,7 @@ void Controller::handleUserCenter(const httplib::Request& req, httplib::Response
         std::cout << "个人中心请求参数：user_id=" << user_id << std::endl;
 
         UserService service;
-        auto user = service.getDinerCenterByUserId(user_id);
+        auto user = service.getUserCenterByUserId(user_id);
 
         if (user) {
             json data = {
@@ -945,12 +945,17 @@ void Controller::handleUserCenter(const httplib::Request& req, httplib::Response
                 {"age", user->getAge()},
                 {"phone", user->getPhone()},
                 {"idCard", user->getIdCard()},
+                {"role", user->getRole()},
                 {"regionId", user->getRegionId()},
                 {"regionName", user->getRegionName()},
                 {"familyId", user->getFamilyId()},
                 {"familyName", user->getFamilyName()},
                 {"diseaseHistory", user->getDiseaseHistory()},
-                {"tastePreference", user->getTastePreference()}
+                {"tastePreference", user->getTastePreference()},
+                {"canteenId", user->getCanteenId()},
+                {"canteenName", user->getCanteenName()},
+                {"adminLevel", user->getAdminLevel()},
+                {"adminRegion", user->getAdminRegion()}
             };
 
             res.status = 200;
@@ -974,7 +979,7 @@ void Controller::handleUserCenterUpdate(const httplib::Request& req, httplib::Re
         json body = json::parse(req.body);
         std::cout << "个人中心更新请求体：" << req.body << std::endl;
 
-        DinerCenterVO user;
+        UserCenterVO user;
         user.setUserId(getIntSafe(body, "user_id"));
         user.setAge(getIntSafe(body, "age"));
         user.setPhone(getStringSafe(body, "phone"));
@@ -1000,7 +1005,7 @@ void Controller::handleUserCenterUpdate(const httplib::Request& req, httplib::Re
             user.setFamilyId(1); // 默认设置为“未设置家庭”
         }
         UserService service;
-        if (service.updateDinerCenter(user)) {
+        if (service.updateUserCenter(user)) {
             res.set_content(Response::success(), "application/json");
             std::cout << "用户 " << user.getUserId() << " 个人中心数据更新成功" << std::endl;
         } else {

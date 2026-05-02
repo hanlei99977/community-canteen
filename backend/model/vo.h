@@ -338,6 +338,82 @@ public:
 
 };
 
+//通用用户中心VO
+class UserCenterVO {
+private:
+    int user_id;
+    std::string username;
+    int age;
+    std::string phone;
+    std::string id_card;
+    std::string role;
+    
+    // 用餐者字段
+    int regionId;
+    std::string regionName;
+    int familyId;
+    std::string familyName;
+    std::string diseaseHistory;
+    std::string tastePreference;
+    
+    // 食堂管理者字段
+    int canteenId;
+    std::string canteenName;
+    
+    // 管理员字段
+    int adminLevel;
+    std::string adminRegion;
+
+public:
+    int getUserId() const { return user_id; }
+    void setUserId(int id) { user_id = id; }
+
+    std::string getUsername() const { return username; }
+    void setUsername(const std::string& name) { username = name; }
+
+    int getAge() const { return age; }
+    void setAge(int a) { age = a; }
+
+    std::string getPhone() const { return phone; }
+    void setPhone(const std::string& p) { phone = p; }
+
+    std::string getIdCard() const { return id_card; }
+    void setIdCard(const std::string& id) { id_card = id; }
+
+    std::string getRole() const { return role; }
+    void setRole(const std::string& r) { role = r; }
+
+    int getRegionId() const { return regionId; }
+    void setRegionId(int id) { regionId = id; }
+
+    std::string getRegionName() const { return regionName; }
+    void setRegionName(const std::string& name) { regionName = name; }
+
+    int getFamilyId() const { return familyId; }
+    void setFamilyId(int id) { familyId = id; }
+
+    std::string getFamilyName() const { return familyName; }
+    void setFamilyName(const std::string& name) { familyName = name; }
+
+    std::string getDiseaseHistory() const { return diseaseHistory; }
+    void setDiseaseHistory(const std::string& history) { diseaseHistory = history; }
+
+    std::string getTastePreference() const { return tastePreference; }
+    void setTastePreference(const std::string& pref) { tastePreference = pref; }
+
+    int getCanteenId() const { return canteenId; }
+    void setCanteenId(int id) { canteenId = id; }
+
+    std::string getCanteenName() const { return canteenName; }
+    void setCanteenName(const std::string& name) { canteenName = name; }
+
+    int getAdminLevel() const { return adminLevel; }
+    void setAdminLevel(int level) { adminLevel = level; }
+
+    std::string getAdminRegion() const { return adminRegion; }
+    void setAdminRegion(const std::string& region) { adminRegion = region; }
+};
+
 //每日餐单
 class CanteenMenuVO {
 private:

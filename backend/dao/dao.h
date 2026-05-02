@@ -13,6 +13,7 @@
 class RegionDAO {
 public:
     std::vector<Region> getRegionList(sql::Connection *conn);
+    std::shared_ptr<Region> getRegionById(sql::Connection *conn, int region_id);
 };
 
 // ================================
@@ -24,7 +25,7 @@ public:
     bool existsByUsername(sql::Connection *conn, const std::string& username);
     std::shared_ptr<User> getUserByUsernameAndPassword(sql::Connection *conn, const std::string&, const std::string&);
     std::shared_ptr<User> getUserById(sql::Connection *conn, int user_id);
-    bool updateUser(sql::Connection *conn, const DinerCenterVO& user);
+    bool updateUser(sql::Connection *conn, const UserCenterVO& user);
     std::string getUserRole(sql::Connection *conn, int user_id);
     bool updateStatus(sql::Connection *conn, int user_id, int status);
     bool updateStatus(sql::Connection *conn, const User& user);
@@ -60,9 +61,9 @@ class DinerDAO {
 public:
     bool insertDiner(sql::Connection *conn, int user_id, int region_id);
     std::shared_ptr<Diner> getDinerByUserId(sql::Connection *conn, int user_id);
-    std::shared_ptr<DinerCenterVO> getDinerCenterByUserId(sql::Connection *conn, int user_id);
+    std::shared_ptr<UserCenterVO> getDinerCenterByUserId(sql::Connection *conn, int user_id);
     std::vector<FamilyMemberVO> getFamilyMembersByUserId(sql::Connection *conn, int user_id);
-    bool updateDiner(sql::Connection *conn, const DinerCenterVO& diner);
+    bool updateDiner(sql::Connection *conn, const UserCenterVO& diner);
     bool updateFamilyId(sql::Connection *conn, int user_id, int family_id);
     std::vector<DinerInformation> getDinerList(sql::Connection *conn);
 };

@@ -106,14 +106,78 @@ std::shared_ptr<User> UserService::login(
     return nullptr;
 }
 
-std::shared_ptr<DinerCenterVO> UserService::getDinerCenterByUserId(int user_id) {
-    DinerDAO dao;
+
+std::shared_ptr<UserCenterVO> UserService::getUserCenterByUserId(int user_id) {
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.getDinerCenterByUserId(conn, user_id);
+
+    UserDAO userDAO;
+    std::string role = userDAO.getUserRole(conn, user_id);
+
+    auto result = std::make_shared<UserCenterVO>();
+    result->setUserId(user_id);
+    result->setRole(role);
+
+    if (role == "diner") {
+        DinerDAO dinerDAO;
+        auto diner = dinerDAO.getDinerCenterByUserId(conn, user_id);
+        if (diner) {
+            result->setUsername(diner->getUsername());
+            result->setAge(diner->getAge());
+            result->setPhone(diner->getPhone());
+            result->setIdCard(diner->getIdCard());
+            result->setRegionId(diner->getRegionId());
+            result->setRegionName(diner->getRegionName());
+            result->setFamilyId(diner->getFamilyId());
+            result->setFamilyName(diner->getFamilyName());
+            result->setDiseaseHistory(diner->getDiseaseHistory());
+            result->setTastePreference(diner->getTastePreference());
+        }
+    } else if (role == "canteen_manager") {
+        auto user = userDAO.getUserById(conn, user_id);
+        if (user) {
+            result->setUsername(user->getUsername());
+            result->setAge(user->getAge());
+            result->setPhone(user->getPhone());
+            result->setIdCard(user->getIdCard());
+        }
+
+        CanteenDAO canteenDAO;
+        int canteen_id = canteenDAO.getCanteenIdByUserId(conn, user_id);
+        if (canteen_id > 0) {
+            auto canteen = canteenDAO.getCanteenById(conn, canteen_id);
+            if (canteen) {
+                result->setCanteenId(canteen->getId());
+                result->setCanteenName(canteen->getName());
+            }
+        }
+    } else if (role == "admin" || role == "system_admin") {
+        auto user = userDAO.getUserById(conn, user_id);
+        if (user) {
+            result->setUsername(user->getUsername());
+            result->setAge(user->getAge());
+            result->setPhone(user->getPhone());
+            result->setIdCard(user->getIdCard());
+        }
+
+        AdminDAO adminDAO;
+        auto admin = adminDAO.getAdminByUserId(conn, user_id);
+        if (admin) {
+            result->setAdminLevel(admin->getLevelId());
+            RegionDAO regionDAO;
+            auto region = regionDAO.getRegionById(conn, admin->getRegionId());
+            if (region) {
+                result->setAdminRegion(region->getName());
+            }
+        }
+    } else {
+        return nullptr;
+    }
+
+    return result;
 }
 
-bool UserService::updateDinerCenter(const DinerCenterVO& diner) {
+bool UserService::updateUserCenter(const UserCenterVO& diner) {
     DBConnectionGuard guard;
     auto* conn = guard.get();
 

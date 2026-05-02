@@ -33,6 +33,30 @@ std::vector<Region> RegionDAO::getRegionList(sql::Connection *conn) {
     return list;
 }
 
+std::shared_ptr<Region> RegionDAO::getRegionById(sql::Connection *conn, int region_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT region_id, region_name, region_level, parent_id FROM region WHERE region_id = ?"
+            )
+        );
+        stmt->setInt(1, region_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        if (res->next()) {
+            auto region = std::make_shared<Region>();
+            region->setId(res->getInt("region_id"));
+            region->setName(res->getString("region_name"));
+            region->setLevel(res->getString("region_level"));
+            region->setParentId(res->getInt("parent_id"));
+            return region;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[RegionDAO::getRegionById] Error: " << e.what() << std::endl;
+    }
+    return nullptr;
+}
+
 
 /***************************************************************************************
  * UserDao
@@ -241,7 +265,7 @@ std::shared_ptr<User> UserDAO::getUserById(sql::Connection *conn, int user_id)
     return nullptr;
 }
 
-bool UserDAO::updateUser(sql::Connection *conn, const DinerCenterVO& user) {
+bool UserDAO::updateUser(sql::Connection *conn, const UserCenterVO& user) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -696,7 +720,7 @@ std::shared_ptr<Diner> DinerDAO::getDinerByUserId(sql::Connection *conn, int use
     return nullptr;
 }
 
-std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(sql::Connection *conn, int user_id)
+std::shared_ptr<UserCenterVO> DinerDAO::getDinerCenterByUserId(sql::Connection *conn, int user_id)
 {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
@@ -713,7 +737,7 @@ std::shared_ptr<DinerCenterVO> DinerDAO::getDinerCenterByUserId(sql::Connection 
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
 
         if (res->next()) {
-            auto vo = std::make_shared<DinerCenterVO>();
+            auto vo = std::make_shared<UserCenterVO>();
             vo->setUserId(user_id);
             vo->setUsername(res->getString("username"));
             vo->setAge(res->getInt("age"));
@@ -770,7 +794,7 @@ std::vector<FamilyMemberVO> DinerDAO::getFamilyMembersByUserId(sql::Connection *
     return list;
 }
 
-bool DinerDAO::updateDiner(sql::Connection *conn, const DinerCenterVO& diner) {
+bool DinerDAO::updateDiner(sql::Connection *conn, const UserCenterVO& diner) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(

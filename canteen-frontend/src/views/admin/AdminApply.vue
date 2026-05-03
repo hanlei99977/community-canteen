@@ -186,9 +186,11 @@ const initRegionByAdminLevel = async () => {
 
   if (isCityAdmin.value) {
     selectedCityId.value = userInfo.value.regionId
+    await loadDistrictOptions(userInfo.value.regionId)
     selectedDistrictId.value = null
   } else if (isDistrictAdmin.value) {
     selectedCityId.value = await findParentCityId(userInfo.value.regionId)
+    await loadDistrictOptions(selectedCityId.value)
     selectedDistrictId.value = userInfo.value.regionId
   }
 }

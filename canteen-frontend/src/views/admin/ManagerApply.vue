@@ -5,7 +5,7 @@
     <!-- 区域筛选 -->
     <div style="margin-bottom: 20px; display: flex; gap: 10px;">
       <span>市级区域：</span>
-      <el-select v-model="selectedCityId" placeholder="全部" clearable style="width: 150px;" @change="handleCityChange">
+      <el-select v-model="selectedCityId" placeholder="全部" clearable style="width: 150px;" :disabled="cityDisabled" @change="handleCityChange">
         <el-option label="全部" :value="null" />
         <el-option
           v-for="city in cityOptions"
@@ -15,7 +15,7 @@
         />
       </el-select>
       <span>区级区域：</span>
-      <el-select v-model="selectedDistrictId" placeholder="全部" clearable style="width: 150px;" :disabled="!selectedCityId">
+      <el-select v-model="selectedDistrictId" placeholder="全部" clearable style="width: 150px;" :disabled="districtDisabled">
         <el-option label="全部" :value="null" />
         <el-option
           v-for="district in districtOptions"
@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -78,6 +78,20 @@ const cityOptions = ref([])
 const districtOptions = ref([])
 const selectedCityId = ref(null)
 const selectedDistrictId = ref(null)
+
+const userInfo = ref({
+  user_id: 0,
+  adminLevel: 0,
+  regionId: 0,
+  regionName: ''
+})
+
+const isSystemAdmin = computed(() => userInfo.value.adminLevel === 1)
+const isCityAdmin = computed(() => userInfo.value.adminLevel === 2)
+const isDistrictAdmin = computed(() => userInfo.value.adminLevel === 3)
+
+const cityDisabled = computed(() => isCityAdmin.value || isDistrictAdmin.value)
+const districtDisabled = computed(() => isDistrictAdmin.value || !selectedCityId.value)
 
 const loadCityOptions = async () => {
   try {
@@ -158,8 +172,49 @@ watch([selectedCityId, selectedDistrictId], () => {
   loadApplyList()
 })
 
+const initRegionByAdminLevel = async () => {
+  const storedUser = localStorage.getItem('user')
+  if (!storedUser) return
+
+  const user = JSON.parse(storedUser)
+  userInfo.value = {
+    user_id: user.user_id || 0,
+    adminLevel: user.adminLevel || 0,
+    regionId: user.regionId || 0,
+    regionName: user.regionName || ''
+  }
+
+  if (isCityAdmin.value) {
+    selectedCityId.value = userInfo.value.regionId
+    await loadDistrictOptions(userInfo.value.regionId)
+    selectedDistrictId.value = null
+  } else if (isDistrictAdmin.value) {
+    selectedCityId.value = await findParentCityId(userInfo.value.regionId)
+    await loadDistrictOptions(selectedCityId.value)
+    selectedDistrictId.value = userInfo.value.regionId
+  }
+}
+
+const findParentCityId = async (districtId) => {
+  for (const city of cityOptions.value) {
+    try {
+      const res = await axios.get('http://192.168.56.100:8080/getDistrictsByCity', {
+        params: { city_id: city.region_id }
+      })
+      if (res.data.code === 0) {
+        const districts = res.data.data || []
+        if (districts.some(d => d.region_id === districtId)) {
+          return city.region_id
+        }
+      }
+    } catch (e) {}
+  }
+  return null
+}
+
 onMounted(async () => {
   await loadCityOptions()
+  await initRegionByAdminLevel()
   await loadApplyList()
 })
 </script>

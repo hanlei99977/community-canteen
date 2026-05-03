@@ -36,9 +36,9 @@ class AdminService{
 public:
     bool submitAdminApply(const User& user, int level_id, int region_id);
     // 根据查看者ID获取可管理的管理员列表
-    std::vector<AdminInformation> getAdminList(int viewer_id);
+    std::vector<AdminInformation> getAdminList(int viewer_id, int city_id = 0, int district_id = 0);
     // 根据审核者ID获取可审核的管理员申请列表
-    std::vector<AdminApplyVO> getAdminApplyList(int reviewer_id);
+    std::vector<AdminApplyVO> getAdminApplyList(int reviewer_id, int city_id = 0, int district_id = 0);
     // 管理员审核申请（带权限验证）
     bool reviewAdminApply(int apply_id, int reviewer_id, int status);
     // 获取管理员信息（级别和区域）
@@ -57,7 +57,7 @@ public:
     bool submitManagerApply(const User& user, const std::string& canteen_name, int region_id);
     bool validateDistrictRegion(int region_id);
     // 根据审核者ID获取可审核的食堂管理者申请列表
-    std::vector<CanteenManagerApplyVO> getManagerApplyList(int reviewer_id);
+    std::vector<CanteenManagerApplyVO> getManagerApplyList(int reviewer_id, int city_id = 0, int district_id = 0);
     bool reviewManagerApply(int apply_id, int reviewer_id, int status);
 };
 
@@ -68,7 +68,7 @@ public:
 class DinerService{
 public:
     // 根据查看者ID获取可管理的用餐者列表
-    std::vector<DinerInformation> getDinerList(int viewer_id);
+    std::vector<DinerInformation> getDinerList(int viewer_id, int city_id = 0, int district_id = 0);
 };
 
 // ================================
@@ -79,8 +79,10 @@ public:
     std::vector<Region> getRegionList();
     std::vector<Region> getDistrictRegionList();
     std::vector<Region> getCityRegionList();
+    std::vector<Region> getDistrictsByCity(int city_id);
     // 检查region_id是否在parent_region_id的管辖范围内（包含直接和间接子区域）
     bool isRegionInScope(sql::Connection *conn, int region_id, int parent_region_id);
+    bool isRegionInScope(int region_id, int parent_region_id);
 };
 
 /*******************************家庭模块*******************************/
@@ -114,7 +116,7 @@ public:
     std::shared_ptr<CanteenVO> getCanteenDetails(int canteen_id);
     std::vector<CanteenManagerVO> getCanteensWithManagers();
     // 根据查看者ID获取可管理的食堂列表
-    std::vector<CanteenManagerVO> getCanteensWithManagers(int viewer_id);
+    std::vector<CanteenManagerVO> getCanteensWithManagers(int viewer_id, int city_id = 0, int district_id = 0);
     // 日常采购
     std::vector<PurchaseBill> getPurchaseBills(int canteen_id);
     int createPurchaseBill(const PurchaseBill& bill);

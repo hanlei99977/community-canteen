@@ -3,6 +3,30 @@
     <el-card>
       <h2>食堂管理</h2>
 
+      <!-- 区域筛选 -->
+      <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+        <span>市级区域：</span>
+        <el-select v-model="selectedCityId" placeholder="全部" clearable style="width: 150px;" @change="handleCityChange">
+          <el-option label="全部" :value="null" />
+          <el-option
+            v-for="city in cityOptions"
+            :key="city.region_id"
+            :label="city.region_name"
+            :value="city.region_id"
+          />
+        </el-select>
+        <span>区级区域：</span>
+        <el-select v-model="selectedDistrictId" placeholder="全部" clearable style="width: 150px;" :disabled="!selectedCityId">
+          <el-option label="全部" :value="null" />
+          <el-option
+            v-for="district in districtOptions"
+            :key="district.region_id"
+            :label="district.region_name"
+            :value="district.region_id"
+          />
+        </el-select>
+      </div>
+
       <el-table :data="canteenList" style="width: 100%">
         <el-table-column prop="id" label="食堂ID" width="80" />
         <el-table-column prop="name" label="食堂名称" />
@@ -76,18 +100,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-// 食堂列表
 const canteenList = ref([])
+const cityOptions = ref([])
+const districtOptions = ref([])
+const selectedCityId = ref(null)
+const selectedDistrictId = ref(null)
 
-// 详情对话框
 const detailDialogVisible = ref(false)
 const selectedCanteen = ref({})
 
-// 请求头自动携带 token
 axios.interceptors.request.use(config => {
   const token = localStorage.getItem('token')
   if (token) {
@@ -96,12 +121,44 @@ axios.interceptors.request.use(config => {
   return config
 })
 
-// 获取食堂列表
+const loadCityOptions = async () => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/cityRegionList')
+    if (res.data.code === 0) {
+      cityOptions.value = res.data.data
+    }
+  } catch (e) {}
+}
+
+const loadDistrictOptions = async (cityId) => {
+  if (!cityId) {
+    districtOptions.value = []
+    return
+  }
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/getDistrictsByCity', {
+      params: { city_id: cityId }
+    })
+    if (res.data.code === 0) {
+      districtOptions.value = res.data.data
+    }
+  } catch (e) {}
+}
+
+const handleCityChange = (cityId) => {
+  selectedDistrictId.value = null
+  loadDistrictOptions(cityId)
+}
+
 const getCanteenList = async () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
     const res = await axios.get('http://192.168.56.100:8080/canteenList', {
-      params: { viewer_id: user.user_id }
+      params: { 
+        viewer_id: user.user_id,
+        city_id: selectedCityId.value,
+        district_id: selectedDistrictId.value
+      }
     })
     if (res.data.code === 0) {
       canteenList.value = res.data.data
@@ -114,7 +171,6 @@ const getCanteenList = async () => {
   }
 }
 
-// 处理食堂状态变更（上架/下架）
 const handleStatusChange = async (canteen) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
@@ -126,7 +182,6 @@ const handleStatusChange = async (canteen) => {
     })
     if (res.data.code === 0) {
       ElMessage.success(canteen.status === 1 ? '食堂已下架' : '食堂已上架')
-      // 重新获取食堂列表
       getCanteenList()
     } else {
       ElMessage.error('操作失败：' + res.data.message)
@@ -137,10 +192,8 @@ const handleStatusChange = async (canteen) => {
   }
 }
 
-// 查看食堂详情
 const viewCanteenDetails = async (canteen) => {
   try {
-    // 复用myCanteen接口获取食堂详情
     const res = await axios.get('http://192.168.56.100:8080/myCanteen', {
       params: { user_id: canteen.managerId }
     })
@@ -158,8 +211,13 @@ const viewCanteenDetails = async (canteen) => {
   }
 }
 
-onMounted(() => {
+watch([selectedCityId, selectedDistrictId], () => {
   getCanteenList()
+})
+
+onMounted(async () => {
+  await loadCityOptions()
+  await getCanteenList()
 })
 </script>
 

@@ -2,6 +2,30 @@
   <div>
     <h2>食堂管理者申请审核</h2>
 
+    <!-- 区域筛选 -->
+    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+      <span>市级区域：</span>
+      <el-select v-model="selectedCityId" placeholder="全部" clearable style="width: 150px;" @change="handleCityChange">
+        <el-option label="全部" :value="null" />
+        <el-option
+          v-for="city in cityOptions"
+          :key="city.region_id"
+          :label="city.region_name"
+          :value="city.region_id"
+        />
+      </el-select>
+      <span>区级区域：</span>
+      <el-select v-model="selectedDistrictId" placeholder="全部" clearable style="width: 150px;" :disabled="!selectedCityId">
+        <el-option label="全部" :value="null" />
+        <el-option
+          v-for="district in districtOptions"
+          :key="district.region_id"
+          :label="district.region_name"
+          :value="district.region_id"
+        />
+      </el-select>
+    </div>
+
     <el-table :data="applyList" style="width: 100%">
       <el-table-column prop="apply_id" label="申请ID" width="90" />
       <el-table-column prop="username" label="用户名" />
@@ -45,18 +69,53 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const applyList = ref([])
+const cityOptions = ref([])
+const districtOptions = ref([])
+const selectedCityId = ref(null)
+const selectedDistrictId = ref(null)
+
+const loadCityOptions = async () => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/cityRegionList')
+    if (res.data.code === 0) {
+      cityOptions.value = res.data.data
+    }
+  } catch (e) {}
+}
+
+const loadDistrictOptions = async (cityId) => {
+  if (!cityId) {
+    districtOptions.value = []
+    return
+  }
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/getDistrictsByCity', {
+      params: { city_id: cityId }
+    })
+    if (res.data.code === 0) {
+      districtOptions.value = res.data.data
+    }
+  } catch (e) {}
+}
+
+const handleCityChange = (cityId) => {
+  selectedDistrictId.value = null
+  loadDistrictOptions(cityId)
+}
 
 const loadApplyList = async () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
     const res = await axios.get('http://192.168.56.100:8080/managerApplyList', {
       params: {
-        reviewer_id: user.user_id || 0
+        reviewer_id: user.user_id || 0,
+        city_id: selectedCityId.value,
+        district_id: selectedDistrictId.value
       }
     })
     if (res.data.code === 0) {
@@ -95,7 +154,12 @@ const reviewApply = async (row, status) => {
   } catch (e) {}
 }
 
-onMounted(() => {
+watch([selectedCityId, selectedDistrictId], () => {
   loadApplyList()
+})
+
+onMounted(async () => {
+  await loadCityOptions()
+  await loadApplyList()
 })
 </script>

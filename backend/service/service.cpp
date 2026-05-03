@@ -388,14 +388,14 @@ bool AdminService::submitAdminApply(const User& user, int level_id, int region_i
 }
 
 
-std::vector<AdminInformation> AdminService::getAdminList(int viewer_id) {
+std::vector<AdminInformation> AdminService::getAdminList(int viewer_id, int city_id, int district_id) {
 
     DBConnectionGuard guard;
     auto* conn = guard.get();
 
     AdminDAO adminDAO;
     try{
-        
+
         auto allAdmins = adminDAO.getAdminList(conn);
 
         // 获取查看者的管理员信息
@@ -407,18 +407,37 @@ std::vector<AdminInformation> AdminService::getAdminList(int viewer_id) {
         int viewer_level_id = viewer->getLevelId();
         int viewer_region_id = viewer->getRegionId();
 
+        RegionService regionService;
+
         // 系统管理员（level_id=1）可以查看所有管理员
         if (viewer_level_id == 1) {
+            // 如果有区域筛选参数，按区域过滤
+            if (city_id > 0 || district_id > 0) {
+                std::vector<AdminInformation> filteredAdmins;
+                for (const auto& admin : allAdmins) {
+                    int target_region_id = district_id > 0 ? district_id : city_id;
+                    if (regionService.isRegionInScope(admin.getRegionId(), target_region_id)) {
+                        filteredAdmins.push_back(admin);
+                    }
+                }
+                return filteredAdmins;
+            }
             return allAdmins;
         }
 
-        RegionService regionService;
         // 市级管理员（level_id=2）可以查看辖区内的区级管理员
         if (viewer_level_id == 2) {
             std::vector<AdminInformation> filteredAdmins;
             for (const auto& admin : allAdmins) {
                 // 市级管理员可以查看自己和辖区内的区级管理员
-                if (admin.getLevelId() == 3 && regionService.isRegionInScope(conn, admin.getRegionId(), viewer_region_id)) {
+                if (admin.getLevelId() == 3 && regionService.isRegionInScope(admin.getRegionId(), viewer_region_id)) {
+                    // 再按区域筛选参数过滤
+                    if (city_id > 0 || district_id > 0) {
+                        int target_region_id = district_id > 0 ? district_id : city_id;
+                        if (!regionService.isRegionInScope(admin.getRegionId(), target_region_id)) {
+                            continue;
+                        }
+                    }
                     filteredAdmins.push_back(admin);
                 }
             }
@@ -430,6 +449,13 @@ std::vector<AdminInformation> AdminService::getAdminList(int viewer_id) {
             std::vector<AdminInformation> filteredAdmins;
             for (const auto& admin : allAdmins) {
                 if (admin.getUserId() == viewer_id) {
+                    // 再按区域筛选参数过滤
+                    if (city_id > 0 || district_id > 0) {
+                        int target_region_id = district_id > 0 ? district_id : city_id;
+                        if (!regionService.isRegionInScope(admin.getRegionId(), target_region_id)) {
+                            continue;
+                        }
+                    }
                     filteredAdmins.push_back(admin);
                     break;
                 }
@@ -444,7 +470,7 @@ std::vector<AdminInformation> AdminService::getAdminList(int viewer_id) {
     }
 }
 
-std::vector<AdminApplyVO> AdminService::getAdminApplyList(int reviewer_id) {
+std::vector<AdminApplyVO> AdminService::getAdminApplyList(int reviewer_id, int city_id, int district_id) {
     DBConnectionGuard guard;
     auto* conn = guard.get();
 
@@ -452,12 +478,22 @@ std::vector<AdminApplyVO> AdminService::getAdminApplyList(int reviewer_id) {
     try{
         auto allApplies = dao.getApplyList(conn);
 
+        RegionService regionService;
+
         // 根据审核者权限过滤申请
         std::vector<AdminApplyVO> filteredApplies;
         for (const auto& apply : allApplies) {
-            if (hasAdminApplyReviewPermission(reviewer_id, apply.getRegionId(), apply.getLevelId())) {
-                filteredApplies.push_back(apply);
+            if (!hasAdminApplyReviewPermission(reviewer_id, apply.getRegionId(), apply.getLevelId())) {
+                continue;
             }
+            // 按区域筛选参数过滤
+            if (city_id > 0 || district_id > 0) {
+                int target_region_id = district_id > 0 ? district_id : city_id;
+                if (!regionService.isRegionInScope(apply.getRegionId(), target_region_id)) {
+                    continue;
+                }
+            }
+            filteredApplies.push_back(apply);
         }
 
         return filteredApplies;
@@ -502,7 +538,7 @@ bool AdminService::hasAdminApplyReviewPermission(int reviewer_id, int apply_regi
     // 市级管理员（level_id=2）可以审核辖区内的区级管理员申请（level_id=3）
     if (reviewer_level_id == 2 && apply_level_id == 3) {
         RegionService regionService;
-        return regionService.isRegionInScope(conn, apply_region_id, reviewer_region_id);
+        return regionService.isRegionInScope(apply_region_id, reviewer_region_id);
     }
 
     // 区级管理员（level_id=3）不能审核管理员申请
@@ -535,7 +571,7 @@ bool AdminService::hasManagerApplyReviewPermission(int reviewer_id, int apply_re
     
     // 市/区级管理员可以审核辖区内所有食堂管理者申请
     if (reviewer_level_id == 2  || reviewer_level_id == 3) {
-        return regionService.isRegionInScope(conn, apply_region_id, reviewer_region_id);
+        return regionService.isRegionInScope(apply_region_id, reviewer_region_id);
     }
 
     return false;
@@ -644,7 +680,7 @@ bool ManagerService::submitManagerApply(const User& user, const std::string& can
 }
 
 
-std::vector<CanteenManagerApplyVO> ManagerService::getManagerApplyList(int reviewer_id) {
+std::vector<CanteenManagerApplyVO> ManagerService::getManagerApplyList(int reviewer_id, int city_id, int district_id) {
 
     DBConnectionGuard guard;
     auto* conn = guard.get();
@@ -652,13 +688,23 @@ std::vector<CanteenManagerApplyVO> ManagerService::getManagerApplyList(int revie
     CanteenManagerApplyDAO dao;
     auto allApplies = dao.getApplyList(conn);
 
-    // 根据审核者权限过滤申请
     AdminService adminService;
+    RegionService regionService;
+
+    // 根据审核者权限过滤申请
     std::vector<CanteenManagerApplyVO> filteredApplies;
     for (const auto& apply : allApplies) {
-        if (adminService.hasManagerApplyReviewPermission(reviewer_id, apply.getRegionId())) {
-            filteredApplies.push_back(apply);
+        if (!adminService.hasManagerApplyReviewPermission(reviewer_id, apply.getRegionId())) {
+            continue;
         }
+        // 按区域筛选参数过滤
+        if (city_id > 0 || district_id > 0) {
+            int target_region_id = district_id > 0 ? district_id : city_id;
+            if (!regionService.isRegionInScope(apply.getRegionId(), target_region_id)) {
+                continue;
+            }
+        }
+        filteredApplies.push_back(apply);
     }
 
     return filteredApplies;
@@ -725,7 +771,7 @@ bool ManagerService::reviewManagerApply(int apply_id, int reviewer_id, int statu
 // ================================
 // 用餐者服务
 // ================================
-std::vector<DinerInformation> DinerService::getDinerList(int viewer_id) {
+std::vector<DinerInformation> DinerService::getDinerList(int viewer_id, int city_id, int district_id) {
 
     DBConnectionGuard guard;
     auto* conn = guard.get();
@@ -747,6 +793,18 @@ std::vector<DinerInformation> DinerService::getDinerList(int viewer_id) {
 
         // 系统管理员（level_id=1）可以查看所有用餐者
         if (viewer_level_id == 1) {
+            // 如果有区域筛选参数，按区域过滤
+            if (city_id > 0 || district_id > 0) {
+                RegionService regionService;
+                std::vector<DinerInformation> filteredDiners;
+                for (const auto& diner : allDiners) {
+                    int target_region_id = district_id > 0 ? district_id : city_id;
+                    if (regionService.isRegionInScope(diner.getRegionId(), target_region_id)) {
+                        filteredDiners.push_back(diner);
+                    }
+                }
+                return filteredDiners;
+            }
             return allDiners;
         }
 
@@ -757,9 +815,18 @@ std::vector<DinerInformation> DinerService::getDinerList(int viewer_id) {
         if (viewer_level_id == 2 || viewer_level_id == 3) {
             std::vector<DinerInformation> filteredDiners;
             for (const auto& diner : allDiners) {
-                if (regionService.isRegionInScope(conn, diner.getRegionId(), viewer_region_id)) {
-                    filteredDiners.push_back(diner);
+                // 先按管理员权限过滤
+                if (!regionService.isRegionInScope(diner.getRegionId(), viewer_region_id)) {
+                    continue;
                 }
+                // 再按区域筛选参数过滤
+                if (city_id > 0 || district_id > 0) {
+                    int target_region_id = district_id > 0 ? district_id : city_id;
+                    if (!regionService.isRegionInScope(diner.getRegionId(), target_region_id)) {
+                        continue;
+                    }
+                }
+                filteredDiners.push_back(diner);
             }
             return filteredDiners;
         }
@@ -803,22 +870,34 @@ std::vector<Region> RegionService::getCityRegionList() {
     return dao.getCityRegions(conn);
 }
 
-bool RegionService::isRegionInScope(sql::Connection *conn, int region_id, int parent_region_id) {
+std::vector<Region> RegionService::getDistrictsByCity(int city_id) {
+    if (city_id <= 0) {
+        return std::vector<Region>();
+    }
+    RegionDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getDistrictRegionsByCity(conn, city_id);
+}
+
+bool RegionService::isRegionInScope(int region_id, int parent_region_id) {
     if (region_id <= 0 || parent_region_id <= 0) {
         return false;
     }
-    
+
     // 如果是同一区域，直接返回true
     if (region_id == parent_region_id) {
         return true;
     }
-  
+
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
     RegionDAO regionDAO;
-    
+
     try {
         // 检查parent_region_id是否是市级区域
         bool isCity = regionDAO.isCityLevel(conn, parent_region_id);
-        
+
         if (isCity) {
             // 市级区域可以管理其下所有区级区域
             auto districts = regionDAO.getDistrictRegionsByCity(conn, parent_region_id);
@@ -976,7 +1055,7 @@ bool CanteenService::canManageCanteen(int viewer_id, int canteen_region_id) {
     
     // 市级和区级管理员需要检查区域范围
     RegionService regionService;
-    return regionService.isRegionInScope(conn, canteen_region_id, viewer_region_id);
+    return regionService.isRegionInScope(canteen_region_id, viewer_region_id);
 }
 
 std::shared_ptr<CanteenVO> CanteenService::getCanteenDetails(int canteen_id) {
@@ -990,8 +1069,8 @@ std::shared_ptr<CanteenVO> CanteenService::getCanteenDetails(int canteen_id) {
 }
 
 
-std::vector<CanteenManagerVO> CanteenService::getCanteensWithManagers(int viewer_id) {
-    
+std::vector<CanteenManagerVO> CanteenService::getCanteensWithManagers(int viewer_id, int city_id, int district_id) {
+
     DBConnectionGuard guard;
     auto* conn = guard.get();
     try{
@@ -1001,32 +1080,52 @@ std::vector<CanteenManagerVO> CanteenService::getCanteensWithManagers(int viewer
         if (!viewer) {
             throw std::runtime_error("无权限"); // 如果不是管理员，终止并抛出异常
         }
-        
+
         int viewer_level_id = viewer->getLevelId();
         int viewer_region_id = viewer->getRegionId();
-               
+
         // 获取所有食堂
         CanteenDAO canteenDAO;
         auto allCanteens = canteenDAO.getCanteensWithManagers(conn);
-        
+
+        RegionService regionService;
+
         // 系统管理员（level_id=1）可以查看所有食堂
         if (viewer_level_id == 1) {
+            // 如果有区域筛选参数，按区域过滤
+            if (city_id > 0 || district_id > 0) {
+                std::vector<CanteenManagerVO> filteredCanteens;
+                for (const auto& canteen : allCanteens) {
+                    int target_region_id = district_id > 0 ? district_id : city_id;
+                    if (regionService.isRegionInScope(canteen.getRegionId(), target_region_id)) {
+                        filteredCanteens.push_back(canteen);
+                    }
+                }
+                return filteredCanteens;
+            }
             return allCanteens;
         }
 
-        RegionService regionService;
-        
         // 市级管理员（level_id=2）和区级管理员（level_id=3）根据区域过滤
         if (viewer_level_id == 2 || viewer_level_id == 3) {
             std::vector<CanteenManagerVO> filteredCanteens;
             for (const auto& canteen : allCanteens) {
-                if (regionService.isRegionInScope(conn, canteen.getRegionId(), viewer_region_id)) {
-                    filteredCanteens.push_back(canteen);
+                // 先按管理员权限过滤
+                if (!regionService.isRegionInScope(canteen.getRegionId(), viewer_region_id)) {
+                    continue;
                 }
+                // 再按区域筛选参数过滤
+                if (city_id > 0 || district_id > 0) {
+                    int target_region_id = district_id > 0 ? district_id : city_id;
+                    if (!regionService.isRegionInScope(canteen.getRegionId(), target_region_id)) {
+                        continue;
+                    }
+                }
+                filteredCanteens.push_back(canteen);
             }
             return filteredCanteens;
         }
-        
+
         return {};
     } catch (const std::exception& e) {
         std::cerr << "[CanteenService::getCanteensWithManagers] Error: " << e.what() << std::endl;

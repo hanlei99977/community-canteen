@@ -145,6 +145,7 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Get("/regionList", handleRegionList);
     server.Get("/districtRegionList", handleDistrictRegionList);
     server.Get("/cityRegionList", handleCityRegionList);
+    server.Get("/getDistrictsByCity", handleGetDistrictsByCity);
     // 食堂管理
     server.Get("/myCanteen", handleMyCanteen);
     server.Post("/updateCanteenAddress", handleUpdateCanteenAddress);
@@ -1112,9 +1113,40 @@ void Controller::handleCityRegionList(const httplib::Request& req, httplib::Resp
                 {"parent_id", r.getParentId()}
             });
         }
+
         res.set_content(Response::success(arr), "application/json");
+
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleCityRegionList] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleGetDistrictsByCity(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int city_id = 0;
+        if (req.has_param("city_id")) {
+            city_id = std::stoi(req.get_param_value("city_id"));
+        }
+        std::cout << "获取区级区域请求, city_id=" << city_id << std::endl;
+
+        RegionService service;
+        auto regionList = service.getDistrictsByCity(city_id);
+
+        json arr = json::array();
+        for (const auto& r : regionList) {
+            arr.push_back({
+                {"region_id", r.getId()},
+                {"region_name", r.getName()},
+                {"region_level", r.getLevel()},
+                {"parent_id", r.getParentId()}
+            });
+        }
+
+        res.set_content(Response::success(arr), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetDistrictsByCity] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
@@ -1153,13 +1185,21 @@ void Controller::handleAdminList(const httplib::Request& req, httplib::Response&
 {
     try{
         int viewer_id = 0;
+        int city_id = 0;
+        int district_id = 0;
         if (req.has_param("viewer_id")) {
             viewer_id = std::stoi(req.get_param_value("viewer_id"));
         }
-        std::cout << "管理员列表请求, viewer_id=" << viewer_id << std::endl;
+        if (req.has_param("city_id")) {
+            city_id = std::stoi(req.get_param_value("city_id"));
+        }
+        if (req.has_param("district_id")) {
+            district_id = std::stoi(req.get_param_value("district_id"));
+        }
+        std::cout << "管理员列表请求, viewer_id=" << viewer_id << ", city_id=" << city_id << ", district_id=" << district_id << std::endl;
 
         AdminService service;
-        auto adminList = service.getAdminList(viewer_id);
+        auto adminList = service.getAdminList(viewer_id, city_id, district_id);
 
         json arr = json::array();
 
@@ -1188,13 +1228,21 @@ void Controller::handleDinerList(const httplib::Request& req, httplib::Response&
 {
     try{
         int viewer_id = 0;
+        int city_id = 0;
+        int district_id = 0;
         if (req.has_param("viewer_id")) {
             viewer_id = std::stoi(req.get_param_value("viewer_id"));
         }
-        std::cout << "用餐者列表请求, viewer_id=" << viewer_id << std::endl;
+        if (req.has_param("city_id")) {
+            city_id = std::stoi(req.get_param_value("city_id"));
+        }
+        if (req.has_param("district_id")) {
+            district_id = std::stoi(req.get_param_value("district_id"));
+        }
+        std::cout << "用餐者列表请求, viewer_id=" << viewer_id << ", city_id=" << city_id << ", district_id=" << district_id << std::endl;
 
         DinerService service;
-        auto dinerList = service.getDinerList(viewer_id);
+        auto dinerList = service.getDinerList(viewer_id, city_id, district_id);
 
         json arr = json::array();
 
@@ -1223,13 +1271,21 @@ void Controller::handleAdminApplyList(const httplib::Request& req, httplib::Resp
 {
     try{
         int reviewer_id = 0;
+        int city_id = 0;
+        int district_id = 0;
         if (req.has_param("reviewer_id")) {
             reviewer_id = std::stoi(req.get_param_value("reviewer_id"));
         }
-        std::cout << "管理员申请列表请求, reviewer_id=" << reviewer_id << std::endl;
+        if (req.has_param("city_id")) {
+            city_id = std::stoi(req.get_param_value("city_id"));
+        }
+        if (req.has_param("district_id")) {
+            district_id = std::stoi(req.get_param_value("district_id"));
+        }
+        std::cout << "管理员申请列表请求, reviewer_id=" << reviewer_id << ", city_id=" << city_id << ", district_id=" << district_id << std::endl;
 
         AdminService service;
-        auto applyList = service.getAdminApplyList(reviewer_id);
+        auto applyList = service.getAdminApplyList(reviewer_id, city_id, district_id);
 
         json arr = json::array();
         for (const auto& applyInfo : applyList) {
@@ -1282,13 +1338,21 @@ void Controller::handleManagerApplyList(const httplib::Request& req, httplib::Re
 {
     try{
         int reviewer_id = 0;
+        int city_id = 0;
+        int district_id = 0;
         if (req.has_param("reviewer_id")) {
             reviewer_id = std::stoi(req.get_param_value("reviewer_id"));
         }
-        std::cout << "食堂管理者申请列表请求, reviewer_id=" << reviewer_id << std::endl;
+        if (req.has_param("city_id")) {
+            city_id = std::stoi(req.get_param_value("city_id"));
+        }
+        if (req.has_param("district_id")) {
+            district_id = std::stoi(req.get_param_value("district_id"));
+        }
+        std::cout << "食堂管理者申请列表请求, reviewer_id=" << reviewer_id << ", city_id=" << city_id << ", district_id=" << district_id << std::endl;
 
         ManagerService service;
-        auto applyList = service.getManagerApplyList(reviewer_id);
+        auto applyList = service.getManagerApplyList(reviewer_id, city_id, district_id);
 
         json arr = json::array();
         for (const auto& applyInfo : applyList) {
@@ -1570,13 +1634,21 @@ void Controller::handleCanteenList(const httplib::Request& req, httplib::Respons
 {
     try {
         int viewer_id = 0;
+        int city_id = 0;
+        int district_id = 0;
         if (req.has_param("viewer_id")) {
             viewer_id = std::stoi(req.get_param_value("viewer_id"));
         }
-        std::cout << "食堂列表请求, viewer_id=" << viewer_id << std::endl;
-        
+        if (req.has_param("city_id")) {
+            city_id = std::stoi(req.get_param_value("city_id"));
+        }
+        if (req.has_param("district_id")) {
+            district_id = std::stoi(req.get_param_value("district_id"));
+        }
+        std::cout << "食堂列表请求, viewer_id=" << viewer_id << ", city_id=" << city_id << ", district_id=" << district_id << std::endl;
+
         CanteenService canteenService;
-        auto canteens = canteenService.getCanteensWithManagers(viewer_id);
+        auto canteens = canteenService.getCanteensWithManagers(viewer_id, city_id, district_id);
 
         json data = json::array();
         for (const auto& canteen : canteens) {

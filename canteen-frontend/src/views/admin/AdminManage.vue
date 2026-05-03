@@ -6,6 +6,30 @@
       <h2>管理员管理</h2>
     </div>
 
+    <!-- 区域筛选 -->
+    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+      <span>市级区域：</span>
+      <el-select v-model="selectedCityId" placeholder="全部" clearable style="width: 150px;" @change="handleCityChange">
+        <el-option label="全部" :value="null" />
+        <el-option
+          v-for="city in cityOptions"
+          :key="city.region_id"
+          :label="city.region_name"
+          :value="city.region_id"
+        />
+      </el-select>
+      <span>区级区域：</span>
+      <el-select v-model="selectedDistrictId" placeholder="全部" clearable style="width: 150px;" :disabled="!selectedCityId">
+        <el-option label="全部" :value="null" />
+        <el-option
+          v-for="district in districtOptions"
+          :key="district.region_id"
+          :label="district.region_name"
+          :value="district.region_id"
+        />
+      </el-select>
+    </div>
+
     <!-- Tab -->
     <el-tabs v-model="activeTab">
       <el-tab-pane label="正常管理员" name="on" />
@@ -57,17 +81,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-// 当前Tab
 const activeTab = ref("on")
 
-// 所有管理员
 const allAdminList = ref([])
+const cityOptions = ref([])
+const districtOptions = ref([])
+const selectedCityId = ref(null)
+const selectedDistrictId = ref(null)
 
-// ================= 分组 =================
 const onAdminList = computed(() =>
   allAdminList.value.filter(a => a.status === 1)
 )
@@ -76,13 +101,43 @@ const offAdminList = computed(() =>
   allAdminList.value.filter(a => a.status === 0)
 )
 
-// ================= 获取管理员 =================
+const loadCityOptions = async () => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/cityRegionList')
+    if (res.data.code === 0) {
+      cityOptions.value = res.data.data
+    }
+  } catch (e) {}
+}
+
+const loadDistrictOptions = async (cityId) => {
+  if (!cityId) {
+    districtOptions.value = []
+    return
+  }
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/getDistrictsByCity', {
+      params: { city_id: cityId }
+    })
+    if (res.data.code === 0) {
+      districtOptions.value = res.data.data
+    }
+  } catch (e) {}
+}
+
+const handleCityChange = (cityId) => {
+  selectedDistrictId.value = null
+  loadDistrictOptions(cityId)
+}
+
 const getAdmins = async () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
     const res = await axios.get('http://192.168.56.100:8080/adminList', {
       params: {
-        viewer_id: user.user_id || 0
+        viewer_id: user.user_id || 0,
+        city_id: selectedCityId.value,
+        district_id: selectedDistrictId.value
       }
     })
     allAdminList.value = res.data.data || []
@@ -91,10 +146,7 @@ const getAdmins = async () => {
   }
 }
 
-// ================= 禁用 =================
 const disableAdmin = (user_id, level_name) => {
-
-  // 系统管理员保护
   if (level_name === '系统管理员') {
     ElMessage.warning("系统管理员不能被禁用")
     return
@@ -114,7 +166,6 @@ const disableAdmin = (user_id, level_name) => {
   })
 }
 
-// ================= 启用 =================
 const enableAdmin = (user_id) => {
   ElMessageBox.confirm("确定要启用该管理员吗？", "提示", {
     type: "success"
@@ -130,8 +181,13 @@ const enableAdmin = (user_id) => {
   })
 }
 
-onMounted(() => {
+watch([selectedCityId, selectedDistrictId], () => {
   getAdmins()
+})
+
+onMounted(async () => {
+  await loadCityOptions()
+  await getAdmins()
 })
 </script>
 

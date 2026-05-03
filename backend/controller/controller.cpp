@@ -89,6 +89,10 @@ void Controller::registerUserRoutes(httplib::Server& server) {
     // 投诉处理
     server.Get("/reportList", handleReportList);
     server.Post("/reportHandle", handleReportHandle);
+    server.Get("/unprocessedReportCount", handleUnprocessedReportCount);
+    server.Get("/reportSummary", handleReportSummary);
+    server.Get("/canteenReviews", handleCanteenReviews);
+    server.Get("/canteenComplaints", handleCanteenComplaints);
 }
 
 // 订单相关路由
@@ -1535,6 +1539,127 @@ void Controller::handleReportHandle(const httplib::Request& req, httplib::Respon
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleReportHandle] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleUnprocessedReportCount(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int viewer_id = std::stoi(req.get_param_value("viewer_id"));
+        int range_type = std::stoi(req.get_param_value("range_type"));
+
+        ReportService service;
+        int count = service.getUnprocessedReportCount(viewer_id, range_type);
+
+        res.set_content(Response::success(count), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleUnprocessedReportCount] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(500, "获取未处理投诉数失败"), "application/json");
+    }
+}
+
+void Controller::handleReportSummary(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int viewer_id = std::stoi(req.get_param_value("viewer_id"));
+        int range_type = std::stoi(req.get_param_value("range_type"));
+        std::string time_period = req.get_param_value("time_period");
+        int complaint_type = std::stoi(req.get_param_value("complaint_type"));
+
+        ReportService service;
+        auto summary = service.getReportSummary(viewer_id, range_type, time_period, complaint_type);
+
+        json canteenNames = json::array();
+        json complaintCounts = json::array();
+        for (const auto& pair : summary) {
+            canteenNames.push_back(pair.first);
+            complaintCounts.push_back(pair.second);
+        }
+
+        json data = {
+            {"canteen_names", canteenNames},
+            {"complaint_counts", complaintCounts}
+        };
+
+        res.set_content(Response::success(data), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleReportSummary] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(500, "获取举报汇总失败"), "application/json");
+    }
+}
+
+void Controller::handleCanteenReviews(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        int page = std::stoi(req.get_param_value("page"));
+        int page_size = std::stoi(req.get_param_value("page_size"));
+
+        RatingService service;
+        auto result = service.getCanteenRatingsPaginated(canteen_id, page, page_size);
+
+        json list = json::array();
+        for (const auto& vo : result.first) {
+            list.push_back({
+                {"user_id", vo.getUserId()},
+                {"username", vo.getUsername()},
+                {"canteen_id", vo.getCanteenId()},
+                {"order_id", vo.getOrderId()},
+                {"rating", vo.getScore()},
+                {"content", vo.getComment()},
+                {"create_time", vo.getTime()}
+            });
+        }
+
+        json data = {
+            {"list", list},
+            {"total", result.second}
+        };
+
+        res.set_content(Response::success(data), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleCanteenReviews] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(500, "获取评价列表失败"), "application/json");
+    }
+}
+
+void Controller::handleCanteenComplaints(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        int page = std::stoi(req.get_param_value("page"));
+        int page_size = std::stoi(req.get_param_value("page_size"));
+
+        ReportService service;
+        auto result = service.getCanteenReportsPaginated(canteen_id, page, page_size);
+
+        json list = json::array();
+        for (const auto& r : result.first) {
+            list.push_back({
+                {"report_id", r.getReportId()},
+                {"user_id", r.getUserId()},
+                {"username", r.getUsername()},
+                {"canteen_id", r.getCanteenId()},
+                {"canteen_name", r.getCanteenName()},
+                {"type", r.getType()},
+                {"content", r.getContent()},
+                {"status", r.getStatus()},
+                {"create_time", r.getCreateTime()},
+                {"handle_time", r.getHandleTime()},
+                {"handler_id", r.getHandlerId()},
+                {"handler_name", r.getHandlerName()}
+            });
+        }
+
+        json data = {
+            {"list", list},
+            {"total", result.second}
+        };
+
+        res.set_content(Response::success(data), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleCanteenComplaints] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(500, "获取投诉列表失败"), "application/json");
     }
 }
 

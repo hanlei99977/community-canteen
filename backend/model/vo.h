@@ -66,6 +66,41 @@ public:
     void setRatingTime(const std::string& time) { rating_time = time; }
 };
 
+// 评价列表 VO（用于食堂管理查看评价）
+class RatingVO {
+private:
+    int user_id;
+    std::string username;
+    int canteen_id;
+    int order_id;
+    int score;
+    std::string comment;
+    std::string time;
+
+public:
+
+    int getUserId() const { return user_id; }
+    void setUserId(int id) { user_id = id; }
+
+    std::string getUsername() const { return username; }
+    void setUsername(const std::string& name) { username = name; }
+
+    int getCanteenId() const { return canteen_id; }
+    void setCanteenId(int id) { canteen_id = id; }
+
+    int getOrderId() const { return order_id; }
+    void setOrderId(int id) { order_id = id; }
+
+    int getScore() const { return score; }
+    void setScore(int s) { score = s; }
+
+    std::string getComment() const { return comment; }
+    void setComment(const std::string& c) { comment = c; }
+
+    std::string getTime() const { return time; }
+    void setTime(const std::string& t) { time = t; }
+};
+
 // 食堂评价明细 VO（含该评价订单菜品）
 class CanteenRatingVO {
 private:

@@ -2416,6 +2416,52 @@ std::vector<CanteenRatingVO> RatingDAO::getCanteenRatingDetails(sql::Connection 
     return list;
 }
 
+std::pair<std::vector<RatingVO>, int> RatingDAO::getRatingsByCanteenPaginated(sql::Connection *conn, int canteen_id, int page, int page_size)
+{
+    std::pair<std::vector<RatingVO>, int> result;
+    try {
+        auto countStmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT COUNT(*) AS total FROM rating WHERE canteen_id = ?")
+        );
+        countStmt->setInt(1, canteen_id);
+        auto countRes = std::unique_ptr<sql::ResultSet>(countStmt->executeQuery());
+        if (countRes->next()) {
+            result.second = countRes->getInt("total");
+        }
+
+        int offset = (page - 1) * page_size;
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(R"(
+                SELECT r.user_id, u.username, r.canteen_id, r.order_id, r.score, r.comment, r.time
+                FROM rating r
+                JOIN users u ON u.user_id = r.user_id
+                WHERE r.canteen_id = ?
+                ORDER BY r.time DESC
+                LIMIT ? OFFSET ?
+            )")
+        );
+        stmt->setInt(1, canteen_id);
+        stmt->setInt(2, page_size);
+        stmt->setInt(3, offset);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            RatingVO vo;
+            vo.setUserId(res->getInt("user_id"));
+            vo.setUsername(res->getString("username"));
+            vo.setCanteenId(res->getInt("canteen_id"));
+            vo.setOrderId(res->getInt("order_id"));
+            vo.setScore(res->getInt("score"));
+            vo.setComment(res->getString("comment"));
+            vo.setTime(res->getString("time"));
+            result.first.push_back(vo);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[RatingDAO::getRatingsByCanteenPaginated] Error: " << e.what() << std::endl;
+    }
+    return result;
+}
+
 /***************************************************************************************
  * ReportDao
 ***************************************************************************************/
@@ -2547,6 +2593,168 @@ bool ReportDAO::updateReportStatus(sql::Connection *conn, int report_id, int sta
         std::cerr << "[ReportDAO::updateReportStatus] Error: " << e.what() << std::endl;
         return false;
     }
+}
+
+std::pair<std::vector<ReportVO>, int> ReportDAO::getReportsByCanteenPaginated(sql::Connection *conn, int canteen_id, int page, int page_size)
+{
+    std::pair<std::vector<ReportVO>, int> result;
+    try {
+        auto countStmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT COUNT(*) AS total FROM report WHERE canteen_id = ?")
+        );
+        countStmt->setInt(1, canteen_id);
+        auto countRes = std::unique_ptr<sql::ResultSet>(countStmt->executeQuery());
+        if (countRes->next()) {
+            result.second = countRes->getInt("total");
+        }
+
+        int offset = (page - 1) * page_size;
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(R"(
+                SELECT
+                    r.report_id,
+                    r.user_id,
+                    u.username,
+                    r.canteen_id,
+                    c.name AS canteen_name,
+                    r.type,
+                    r.content,
+                    r.status,
+                    r.create_time,
+                    r.handle_time,
+                    r.handler_id,
+                    hu.username AS handler_name
+                FROM report r
+                JOIN users u ON u.user_id = r.user_id
+                JOIN canteen c ON c.canteen_id = r.canteen_id
+                LEFT JOIN users hu ON hu.user_id = r.handler_id
+                WHERE r.canteen_id = ?
+                ORDER BY r.create_time DESC
+                LIMIT ? OFFSET ?
+            )")
+        );
+        stmt->setInt(1, canteen_id);
+        stmt->setInt(2, page_size);
+        stmt->setInt(3, offset);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            ReportVO vo;
+            vo.setReportId(res->getInt("report_id"));
+            vo.setUserId(res->getInt("user_id"));
+            vo.setUsername(res->getString("username"));
+            vo.setCanteenId(res->getInt("canteen_id"));
+            vo.setCanteenName(res->getString("canteen_name"));
+            vo.setType(res->getInt("type"));
+            vo.setContent(res->getString("content"));
+            vo.setStatus(res->getInt("status"));
+            vo.setCreateTime(res->getString("create_time"));
+            if (!res->isNull("handle_time")) {
+                vo.setHandleTime(res->getString("handle_time"));
+            }
+            vo.setHandlerId(res->getInt("handler_id"));
+            if (!res->isNull("handler_name")) {
+                vo.setHandlerName(res->getString("handler_name"));
+            }
+            result.first.push_back(vo);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ReportDAO::getReportsByCanteenPaginated] Error: " << e.what() << std::endl;
+    }
+    return result;
+}
+
+int ReportDAO::getUnprocessedCountByScope(sql::Connection *conn, int viewer_id, int range_type)
+{
+    int count = 0;
+    try {
+        std::string sql;
+        if (range_type == 0) {
+            sql = R"(
+                SELECT COUNT(*) AS cnt FROM report r
+                JOIN canteen c ON c.canteen_id = r.canteen_id
+                WHERE r.status = 0
+            )";
+        } else if (range_type == 1) {
+            sql = R"(
+                SELECT COUNT(*) AS cnt FROM report r
+                JOIN canteen c ON c.canteen_id = r.canteen_id
+                JOIN admin a ON a.region_id = c.region_id
+                WHERE r.status = 0 AND a.user_id = ?
+            )";
+        } else {
+            sql = R"(
+                SELECT COUNT(*) AS cnt FROM report r
+                JOIN canteen c ON c.canteen_id = r.canteen_id
+                WHERE r.status = 0 AND c.region_id IN (
+                    SELECT region_id FROM region WHERE parent_id = (
+                        SELECT region_id FROM admin WHERE user_id = ?
+                    )
+                )
+            )";
+        }
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(sql));
+        stmt->setInt(1, viewer_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            count = res->getInt("cnt");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ReportDAO::getUnprocessedCountByScope] Error: " << e.what() << std::endl;
+    }
+    return count;
+}
+
+std::vector<std::pair<std::string, int>> ReportDAO::getReportSummaryByScope(sql::Connection *conn, int viewer_id, int range_type, const std::string& time_period, int complaint_type)
+{
+    std::vector<std::pair<std::string, int>> result;
+    try {
+        std::string dateCondition;
+        if (time_period == "day") {
+            dateCondition = "DATE(r.create_time) = CURDATE()";
+        } else if (time_period == "month") {
+            dateCondition = "YEAR(r.create_time) = YEAR(CURDATE()) AND MONTH(r.create_time) = MONTH(CURDATE())";
+        } else {
+            dateCondition = "YEAR(r.create_time) = YEAR(CURDATE())";
+        }
+
+        std::string typeCondition = complaint_type > 0 ? "AND r.type = ? " : "";
+
+        std::string scopeCondition;
+        if (range_type == 0) {
+            scopeCondition = "";
+        } else if (range_type == 1) {
+            scopeCondition = "AND c.region_id IN (SELECT region_id FROM region WHERE parent_id = (SELECT region_id FROM admin WHERE user_id = ?)) ";
+        } else {
+            scopeCondition = "AND c.region_id = (SELECT region_id FROM admin WHERE user_id = ?) ";
+        }
+
+        std::string sql = R"(
+            SELECT c.name AS canteen_name, COUNT(*) AS cnt
+            FROM report r
+            JOIN canteen c ON c.canteen_id = r.canteen_id
+            WHERE )" + dateCondition + " " + typeCondition + scopeCondition +
+            "GROUP BY c.canteen_id, c.name ORDER BY cnt DESC";
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(sql));
+
+        int paramIdx = 1;
+        if (complaint_type > 0) {
+            stmt->setInt(paramIdx++, complaint_type);
+        }
+        if (range_type != 0) {
+            stmt->setInt(paramIdx, viewer_id);
+        }
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            result.push_back({res->getString("canteen_name"), res->getInt("cnt")});
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ReportDAO::getReportSummaryByScope] Error: " << e.what() << std::endl;
+    }
+    return result;
 }
 
 /***************************************************************************************

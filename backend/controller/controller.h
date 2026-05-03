@@ -82,6 +82,10 @@ private:
     // 投诉处理
     static void handleReportList(const httplib::Request& req, httplib::Response& res);
     static void handleReportHandle(const httplib::Request& req, httplib::Response& res);
+    static void handleUnprocessedReportCount(const httplib::Request& req, httplib::Response& res);
+    static void handleReportSummary(const httplib::Request& req, httplib::Response& res);
+    static void handleCanteenReviews(const httplib::Request& req, httplib::Response& res);// 获取食堂评价
+    static void handleCanteenComplaints(const httplib::Request& req, httplib::Response& res); // 获取食堂投诉
     /*************************************订单相关**************************************/
     // 下单
     static void handlePlaceOrder(const httplib::Request& req, httplib::Response& res);

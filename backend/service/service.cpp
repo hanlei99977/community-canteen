@@ -1773,6 +1773,13 @@ std::vector<CanteenRatingVO> RatingService::getCanteenRatingDetails(int canteen_
     return dao.getCanteenRatingDetails(conn, canteen_id);
 }
 
+std::pair<std::vector<RatingVO>, int> RatingService::getCanteenRatingsPaginated(int canteen_id, int page, int page_size) {
+    RatingDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getRatingsByCanteenPaginated(conn, canteen_id, page, page_size);
+}
+
 /**********************************************
  * ReportService
  *********************************************/
@@ -1811,6 +1818,27 @@ bool ReportService::updateReportStatus(int report_id, int status, int handler_id
     DBConnectionGuard guard;
     auto* conn = guard.get();
     return dao.updateReportStatus(conn, report_id, status, handler_id);
+}
+
+std::pair<std::vector<ReportVO>, int> ReportService::getCanteenReportsPaginated(int canteen_id, int page, int page_size) {
+    ReportDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getReportsByCanteenPaginated(conn, canteen_id, page, page_size);
+}
+
+int ReportService::getUnprocessedReportCount(int viewer_id, int range_type) {
+    ReportDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getUnprocessedCountByScope(conn, viewer_id, range_type);
+}
+
+std::vector<std::pair<std::string, int>> ReportService::getReportSummary(int viewer_id, int range_type, const std::string& time_period, int complaint_type) {
+    ReportDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getReportSummaryByScope(conn, viewer_id, range_type, time_period, complaint_type);
 }
 
 /**********************************************

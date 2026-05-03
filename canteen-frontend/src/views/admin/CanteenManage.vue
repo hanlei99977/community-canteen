@@ -3,7 +3,6 @@
     <el-card>
       <h2>食堂管理</h2>
 
-      <!-- 区域筛选 -->
       <div style="margin-bottom: 20px; display: flex; gap: 10px;">
         <span>市级区域：</span>
         <el-select v-model="selectedCityId" placeholder="全部" clearable style="width: 150px;" :disabled="cityDisabled" @change="handleCityChange">
@@ -42,28 +41,40 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150">
+        <el-table-column label="操作" width="220">
           <template #default="scope">
-            <el-button 
-              type="primary" 
-              size="small" 
+            <el-button
+              type="primary"
+              size="small"
               @click="handleStatusChange(scope.row)"
             >
               {{ scope.row.status === 1 ? '下架' : '上架' }}
             </el-button>
-            <el-button 
-              type="info" 
-              size="small" 
+            <el-button
+              type="info"
+              size="small"
               @click="viewCanteenDetails(scope.row)"
-              style="margin-left: 10px"
             >
               详情
+            </el-button>
+            <el-button
+              type="success"
+              size="small"
+              @click="openReviewDialog(scope.row)"
+            >
+              查看评价
+            </el-button>
+            <el-button
+              type="warning"
+              size="small"
+              @click="openComplaintDialog(scope.row)"
+            >
+              查看投诉
             </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- 食堂详情对话框 -->
       <el-dialog
         v-model="detailDialogVisible"
         title="食堂详情"
@@ -95,6 +106,86 @@
           </el-form-item>
         </el-form>
       </el-dialog>
+
+      <el-dialog
+        v-model="reviewDialogVisible"
+        :title="'食堂评价 - ' + selectedCanteenName"
+        width="700px"
+      >
+        <el-table :data="reviewList" border max-height="400">
+          <el-table-column prop="username" label="评价用户" width="100" />
+          <el-table-column prop="rating" label="评分" width="80">
+            <template #default="scope">
+              <el-rate v-model="scope.row.rating" disabled text-color="#ff9900" />
+            </template>
+          </el-table-column>
+          <el-table-column prop="content" label="评价内容" min-width="200" />
+          <el-table-column prop="create_time" label="评价时间" width="170" />
+        </el-table>
+        <div style="margin-top: 20px; display: flex; justify-content: center;">
+          <el-pagination
+            v-model:current-page="reviewPage"
+            :page-size="pageSize"
+            :page-sizes="[15]"
+            :total="reviewTotal"
+            layout="total, prev, pager, next"
+            @current-change="loadReviews"
+          />
+        </div>
+      </el-dialog>
+
+      <el-dialog
+        v-model="complaintDialogVisible"
+        :title="'食堂投诉 - ' + selectedCanteenName"
+        width="800px"
+      >
+        <el-table :data="complaintList" border max-height="400">
+          <el-table-column prop="report_id" label="投诉ID" width="90" />
+          <el-table-column prop="username" label="投诉人" width="100" />
+          <el-table-column label="类型" width="100">
+            <template #default="scope">{{ typeText(scope.row.type) }}</template>
+          </el-table-column>
+          <el-table-column prop="content" label="投诉内容" min-width="180" />
+          <el-table-column label="状态" width="90">
+            <template #default="scope">
+              <el-tag v-if="scope.row.status === 0" type="warning">未处理</el-tag>
+              <el-tag v-else-if="scope.row.status === 1" type="success">已处理</el-tag>
+              <el-tag v-else type="info">不予处理</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="create_time" label="投诉时间" width="170" />
+          <el-table-column label="操作" width="120">
+            <template #default="scope">
+              <el-button
+                type="success"
+                size="small"
+                :disabled="scope.row.status !== 0"
+                @click="handleComplaint(scope.row, 1)"
+              >
+                已处理
+              </el-button>
+              <el-button
+                type="danger"
+                size="small"
+                :disabled="scope.row.status !== 0"
+                @click="handleComplaint(scope.row, 2)"
+              >
+                不予处理
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div style="margin-top: 20px; display: flex; justify-content: center;">
+          <el-pagination
+            v-model:current-page="complaintPage"
+            :page-size="pageSize"
+            :page-sizes="[15]"
+            :total="complaintTotal"
+            layout="total, prev, pager, next"
+            @current-change="loadComplaints"
+          />
+        </div>
+      </el-dialog>
     </el-card>
   </div>
 </template>
@@ -102,7 +193,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const canteenList = ref([])
 const cityOptions = ref([])
@@ -124,8 +215,33 @@ const isDistrictAdmin = computed(() => userInfo.value.adminLevel === 3)
 const cityDisabled = computed(() => isCityAdmin.value || isDistrictAdmin.value)
 const districtDisabled = computed(() => isDistrictAdmin.value || !selectedCityId.value)
 
+const pageSize = 15
+
 const detailDialogVisible = ref(false)
 const selectedCanteen = ref({})
+
+const reviewDialogVisible = ref(false)
+const reviewList = ref([])
+const reviewPage = ref(1)
+const reviewTotal = ref(0)
+
+const complaintDialogVisible = ref(false)
+const complaintList = ref([])
+const complaintPage = ref(1)
+const complaintTotal = ref(0)
+
+const selectedCanteenId = ref(null)
+const selectedCanteenName = ref('')
+
+const typeText = (type) => {
+  const map = {
+    1: '食品安全',
+    2: '服务态度',
+    3: '环境卫生',
+    4: '其他'
+  }
+  return map[type] || '其他'
+}
 
 axios.interceptors.request.use(config => {
   const token = localStorage.getItem('token')
@@ -168,7 +284,7 @@ const getCanteenList = async () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
     const res = await axios.get('http://192.168.56.100:8080/canteenList', {
-      params: { 
+      params: {
         viewer_id: user.user_id,
         city_id: selectedCityId.value,
         district_id: selectedDistrictId.value
@@ -222,6 +338,89 @@ const viewCanteenDetails = async (canteen) => {
   } catch (err) {
     ElMessage.error('获取食堂详情失败：' + (err.response?.data?.message || '服务器异常'))
     console.error(err)
+  }
+}
+
+const openReviewDialog = (canteen) => {
+  selectedCanteenId.value = canteen.id
+  selectedCanteenName.value = canteen.name
+  reviewPage.value = 1
+  reviewDialogVisible.value = true
+  loadReviews()
+}
+
+const loadReviews = async () => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/canteenReviews', {
+      params: {
+        canteen_id: selectedCanteenId.value,
+        page: reviewPage.value,
+        page_size: pageSize
+      }
+    })
+    if (res.data.code === 0) {
+      reviewList.value = res.data.data.list || []
+      reviewTotal.value = res.data.data.total || 0
+    } else {
+      ElMessage.error('获取评价列表失败')
+    }
+  } catch (err) {
+    ElMessage.error('获取评价列表失败')
+    console.error(err)
+  }
+}
+
+const openComplaintDialog = (canteen) => {
+  selectedCanteenId.value = canteen.id
+  selectedCanteenName.value = canteen.name
+  complaintPage.value = 1
+  complaintDialogVisible.value = true
+  loadComplaints()
+}
+
+const loadComplaints = async () => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/canteenComplaints', {
+      params: {
+        canteen_id: selectedCanteenId.value,
+        page: complaintPage.value,
+        page_size: pageSize
+      }
+    })
+    if (res.data.code === 0) {
+      complaintList.value = res.data.data.list || []
+      complaintTotal.value = res.data.data.total || 0
+    } else {
+      ElMessage.error('获取投诉列表失败')
+    }
+  } catch (err) {
+    ElMessage.error('获取投诉列表失败')
+    console.error(err)
+  }
+}
+
+const handleComplaint = async (row, status) => {
+  const text = status === 1 ? '已处理' : '不予处理'
+  try {
+    await ElMessageBox.confirm(`确认将投诉 #${row.report_id} 标记为${text}吗？`, '提示', { type: 'warning' })
+
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    const res = await axios.post('http://192.168.56.100:8080/reportHandle', {
+      report_id: row.report_id,
+      status,
+      handler_id: user.user_id
+    })
+
+    if (res.data.code === 0) {
+      ElMessage.success('处理成功')
+      loadComplaints()
+    } else {
+      ElMessage.error(res.data.message || '处理失败')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('处理失败')
+    }
   }
 }
 

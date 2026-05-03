@@ -221,6 +221,7 @@ public:
     bool insertRating(sql::Connection *conn, const Rating& rating);
     std::vector<Rating> getRatingsByCanteen(sql::Connection *conn, int canteen_id);
     std::vector<CanteenRatingVO> getCanteenRatingDetails(sql::Connection *conn, int canteen_id);
+    std::pair<std::vector<RatingVO>, int> getRatingsByCanteenPaginated(sql::Connection *conn, int canteen_id, int page, int page_size);
 };
 
 // ================================
@@ -232,6 +233,9 @@ public:
     std::vector<Report> getReportsByCanteen(sql::Connection *conn, int canteen_id);
     std::vector<ReportVO> getAllReports(sql::Connection *conn);
     bool updateReportStatus(sql::Connection *conn, int report_id, int status, int handler_id);
+    std::pair<std::vector<ReportVO>, int> getReportsByCanteenPaginated(sql::Connection *conn, int canteen_id, int page, int page_size);
+    int getUnprocessedCountByScope(sql::Connection *conn, int viewer_id, int range_type);// 获取未处理举报数量
+    std::vector<std::pair<std::string, int>> getReportSummaryByScope(sql::Connection *conn, int viewer_id, int range_type, const std::string& time_period, int complaint_type);
 };
 
 /************************内容消息类DAO*******************************/

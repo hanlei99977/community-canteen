@@ -201,6 +201,7 @@ public:
     bool submitRating(const Rating& rating);
     std::vector<Rating> getRatings(int canteen_id);
     std::vector<CanteenRatingVO> getCanteenRatingDetails(int canteen_id);
+    std::pair<std::vector<RatingVO>, int> getCanteenRatingsPaginated(int canteen_id, int page, int page_size);
 };
 
 // ================================
@@ -212,6 +213,9 @@ public:
     std::vector<Report> getReportsByCanteen(int canteen_id);
     std::vector<ReportVO> getAllReports();
     bool updateReportStatus(int report_id, int status, int handler_id);
+    std::pair<std::vector<ReportVO>, int> getCanteenReportsPaginated(int canteen_id, int page, int page_size);
+    int getUnprocessedReportCount(int viewer_id, int range_type);
+    std::vector<std::pair<std::string, int>> getReportSummary(int viewer_id, int range_type, const std::string& time_period, int complaint_type);
 };
 
 /*******************************公告模块*******************************/

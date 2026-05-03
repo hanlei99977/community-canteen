@@ -50,7 +50,7 @@
         </el-menu-item>
 
         <el-menu-item v-if="isAdmin" index="/reportManage">
-          举报处理
+          举报汇总
         </el-menu-item>
 
         <!-- ================== 食堂管理员 ================== -->

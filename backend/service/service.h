@@ -105,11 +105,15 @@ public:
     int getCanteenIdByUserId(int user_id);
     // 更新食堂
     bool updateCanteenAddress(int canteen_id, const std::string& address);
-    bool updateCanteenStatus(int canteen_id, int status);
+    bool updateCanteenStatus(int canteen_id, int viewer_id, int status);
+    // 检查管理员是否有权限管理该食堂
+    bool canManageCanteen(int viewer_id, int canteen_region_id);
 
     // 获取食堂详情
     std::shared_ptr<CanteenVO> getCanteenDetails(int canteen_id);
     std::vector<CanteenManagerVO> getCanteensWithManagers();
+    // 根据查看者ID获取可管理的食堂列表
+    std::vector<CanteenManagerVO> getCanteensWithManagers(int viewer_id);
     // 日常采购
     std::vector<PurchaseBill> getPurchaseBills(int canteen_id);
     int createPurchaseBill(const PurchaseBill& bill);

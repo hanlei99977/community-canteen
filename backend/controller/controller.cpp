@@ -1543,8 +1543,14 @@ void Controller::handleUpdateCanteenAddress(const httplib::Request& req, httplib
 void Controller::handleCanteenList(const httplib::Request& req, httplib::Response& res)
 {
     try {
+        int viewer_id = 0;
+        if (req.has_param("viewer_id")) {
+            viewer_id = std::stoi(req.get_param_value("viewer_id"));
+        }
+        std::cout << "食堂列表请求, viewer_id=" << viewer_id << std::endl;
+        
         CanteenService canteenService;
-        auto canteens = canteenService.getCanteensWithManagers();
+        auto canteens = canteenService.getCanteensWithManagers(viewer_id);
 
         json data = json::array();
         for (const auto& canteen : canteens) {
@@ -1578,6 +1584,7 @@ void Controller::handleUpdateCanteenStatus(const httplib::Request& req, httplib:
         
         json body = json::parse(req.body);
         int canteen_id = getIntSafe(body, "canteen_id");
+        int viewer_id = getIntSafe(body, "viewer_id");
         int status = getIntSafe(body, "status");
 
         if (canteen_id <= 0 || (status != 0 && status != 1)) {
@@ -1586,7 +1593,7 @@ void Controller::handleUpdateCanteenStatus(const httplib::Request& req, httplib:
         }
 
         CanteenService canteenService;
-        if (canteenService.updateCanteenStatus(canteen_id, status)) {
+        if (canteenService.updateCanteenStatus(canteen_id, viewer_id, status)) {
             res.set_content(Response::success(), "application/json");
         } else {
             res.set_content(Response::error(500, "更新状态失败"), "application/json");

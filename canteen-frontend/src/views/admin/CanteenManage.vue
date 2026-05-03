@@ -98,8 +98,11 @@ axios.interceptors.request.use(config => {
 
 // 获取食堂列表
 const getCanteenList = async () => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
-    const res = await axios.get('http://192.168.56.100:8080/canteenList')
+    const res = await axios.get('http://192.168.56.100:8080/canteenList', {
+      params: { viewer_id: user.user_id }
+    })
     if (res.data.code === 0) {
       canteenList.value = res.data.data
     } else {
@@ -113,10 +116,12 @@ const getCanteenList = async () => {
 
 // 处理食堂状态变更（上架/下架）
 const handleStatusChange = async (canteen) => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
     const newStatus = canteen.status === 1 ? 0 : 1
     const res = await axios.post('http://192.168.56.100:8080/updateCanteenStatus', {
       canteen_id: canteen.id,
+      viewer_id: user.user_id,
       status: newStatus
     })
     if (res.data.code === 0) {

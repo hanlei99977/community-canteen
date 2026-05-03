@@ -923,14 +923,53 @@ bool CanteenService::updateCanteenAddress(int canteen_id, const std::string& add
     return dao.updateCanteenAddress(conn, canteen_id, address);
 }
 
-bool CanteenService::updateCanteenStatus(int canteen_id, int status) {
+bool CanteenService::updateCanteenStatus(int canteen_id, int viewer_id, int status) {
     if (canteen_id <= 0 || (status != 0 && status != 1)) {
         return false;
     }
-    CanteenDAO dao;
+    
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.updateCanteenStatus(conn, canteen_id, status);
+    
+    CanteenDAO canteenDAO;
+    auto canteen = canteenDAO.getCanteenById(conn, canteen_id);
+    if (!canteen) {
+        return false;
+    }
+    
+    if (!canManageCanteen(viewer_id, canteen->getRegionId())) {
+        std::cerr << "管理员 " << viewer_id << " 没有权限管理食堂 " << canteen_id << std::endl;
+        return false;
+    }
+    
+    return canteenDAO.updateCanteenStatus(conn, canteen_id, status);
+}
+
+bool CanteenService::canManageCanteen(int viewer_id, int canteen_region_id) {
+    if (viewer_id <= 0 || canteen_region_id <= 0) {
+        return false;
+    }
+    
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    
+    AdminDAO adminDAO;
+    auto viewer = adminDAO.getAdminByUserId(conn, viewer_id);
+    if (!viewer) {
+        return false;
+    }
+    
+    int viewer_level_id = viewer->getLevelId();
+    int viewer_region_id = viewer->getRegionId();
+    
+    // 系统管理员（level_id=1）可以管理所有食堂
+    if (viewer_level_id == 1) {
+        return true;
+    }
+    
+    // 市级和区级管理员需要检查区域范围
+    RegionService regionService;
+    return regionService.isRegionInScope(conn, canteen_region_id, viewer_region_id);
 }
 
 std::shared_ptr<CanteenVO> CanteenService::getCanteenDetails(int canteen_id) {
@@ -943,11 +982,49 @@ std::shared_ptr<CanteenVO> CanteenService::getCanteenDetails(int canteen_id) {
     return dao.getCanteenById(conn, canteen_id);
 }
 
-std::vector<CanteenManagerVO> CanteenService::getCanteensWithManagers() {
-    CanteenDAO dao;
+
+std::vector<CanteenManagerVO> CanteenService::getCanteensWithManagers(int viewer_id) {
+    
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.getCanteensWithManagers(conn);
+    try{
+        // 获取查看者的管理员信息
+        AdminDAO adminDAO;
+        auto viewer = adminDAO.getAdminByUserId(conn, viewer_id);
+        if (!viewer) {
+            throw std::runtime_error("无权限"); // 如果不是管理员，终止并抛出异常
+        }
+        
+        int viewer_level_id = viewer->getLevelId();
+        int viewer_region_id = viewer->getRegionId();
+               
+        // 获取所有食堂
+        CanteenDAO canteenDAO;
+        auto allCanteens = canteenDAO.getCanteensWithManagers(conn);
+        
+        // 系统管理员（level_id=1）可以查看所有食堂
+        if (viewer_level_id == 1) {
+            return allCanteens;
+        }
+
+        RegionService regionService;
+        
+        // 市级管理员（level_id=2）和区级管理员（level_id=3）根据区域过滤
+        if (viewer_level_id == 2 || viewer_level_id == 3) {
+            std::vector<CanteenManagerVO> filteredCanteens;
+            for (const auto& canteen : allCanteens) {
+                if (regionService.isRegionInScope(conn, canteen.getRegionId(), viewer_region_id)) {
+                    filteredCanteens.push_back(canteen);
+                }
+            }
+            return filteredCanteens;
+        }
+        
+        return {};
+    } catch (const std::exception& e) {
+        std::cerr << "[CanteenService::getCanteensWithManagers] Error: " << e.what() << std::endl;
+        return {};
+    }
 }
 
 std::vector<PurchaseBill> CanteenService::getPurchaseBills(int canteen_id) {

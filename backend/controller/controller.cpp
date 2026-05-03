@@ -178,37 +178,32 @@ void Controller::handleLogin(const httplib::Request& req, httplib::Response& res
         }
 
         UserService userService;
-        CanteenService canteenService; 
-        auto user = userService.login(username, password);
+        auto loginResult = userService.completeLogin(username, password);
 
-        if (!user) {
+        if (!loginResult) {
             res.status = 401;
             res.set_content(Response::error(401, "用户名或密码错误"), "application/json");
             return;
         }
 
-        int user_id = user->getId();
-        std::string role = userService.getUserRole(user_id);
-
-        // ⭐ 新增：canteen_id
-        int canteen_id = -1;
-
-        if (role == "canteen_manager") {
-            canteen_id = canteenService.getCanteenIdByUserId(user_id);
-        }
-
-        // ⭐ 返回数据
+        // 返回数据
         json data = {
-            {"user_id", user_id},
-            {"username", user->getUsername()},
-            {"role", role},
-            {"canteen_id", canteen_id}   // ⭐ 新增
+            {"user_id", loginResult->getUserId()},
+            {"username", loginResult->getUsername()},
+            {"role", loginResult->getRole()},
+            {"canteen_id", loginResult->getCanteenId()},
+            {"adminLevel", loginResult->getAdminLevel()},
+            {"regionId", loginResult->getRegionId()},
+            {"regionName", loginResult->getRegionName()}
         };
 
         res.status = 200;
         res.set_content(Response::success(data), "application/json");
 
-        std::cout << "用户 " << username << "role" << role << " canteen_id " << canteen_id << " 登录成功" << std::endl;
+        std::cout << "用户 " << username << " role: " << loginResult->getRole() 
+                  << " canteen_id: " << loginResult->getCanteenId() 
+                  << " admin_level: " << loginResult->getAdminLevel() 
+                  << " region_id: " << loginResult->getRegionId() << " 登录成功" << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleLogin] Error: " << e.what() << std::endl;
@@ -1131,10 +1126,14 @@ void Controller::handleCreateFamily(const httplib::Request& req, httplib::Respon
 void Controller::handleAdminList(const httplib::Request& req, httplib::Response& res)
 {
     try{
-        std::cout << "管理员列表请求" << std::endl;
+        int viewer_id = 0;
+        if (req.has_param("viewer_id")) {
+            viewer_id = std::stoi(req.get_param_value("viewer_id"));
+        }
+        std::cout << "管理员列表请求, viewer_id=" << viewer_id << std::endl;
 
         AdminService service;
-        auto adminList = service.getAdminList();
+        auto adminList = service.getAdminList(viewer_id);
 
         json arr = json::array();
 
@@ -1154,7 +1153,7 @@ void Controller::handleAdminList(const httplib::Request& req, httplib::Response&
         res.set_content(Response::success(arr), "application/json");
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleAdminList] Error: " << e.what() << std::endl;
-        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+        res.set_content(Response::error(400, "参数错误"), "application/json");
 
     }
 }
@@ -1162,10 +1161,14 @@ void Controller::handleAdminList(const httplib::Request& req, httplib::Response&
 void Controller::handleDinerList(const httplib::Request& req, httplib::Response& res)
 {
     try{
-        std::cout << "用餐者列表请求" << std::endl;
+        int viewer_id = 0;
+        if (req.has_param("viewer_id")) {
+            viewer_id = std::stoi(req.get_param_value("viewer_id"));
+        }
+        std::cout << "用餐者列表请求, viewer_id=" << viewer_id << std::endl;
 
         DinerService service;
-        auto dinerList = service.getDinerList();
+        auto dinerList = service.getDinerList(viewer_id);
 
         json arr = json::array();
 
@@ -1185,7 +1188,7 @@ void Controller::handleDinerList(const httplib::Request& req, httplib::Response&
         res.set_content(Response::success(arr), "application/json");
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleDinerList] Error: " << e.what() << std::endl;
-        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+        res.set_content(Response::error(400, "参数错误"), "application/json");
 
     }
 }
@@ -1193,10 +1196,14 @@ void Controller::handleDinerList(const httplib::Request& req, httplib::Response&
 void Controller::handleAdminApplyList(const httplib::Request& req, httplib::Response& res)
 {
     try{
-        std::cout << "管理员申请列表请求" << std::endl;
+        int reviewer_id = 0;
+        if (req.has_param("reviewer_id")) {
+            reviewer_id = std::stoi(req.get_param_value("reviewer_id"));
+        }
+        std::cout << "管理员申请列表请求, reviewer_id=" << reviewer_id << std::endl;
 
         AdminService service;
-        auto applyList = service.getAdminApplyList();
+        auto applyList = service.getAdminApplyList(reviewer_id);
 
         json arr = json::array();
         for (const auto& applyInfo : applyList) {
@@ -1220,7 +1227,7 @@ void Controller::handleAdminApplyList(const httplib::Request& req, httplib::Resp
         res.set_content(Response::success(arr), "application/json");
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleAdminApplyList] Error: " << e.what() << std::endl;
-        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+        res.set_content(Response::error(400, "参数错误"), "application/json");
 
     }
 }
@@ -1248,10 +1255,14 @@ void Controller::handleAdminApplyReview(const httplib::Request& req, httplib::Re
 void Controller::handleManagerApplyList(const httplib::Request& req, httplib::Response& res)
 {
     try{
-        std::cout << "食堂管理者申请列表请求" << std::endl;
+        int reviewer_id = 0;
+        if (req.has_param("reviewer_id")) {
+            reviewer_id = std::stoi(req.get_param_value("reviewer_id"));
+        }
+        std::cout << "食堂管理者申请列表请求, reviewer_id=" << reviewer_id << std::endl;
 
         ManagerService service;
-        auto applyList = service.getManagerApplyList();
+        auto applyList = service.getManagerApplyList(reviewer_id);
 
         json arr = json::array();
         for (const auto& applyInfo : applyList) {
@@ -1274,7 +1285,7 @@ void Controller::handleManagerApplyList(const httplib::Request& req, httplib::Re
         res.set_content(Response::success(arr), "application/json");
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleManagerApplyList] Error: " << e.what() << std::endl;
-        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+        res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
 

@@ -81,8 +81,13 @@ const offDinerList = computed(() =>
 
 // ================= 获取用餐者 =================
 const getDiners = async () => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
-    const res = await axios.get('http://192.168.56.100:8080/dinerList')
+    const res = await axios.get('http://192.168.56.100:8080/dinerList', {
+      params: {
+        viewer_id: user.user_id || 0
+      }
+    })
     allDinerList.value = res.data.data || []
   } catch (err) {
     ElMessage.error("获取用餐者失败")

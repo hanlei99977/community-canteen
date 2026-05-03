@@ -14,8 +14,10 @@ public:
     // 注册用户
     bool registerUser(const User& user, int role=1, int region_id=0);
     bool isUsernameTaken(const std::string& username);// 检查用户名是否已被注册
-    // 登录用户
+    // 登录用户（基础）
     std::shared_ptr<User> login(std::string& username, std::string& password);
+    // 完整登录（包含角色、食堂ID、管理员级别和区域信息）
+    std::shared_ptr<LoginResultVO> completeLogin(std::string& username, std::string& password);
     // 用户信息获取及更新
     std::shared_ptr<UserCenterVO> getUserCenterByUserId(int user_id);
     bool updateUserCenter(const UserCenterVO& diner);
@@ -33,10 +35,18 @@ public:
 class AdminService{
 public:
     bool submitAdminApply(const User& user, int level_id, int region_id);
-    std::vector<AdminInformation> getAdminList();
-    std::vector<AdminApplyVO> getAdminApplyList();
-    // 管理员审核申请
+    // 根据查看者ID获取可管理的管理员列表
+    std::vector<AdminInformation> getAdminList(int viewer_id);
+    // 根据审核者ID获取可审核的管理员申请列表
+    std::vector<AdminApplyVO> getAdminApplyList(int reviewer_id);
+    // 管理员审核申请（带权限验证）
     bool reviewAdminApply(int apply_id, int reviewer_id, int status);
+    // 获取管理员信息（级别和区域）
+    std::shared_ptr<Admin> getAdminInfo(int user_id);
+    // 检查管理员是否有权限审核管理员申请
+    bool hasAdminApplyReviewPermission(int reviewer_id, int apply_region_id, int apply_level_id);
+    // 检查管理员是否有权限审核食堂管理者申请
+    bool hasManagerApplyReviewPermission(int reviewer_id, int apply_region_id);
 };
 
 // ================================
@@ -46,7 +56,8 @@ class ManagerService {
 public:
     bool submitManagerApply(const User& user, const std::string& canteen_name, int region_id);
     bool validateDistrictRegion(int region_id);
-    std::vector<CanteenManagerApplyVO> getManagerApplyList();
+    // 根据审核者ID获取可审核的食堂管理者申请列表
+    std::vector<CanteenManagerApplyVO> getManagerApplyList(int reviewer_id);
     bool reviewManagerApply(int apply_id, int reviewer_id, int status);
 };
 
@@ -56,7 +67,8 @@ public:
 // ================================
 class DinerService{
 public:
-    std::vector<DinerInformation> getDinerList();
+    // 根据查看者ID获取可管理的用餐者列表
+    std::vector<DinerInformation> getDinerList(int viewer_id);
 };
 
 // ================================
@@ -66,6 +78,8 @@ class RegionService {
 public:
     std::vector<Region> getRegionList();
     std::vector<Region> getDistrictRegionList();
+    // 检查region_id是否在parent_region_id的管辖范围内（包含直接和间接子区域）
+    bool isRegionInScope(sql::Connection *conn, int region_id, int parent_region_id);
 };
 
 /*******************************家庭模块*******************************/

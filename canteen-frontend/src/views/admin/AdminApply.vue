@@ -52,8 +52,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 const applyList = ref([])
 
 const loadApplyList = async () => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
-    const res = await axios.get('http://192.168.56.100:8080/adminApplyList')
+    const res = await axios.get('http://192.168.56.100:8080/adminApplyList', {
+      params: {
+        reviewer_id: user.user_id || 0
+      }
+    })
     if (res.data.code === 0) {
       applyList.value = res.data.data
     } else {

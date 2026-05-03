@@ -78,8 +78,13 @@ const offAdminList = computed(() =>
 
 // ================= 获取管理员 =================
 const getAdmins = async () => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
   try {
-    const res = await axios.get('http://192.168.56.100:8080/adminList')
+    const res = await axios.get('http://192.168.56.100:8080/adminList', {
+      params: {
+        viewer_id: user.user_id || 0
+      }
+    })
     allAdminList.value = res.data.data || []
   } catch (err) {
     ElMessage.error("获取管理员失败")

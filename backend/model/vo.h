@@ -752,6 +752,42 @@ public:
     void setOrderTime(const std::string& time) { order_time = time; }
 };
 
+// ================================
+// 登录结果 VO
+// ================================
+class LoginResultVO {
+private:
+    int user_id;
+    std::string username;
+    std::string role;
+    int canteen_id;
+    int admin_level;
+    int region_id;
+    std::string region_name;
+
+public:
+    int getUserId() const { return user_id; }
+    void setUserId(int id) { user_id = id; }
+
+    std::string getUsername() const { return username; }
+    void setUsername(const std::string& name) { username = name; }
+
+    std::string getRole() const { return role; }
+    void setRole(const std::string& r) { role = r; }
+
+    int getCanteenId() const { return canteen_id; }
+    void setCanteenId(int id) { canteen_id = id; }
+
+    int getAdminLevel() const { return admin_level; }
+    void setAdminLevel(int level) { admin_level = level; }
+
+    int getRegionId() const { return region_id; }
+    void setRegionId(int id) { region_id = id; }
+
+    std::string getRegionName() const { return region_name; }
+    void setRegionName(const std::string& name) { region_name = name; }
+};
+
 
 // 财务统计相关 VO
 // 今日财务统计

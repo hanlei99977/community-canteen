@@ -21,23 +21,22 @@
         <el-menu-item v-if="isDiner" index="/diningPreference">用餐偏好</el-menu-item>
         <el-menu-item v-if="isDiner" index="/messageCenter">消息中心</el-menu-item>
 
-        <!-- ================== 所有用户 ================== -->
-        <el-menu-item index="/userCenter">用户中心</el-menu-item>
-
-        <!-- ================== 系统管理员专属 ================== -->
-        <el-menu-item v-if="isSystemAdmin" index="/adminApply">
+        <!-- ================== 管理员申请审核（系统管理员+市级管理员） ================== -->
+        <el-menu-item v-if="canReviewAdminApply" index="/adminApply">
           管理员申请
         </el-menu-item>
 
-        <el-menu-item v-if="isSystemAdmin" index="/managerApply">
+        <!-- ================== 食堂管理者申请审核（系统管理员+市级管理员+区级管理员） ================== -->
+        <el-menu-item v-if="canReviewManagerApply" index="/managerApply">
           食堂管理者申请
         </el-menu-item>
 
-        <el-menu-item v-if="isSystemAdmin" index="/adminManage">
+        <!-- ================== 管理员管理（系统管理员+市级管理员） ================== -->
+        <el-menu-item v-if="canManageAdmin" index="/adminManage">
           管理员管理
         </el-menu-item>
 
-        <!-- ================== 系统管理员 + 普通管理员 ================== -->
+        <!-- ================== 管理员通用功能（系统管理员+市级管理员+区级管理员） ================== -->
         <el-menu-item v-if="isAdmin" index="/dinerManage">
           用餐者管理
         </el-menu-item>
@@ -83,6 +82,8 @@
           留言板
         </el-menu-item>
 
+        <!-- ================== 所有用户 ================== -->
+        <el-menu-item index="/userCenter">用户中心</el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -111,13 +112,16 @@ const router = useRouter()
 
 const user = ref({
   username: '',
-  role: ''
+  role: '',
+  adminLevel: 0,  // 管理员级别：1-系统管理员，2-市级管理员，3-区级管理员
+  regionId: 0,    // 管理区域ID
+  regionName: ''  // 管理区域名称
 })
 
 onMounted(() => {
   const u = localStorage.getItem('user')
   if (u) {
-    user.value = JSON.parse(u)
+    user.value = { ...user.value, ...JSON.parse(u) }
   } else {
     router.push('/login')
   }
@@ -129,12 +133,18 @@ onMounted(() => {
 const isDiner = computed(() => user.value.role === 'diner')
 
 // 系统管理员
-const isSystemAdmin = computed(() => user.value.role === 'system_admin')
+const isSystemAdmin = computed(() => user.value.role === 'system_admin' || user.value.adminLevel === 1)
 
-// 普通管理员（包含系统管理员）
+// 市级管理员
+const isCityAdmin = computed(() => user.value.role === 'admin' && user.value.adminLevel === 2)
+
+// 区级管理员
+const isDistrictAdmin = computed(() => user.value.role === 'admin' && user.value.adminLevel === 3)
+
+// 普通管理员（包含系统管理员、市级管理员、区级管理员）
 const isAdmin = computed(() =>
   user.value.role === 'system_admin' ||
-  user.value.role === 'admin'
+  (user.value.role === 'admin' && user.value.adminLevel > 0)
 )
 
 // 食堂管理员
@@ -142,9 +152,24 @@ const isCanteenAdmin = computed(() =>
   user.value.role === 'canteen_manager'
 )
 
+// 可以审核管理员申请（系统管理员+市级管理员）
+const canReviewAdminApply = computed(() => isSystemAdmin.value || isCityAdmin.value)
+
+// 可以审核食堂管理者申请（系统管理员+市级管理员+区级管理员）
+const canReviewManagerApply = computed(() => isSystemAdmin.value || isCityAdmin.value || isDistrictAdmin.value)
+
+// 可以管理管理员（系统管理员+市级管理员）
+const canManageAdmin = computed(() => isSystemAdmin.value || isCityAdmin.value)
+
 const logout = () => {
   localStorage.removeItem('user')
-  user.value = {}
+  user.value = {
+    username: '',
+    role: '',
+    adminLevel: 0,
+    regionId: 0,
+    regionName: ''
+  }
   router.push('/login')
 }
 </script>

@@ -16,6 +16,14 @@ public:
     std::shared_ptr<Region> getRegionById(sql::Connection *conn, int region_id);
     std::vector<Region> getDistrictRegions(sql::Connection *conn);
     bool isDistrictLevel(sql::Connection *conn, int region_id);
+    // 获取市级区域下所有区级区域
+    std::vector<Region> getDistrictRegionsByCity(sql::Connection *conn, int city_region_id);
+    // 获取所有市级区域
+    std::vector<Region> getCityRegions(sql::Connection *conn);
+    // 检查是否是市级区域
+    bool isCityLevel(sql::Connection *conn, int region_id);
+    // 获取区域的父级区域ID
+    int getParentRegionId(sql::Connection *conn, int region_id);
 };
 
 // ================================

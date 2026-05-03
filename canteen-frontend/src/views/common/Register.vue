@@ -135,17 +135,31 @@ const loadRegions = async () => {
 }
 
 const loadAdminRegions = async () => {
-  try {
-    const res = await axios.get('http://192.168.56.100:8080/regionList')
-    if (res.data.code === 0) {
-      adminRegionOptions.value = res.data.data
-    }
-  } catch (e) {}
+  if (form.level_id === 2) {
+    try {
+      const res = await axios.get('http://192.168.56.100:8080/cityRegionList')
+      if (res.data.code === 0) {
+        adminRegionOptions.value = res.data.data
+      }
+    } catch (e) {}
+  } else if (form.level_id === 3) {
+    try {
+      const res = await axios.get('http://192.168.56.100:8080/districtRegionList')
+      if (res.data.code === 0) {
+        adminRegionOptions.value = res.data.data
+      }
+    } catch (e) {}
+  }
 }
 
 watch(() => form.role, () => {
   form.region_id = null
   loadRegions()
+})
+
+watch(() => form.level_id, () => {
+  form.region_id = null
+  loadAdminRegions()
 })
 
 onMounted(async () => {

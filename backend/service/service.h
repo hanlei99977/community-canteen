@@ -78,6 +78,7 @@ class RegionService {
 public:
     std::vector<Region> getRegionList();
     std::vector<Region> getDistrictRegionList();
+    std::vector<Region> getCityRegionList();
     // 检查region_id是否在parent_region_id的管辖范围内（包含直接和间接子区域）
     bool isRegionInScope(sql::Connection *conn, int region_id, int parent_region_id);
 };

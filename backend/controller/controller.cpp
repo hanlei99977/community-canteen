@@ -144,6 +144,7 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Post("/createFamily", handleCreateFamily);
     server.Get("/regionList", handleRegionList);
     server.Get("/districtRegionList", handleDistrictRegionList);
+    server.Get("/cityRegionList", handleCityRegionList);
     // 食堂管理
     server.Get("/myCanteen", handleMyCanteen);
     server.Post("/updateCanteenAddress", handleUpdateCanteenAddress);
@@ -1089,6 +1090,31 @@ void Controller::handleDistrictRegionList(const httplib::Request& req, httplib::
         res.set_content(Response::success(arr), "application/json");
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleDistrictRegionList] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleCityRegionList(const httplib::Request& req, httplib::Response& res)
+{
+    try{
+        std::cout << "市级区域列表请求" << std::endl;
+
+        RegionService service;
+        auto regionList = service.getCityRegionList();
+
+        json arr = json::array();
+
+        for (const auto& r : regionList) {
+            arr.push_back({
+                {"region_id", r.getId()},
+                {"region_name", r.getName()},
+                {"region_level", r.getLevel()},
+                {"parent_id", r.getParentId()}
+            });
+        }
+        res.set_content(Response::success(arr), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleCityRegionList] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }

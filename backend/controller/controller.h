@@ -22,6 +22,7 @@ private:
     // 所在区域
     static void handleRegionList(const httplib::Request& req, httplib::Response& res);
     static void handleDistrictRegionList(const httplib::Request& req, httplib::Response& res);
+    static void handleCityRegionList(const httplib::Request& req, httplib::Response& res);
     // 密码修改
     static void handleChangePassword(const httplib::Request& req, httplib::Response& res);
 

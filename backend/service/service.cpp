@@ -796,6 +796,13 @@ std::vector<Region> RegionService::getDistrictRegionList() {
     return dao.getDistrictRegions(conn);
 }
 
+std::vector<Region> RegionService::getCityRegionList() {
+    RegionDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getCityRegions(conn);
+}
+
 bool RegionService::isRegionInScope(sql::Connection *conn, int region_id, int parent_region_id) {
     if (region_id <= 0 || parent_region_id <= 0) {
         return false;

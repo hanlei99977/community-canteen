@@ -6,15 +6,15 @@
       <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
         <div style="display: flex; align-items: center;">
           <span style="margin-right: 10px;">市级区域：</span>
-          <el-select v-model="selectedCityId" placeholder="请选择市级区域" style="width: 150px;" @change="handleCityChange">
-            <el-option label="全部" :value="0" />
+          <el-select v-model="selectedCityId" :disabled="cityDisabled" placeholder="请选择市级区域" style="width: 150px;" @change="handleCityChange">
+            <el-option v-if="!cityDisabled" label="全部" :value="0" />
             <el-option v-for="city in cityList" :key="city.region_id" :label="city.region_name" :value="city.region_id" />
           </el-select>
         </div>
         <div style="display: flex; align-items: center;">
           <span style="margin-right: 10px;">区级区域：</span>
-          <el-select v-model="selectedDistrictId" placeholder="请选择区级区域" style="width: 150px;" @change="handleDistrictChange">
-            <el-option label="全部" :value="0" />
+          <el-select v-model="selectedDistrictId" :disabled="districtDisabled" placeholder="请选择区级区域" style="width: 150px;" @change="handleDistrictChange">
+            <el-option v-if="!districtDisabled" label="全部" :value="0" />
             <el-option v-for="district in districtList" :key="district.region_id" :label="district.region_name" :value="district.region_id" />
           </el-select>
         </div>
@@ -135,6 +135,12 @@ const districtList = ref([])
 const canteenList = ref([])
 const timeRange = ref(7)
 
+const cityDisabled = ref(false)
+const districtDisabled = ref(false)
+
+let adminLevel = 1
+let adminRegionId = 0
+
 const statistics = ref({
   unprocessed_count: 0,
   total_count: 0,
@@ -197,6 +203,17 @@ const loadDistrictList = async () => {
     loadCanteenList()
   } catch (error) {
     console.error('获取区县列表失败:', error)
+  }
+}
+
+const loadAllDistricts = async () => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/districtRegionList')
+    if (res.data.code === 0) {
+      districtList.value = res.data.data || []
+    }
+  } catch (error) {
+    console.error('获取所有区县列表失败:', error)
   }
 }
 
@@ -610,8 +627,32 @@ const handleResize = () => {
   if (rankChart) rankChart.resize()
 }
 
-onMounted(() => {
-  loadCityList()
+onMounted(async () => {
+  const user = getUser()
+  if (user) {
+    adminLevel = user.adminLevel || 1
+    adminRegionId = user.regionId || 0
+    
+    if (adminLevel === 2) {
+      cityDisabled.value = true
+      selectedCityId.value = adminRegionId
+      await loadDistrictList()
+      loadCanteenList()
+    } else if (adminLevel === 3) {
+      cityDisabled.value = true
+      districtDisabled.value = true
+      selectedDistrictId.value = adminRegionId
+      await loadCityList()
+      await loadAllDistricts()
+      const district = districtList.value.find(d => d.region_id === adminRegionId)
+      if (district && district.parent_id) {
+        selectedCityId.value = district.parent_id
+      }
+      loadCanteenList()
+    }
+  } else {
+    await loadCityList()
+  }
   loadData()
   window.addEventListener('resize', handleResize)
 })

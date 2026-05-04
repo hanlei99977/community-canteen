@@ -479,7 +479,7 @@ const renderTypeChart = (typeNames, typeCounts, total) => {
       if (typeIndex !== -1) {
         dialogTitle.value = `类型: ${params.name}`
         dialogType.value = typeIndex + 1
-        dialogCanteenId.value = null
+        dialogCanteenId.value = selectedCanteenId.value || null
         complaintPage.value = 1
         complaintDialogVisible.value = true
         loadComplaintDialog()
@@ -558,10 +558,14 @@ const loadComplaintDialog = async () => {
   const user = getUser()
   try {
     let canteenId = 0
-    if (dialogCanteenId.value) {
-      const canteen = canteenList.value.find(c => c.name === dialogCanteenId.value)
-      if (canteen) {
-        canteenId = canteen.id
+    if (dialogCanteenId.value !== null && dialogCanteenId.value !== undefined) {
+      if (typeof dialogCanteenId.value === 'number') {
+        canteenId = dialogCanteenId.value
+      } else {
+        const canteen = canteenList.value.find(c => c.name === dialogCanteenId.value)
+        if (canteen) {
+          canteenId = canteen.id
+        }
       }
     }
 

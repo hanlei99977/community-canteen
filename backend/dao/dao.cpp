@@ -2947,7 +2947,7 @@ std::pair<std::vector<ReportVO>, int> ReportDAO::getReportsByFilters(sql::Connec
                               "FROM report r JOIN users u ON u.user_id = r.user_id "
                               "JOIN canteen c ON c.canteen_id = r.canteen_id "
                               "LEFT JOIN users hu ON hu.user_id = r.handler_id" + sql +
-                              " ORDER BY r.create_time DESC LIMIT ? OFFSET ?";
+                              " ORDER BY r.status ASC, r.create_time DESC LIMIT ? OFFSET ?";
 
         auto dataStmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(dataSql));
         for (size_t i = 0; i < params.size(); i++) {

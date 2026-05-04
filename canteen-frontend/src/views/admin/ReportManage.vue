@@ -633,8 +633,11 @@ onMounted(async () => {
     adminLevel = user.adminLevel || 1
     adminRegionId = user.regionId || 0
     
-    if (adminLevel === 2) {
+    if (adminLevel === 1) {
+      await loadCityList()
+    } else if (adminLevel === 2) {
       cityDisabled.value = true
+      await loadCityList()
       selectedCityId.value = adminRegionId
       await loadDistrictList()
       loadCanteenList()

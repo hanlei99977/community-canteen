@@ -89,8 +89,11 @@ void Controller::registerUserRoutes(httplib::Server& server) {
     // 投诉处理
     server.Get("/reportList", handleReportList);
     server.Post("/reportHandle", handleReportHandle);
-    server.Get("/unprocessedReportCount", handleUnprocessedReportCount);
-    server.Get("/reportSummary", handleReportSummary);
+    server.Get("/reportStatistics", handleReportStatistics);
+    server.Get("/reportTrend", handleReportTrend);
+    server.Get("/reportTypeDistribution", handleReportTypeDistribution);
+    server.Get("/topCanteenReports", handleTopCanteenReports);
+    server.Get("/filteredReports", handleFilteredReports);
     server.Get("/canteenReviews", handleCanteenReviews);
     server.Get("/canteenComplaints", handleCanteenComplaints);
 }
@@ -1142,16 +1145,15 @@ void Controller::handleGetDistrictsByCity(const httplib::Request& req, httplib::
         for (const auto& r : regionList) {
             arr.push_back({
                 {"region_id", r.getId()},
-                {"region_name", r.getName()},
-                {"region_level", r.getLevel()},
-                {"parent_id", r.getParentId()}
+                {"region_name", r.getName()}
             });
         }
 
         res.set_content(Response::success(arr), "application/json");
+
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleGetDistrictsByCity] Error: " << e.what() << std::endl;
-        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+        res.set_content(Response::error(500, "获取区级区域失败"), "application/json");
     }
 }
 
@@ -1542,49 +1544,243 @@ void Controller::handleReportHandle(const httplib::Request& req, httplib::Respon
     }
 }
 
-void Controller::handleUnprocessedReportCount(const httplib::Request& req, httplib::Response& res)
+void Controller::handleReportStatistics(const httplib::Request& req, httplib::Response& res)
 {
     try {
-        int viewer_id = std::stoi(req.get_param_value("viewer_id"));
-        int range_type = std::stoi(req.get_param_value("range_type"));
-
-        ReportService service;
-        int count = service.getUnprocessedReportCount(viewer_id, range_type);
-
-        res.set_content(Response::success(count), "application/json");
-    } catch (const std::exception& e) {
-        std::cerr << "[Controller::handleUnprocessedReportCount] Error: " << e.what() << std::endl;
-        res.set_content(Response::error(500, "获取未处理投诉数失败"), "application/json");
-    }
-}
-
-void Controller::handleReportSummary(const httplib::Request& req, httplib::Response& res)
-{
-    try {
-        int viewer_id = std::stoi(req.get_param_value("viewer_id"));
-        int range_type = std::stoi(req.get_param_value("range_type"));
-        std::string time_period = req.get_param_value("time_period");
-        int complaint_type = std::stoi(req.get_param_value("complaint_type"));
-
-        ReportService service;
-        auto summary = service.getReportSummary(viewer_id, range_type, time_period, complaint_type);
-
-        json canteenNames = json::array();
-        json complaintCounts = json::array();
-        for (const auto& pair : summary) {
-            canteenNames.push_back(pair.first);
-            complaintCounts.push_back(pair.second);
+        int city_id = 0;
+        int district_id = 0;
+        int canteen_id = 0;
+        int days = 7;
+        
+        if (req.has_param("city_id")) {
+            city_id = std::stoi(req.get_param_value("city_id"));
+        }
+        if (req.has_param("district_id")) {
+            district_id = std::stoi(req.get_param_value("district_id"));
+        }
+        if (req.has_param("canteen_id")) {
+            canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        }
+        if (req.has_param("days")) {
+            days = std::stoi(req.get_param_value("days"));
         }
 
+        ReportService service;
+        auto stats = service.getReportStatistics(city_id, district_id, canteen_id, days);
+
         json data = {
-            {"canteen_names", canteenNames},
-            {"complaint_counts", complaintCounts}
+            {"unprocessed_count", stats.unprocessed_count},
+            {"total_count", stats.total_count},
+            {"today_count", stats.today_count}
         };
 
         res.set_content(Response::success(data), "application/json");
     } catch (const std::exception& e) {
-        std::cerr << "[Controller::handleReportSummary] Error: " << e.what() << std::endl;
-        res.set_content(Response::error(500, "获取举报汇总失败"), "application/json");
+        std::cerr << "[Controller::handleReportStatistics] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(500, "获取统计数据失败"), "application/json");
+    }
+}
+
+void Controller::handleReportTrend(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int city_id = 0;
+        int district_id = 0;
+        int canteen_id = 0;
+        int days = 7;
+        
+        if (req.has_param("city_id")) {
+            city_id = std::stoi(req.get_param_value("city_id"));
+        }
+        if (req.has_param("district_id")) {
+            district_id = std::stoi(req.get_param_value("district_id"));
+        }
+        if (req.has_param("canteen_id")) {
+            canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        }
+        if (req.has_param("days")) {
+            days = std::stoi(req.get_param_value("days"));
+        }
+
+        ReportService service;
+        auto trend = service.getReportTrend(city_id, district_id, canteen_id, days);
+
+        json dates = json::array();
+        json counts = json::array();
+        for (const auto& pair : trend) {
+            dates.push_back(pair.first);
+            counts.push_back(pair.second);
+        }
+
+        json data = {
+            {"dates", dates},
+            {"counts", counts}
+        };
+
+        res.set_content(Response::success(data), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleReportTrend] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(500, "获取投诉趋势失败"), "application/json");
+    }
+}
+
+void Controller::handleReportTypeDistribution(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int city_id = 0;
+        int district_id = 0;
+        int canteen_id = 0;
+        int days = 7;
+        
+        if (req.has_param("city_id")) {
+            city_id = std::stoi(req.get_param_value("city_id"));
+        }
+        if (req.has_param("district_id")) {
+            district_id = std::stoi(req.get_param_value("district_id"));
+        }
+        if (req.has_param("canteen_id")) {
+            canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        }
+        if (req.has_param("days")) {
+            days = std::stoi(req.get_param_value("days"));
+        }
+
+        ReportService service;
+        auto distribution = service.getReportTypeDistribution(city_id, district_id, canteen_id, days);
+
+        int total = 0;
+        json types = json::array();
+        json typeNames = json::array();
+        json typeCounts = json::array();
+        for (const auto& pair : distribution) {
+            typeNames.push_back(pair.second.first);
+            typeCounts.push_back(pair.second.second);
+            total += pair.second.second;
+        }
+
+        json data = {
+            {"total", total},
+            {"type_names", typeNames},
+            {"type_counts", typeCounts}
+        };
+
+        res.set_content(Response::success(data), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleReportTypeDistribution] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(500, "获取类型分布失败"), "application/json");
+    }
+}
+
+void Controller::handleTopCanteenReports(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int city_id = 0;
+        int district_id = 0;
+        int canteen_id = 0;
+        int days = 7;
+        int limit = 10;
+        
+        if (req.has_param("city_id")) {
+            city_id = std::stoi(req.get_param_value("city_id"));
+        }
+        if (req.has_param("district_id")) {
+            district_id = std::stoi(req.get_param_value("district_id"));
+        }
+        if (req.has_param("canteen_id")) {
+            canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        }
+        if (req.has_param("days")) {
+            days = std::stoi(req.get_param_value("days"));
+        }
+        if (req.has_param("limit")) {
+            limit = std::stoi(req.get_param_value("limit"));
+        }
+
+        ReportService service;
+        auto topList = service.getTopCanteenReports(city_id, district_id, canteen_id, days, limit);
+
+        json canteenNames = json::array();
+        json canteenCounts = json::array();
+        for (const auto& pair : topList) {
+            canteenNames.push_back(pair.first);
+            canteenCounts.push_back(pair.second);
+        }
+
+        json data = {
+            {"canteen_names", canteenNames},
+            {"canteen_counts", canteenCounts}
+        };
+
+        res.set_content(Response::success(data), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleTopCanteenReports] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(500, "获取食堂排行榜失败"), "application/json");
+    }
+}
+
+void Controller::handleFilteredReports(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int city_id = 0;
+        int district_id = 0;
+        int canteen_id = 0;
+        int type = 0;
+        int days = 7;
+        int page = 1;
+        int page_size = 15;
+        
+        if (req.has_param("city_id")) {
+            city_id = std::stoi(req.get_param_value("city_id"));
+        }
+        if (req.has_param("district_id")) {
+            district_id = std::stoi(req.get_param_value("district_id"));
+        }
+        if (req.has_param("canteen_id")) {
+            canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        }
+        if (req.has_param("type")) {
+            type = std::stoi(req.get_param_value("type"));
+        }
+        if (req.has_param("days")) {
+            days = std::stoi(req.get_param_value("days"));
+        }
+        if (req.has_param("page")) {
+            page = std::stoi(req.get_param_value("page"));
+        }
+        if (req.has_param("page_size")) {
+            page_size = std::stoi(req.get_param_value("page_size"));
+        }
+
+        ReportService service;
+        auto result = service.getReportsByFilters(city_id, district_id, canteen_id, type, days, page, page_size);
+
+        json list = json::array();
+        for (const auto& vo : result.first) {
+            list.push_back({
+                {"report_id", vo.getReportId()},
+                {"user_id", vo.getUserId()},
+                {"username", vo.getUsername()},
+                {"canteen_id", vo.getCanteenId()},
+                {"canteen_name", vo.getCanteenName()},
+                {"type", vo.getType()},
+                {"content", vo.getContent()},
+                {"status", vo.getStatus()},
+                {"create_time", vo.getCreateTime()},
+                {"handle_time", vo.getHandleTime()},
+                {"handler_id", vo.getHandlerId()},
+                {"handler_name", vo.getHandlerName()}
+            });
+        }
+
+        json data = {
+            {"list", list},
+            {"total", result.second}
+        };
+
+        res.set_content(Response::success(data), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleFilteredReports] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(500, "获取投诉列表失败"), "application/json");
     }
 }
 

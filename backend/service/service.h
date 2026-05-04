@@ -215,7 +215,12 @@ public:
     bool updateReportStatus(int report_id, int status, int handler_id);
     std::pair<std::vector<ReportVO>, int> getCanteenReportsPaginated(int canteen_id, int page, int page_size);
     int getUnprocessedReportCount(int viewer_id, int range_type);
-    std::vector<std::pair<std::string, int>> getReportSummary(int viewer_id, int range_type, const std::string& time_period, int complaint_type);
+
+    ReportStatisticsVO getReportStatistics(int city_id, int district_id, int canteen_id, int days);
+    std::vector<std::pair<std::string, int>> getReportTrend(int city_id, int district_id, int canteen_id, int days);
+    std::vector<std::pair<int, std::pair<std::string, int>>> getReportTypeDistribution(int city_id, int district_id, int canteen_id, int days);
+    std::vector<std::pair<std::string, int>> getTopCanteenReports(int city_id, int district_id, int canteen_id, int days, int limit);
+    std::pair<std::vector<ReportVO>, int> getReportsByFilters(int city_id, int district_id, int canteen_id, int type, int days, int page, int page_size);
 };
 
 /*******************************公告模块*******************************/

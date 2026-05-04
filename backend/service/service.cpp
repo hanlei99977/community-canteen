@@ -1074,59 +1074,37 @@ std::vector<CanteenManagerVO> CanteenService::getCanteensWithManagers(int viewer
     DBConnectionGuard guard;
     auto* conn = guard.get();
     try{
-        // 获取查看者的管理员信息
         AdminDAO adminDAO;
-        auto viewer = adminDAO.getAdminByUserId(conn, viewer_id);
-        if (!viewer) {
-            throw std::runtime_error("无权限"); // 如果不是管理员，终止并抛出异常
-        }
-
-        int viewer_level_id = viewer->getLevelId();
-        int viewer_region_id = viewer->getRegionId();
-
-        // 获取所有食堂
         CanteenDAO canteenDAO;
-        auto allCanteens = canteenDAO.getCanteensWithManagers(conn);
-
         RegionService regionService;
 
-        // 系统管理员（level_id=1）可以查看所有食堂
-        if (viewer_level_id == 1) {
-            // 如果有区域筛选参数，按区域过滤
-            if (city_id > 0 || district_id > 0) {
-                std::vector<CanteenManagerVO> filteredCanteens;
-                for (const auto& canteen : allCanteens) {
-                    int target_region_id = district_id > 0 ? district_id : city_id;
-                    if (regionService.isRegionInScope(canteen.getRegionId(), target_region_id)) {
-                        filteredCanteens.push_back(canteen);
-                    }
-                }
-                return filteredCanteens;
+        // 如果 viewer_id > 0，进行权限检查
+        if (viewer_id > 0) {
+            auto viewer = adminDAO.getAdminByUserId(conn, viewer_id);
+            if (!viewer) {
+                throw std::runtime_error("无权限");
             }
-            return allCanteens;
+
+            int viewer_level_id = viewer->getLevelId();
+            int viewer_region_id = viewer->getRegionId();
+
+            // 系统管理员（level_id=1）可以查看所有食堂
+            if (viewer_level_id != 1) {
+                // 市级和区级管理员只能查看其管辖范围内的食堂
+                if (city_id > 0 && !regionService.isRegionInScope(city_id, viewer_region_id)) {
+                    city_id = viewer_region_id;
+                }
+                if (district_id > 0 && !regionService.isRegionInScope(district_id, viewer_region_id)) {
+                    district_id = viewer_region_id;
+                }
+                if (city_id == 0 && district_id == 0) {
+                    city_id = viewer_region_id;
+                }
+            }
         }
 
-        // 市级管理员（level_id=2）和区级管理员（level_id=3）根据区域过滤
-        if (viewer_level_id == 2 || viewer_level_id == 3) {
-            std::vector<CanteenManagerVO> filteredCanteens;
-            for (const auto& canteen : allCanteens) {
-                // 先按管理员权限过滤
-                if (!regionService.isRegionInScope(canteen.getRegionId(), viewer_region_id)) {
-                    continue;
-                }
-                // 再按区域筛选参数过滤
-                if (city_id > 0 || district_id > 0) {
-                    int target_region_id = district_id > 0 ? district_id : city_id;
-                    if (!regionService.isRegionInScope(canteen.getRegionId(), target_region_id)) {
-                        continue;
-                    }
-                }
-                filteredCanteens.push_back(canteen);
-            }
-            return filteredCanteens;
-        }
-
-        return {};
+        // 直接在数据库查询时过滤
+        return canteenDAO.getCanteensWithManagers(conn, city_id, district_id);
     } catch (const std::exception& e) {
         std::cerr << "[CanteenService::getCanteensWithManagers] Error: " << e.what() << std::endl;
         return {};
@@ -1834,11 +1812,39 @@ int ReportService::getUnprocessedReportCount(int viewer_id, int range_type) {
     return dao.getUnprocessedCountByScope(conn, viewer_id, range_type);
 }
 
-std::vector<std::pair<std::string, int>> ReportService::getReportSummary(int viewer_id, int range_type, const std::string& time_period, int complaint_type) {
+ReportStatisticsVO ReportService::getReportStatistics(int city_id, int district_id, int canteen_id, int days) {
     ReportDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.getReportSummaryByScope(conn, viewer_id, range_type, time_period, complaint_type);
+    return dao.getReportStatistics(conn, city_id, district_id, canteen_id, days);
+}
+
+std::vector<std::pair<std::string, int>> ReportService::getReportTrend(int city_id, int district_id, int canteen_id, int days) {
+    ReportDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getReportTrend(conn, city_id, district_id, canteen_id, days);
+}
+
+std::vector<std::pair<int, std::pair<std::string, int>>> ReportService::getReportTypeDistribution(int city_id, int district_id, int canteen_id, int days) {
+    ReportDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getReportTypeDistribution(conn, city_id, district_id, canteen_id, days);
+}
+
+std::vector<std::pair<std::string, int>> ReportService::getTopCanteenReports(int city_id, int district_id, int canteen_id, int days, int limit) {
+    ReportDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getTopCanteenReports(conn, city_id, district_id, canteen_id, days, limit);
+}
+
+std::pair<std::vector<ReportVO>, int> ReportService::getReportsByFilters(int city_id, int district_id, int canteen_id, int type, int days, int page, int page_size) {
+    ReportDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getReportsByFilters(conn, city_id, district_id, canteen_id, type, days, page, page_size);
 }
 
 /**********************************************

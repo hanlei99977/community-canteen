@@ -120,7 +120,7 @@ public:
     int insertCanteen(sql::Connection *conn, const std::string& canteen_name, int region_id);
     bool updateCanteenAddress(sql::Connection *conn, int canteen_id, const std::string& address);
     bool updateCanteenStatus(sql::Connection *conn, int canteen_id, int status);
-    std::vector<CanteenManagerVO> getCanteensWithManagers(sql::Connection *conn);
+    std::vector<CanteenManagerVO> getCanteensWithManagers(sql::Connection *conn, int city_id = 0, int district_id = 0);
     std::vector<PurchaseBill> getPurchaseBillsByCanteen(sql::Connection *conn, int canteen_id);
     int createPurchaseBill(sql::Connection *conn, const PurchaseBill& bill);
     bool updatePurchaseBill(sql::Connection *conn, const PurchaseBill& bill);
@@ -234,8 +234,16 @@ public:
     std::vector<ReportVO> getAllReports(sql::Connection *conn);
     bool updateReportStatus(sql::Connection *conn, int report_id, int status, int handler_id);
     std::pair<std::vector<ReportVO>, int> getReportsByCanteenPaginated(sql::Connection *conn, int canteen_id, int page, int page_size);
-    int getUnprocessedCountByScope(sql::Connection *conn, int viewer_id, int range_type);// 获取未处理举报数量
-    std::vector<std::pair<std::string, int>> getReportSummaryByScope(sql::Connection *conn, int viewer_id, int range_type, const std::string& time_period, int complaint_type);
+    int getUnprocessedCountByScope(sql::Connection *conn, int viewer_id, int range_type);
+    ReportStatisticsVO getReportStatistics(sql::Connection *conn, int city_id, int district_id, int canteen_id, int days);
+
+    std::vector<std::pair<std::string, int>> getReportTrend(sql::Connection *conn, int city_id, int district_id, int canteen_id, int days);
+
+    std::vector<std::pair<int, std::pair<std::string, int>>> getReportTypeDistribution(sql::Connection *conn, int city_id, int district_id, int canteen_id, int days);
+
+    std::vector<std::pair<std::string, int>> getTopCanteenReports(sql::Connection *conn, int city_id, int district_id, int canteen_id, int days, int limit);
+
+    std::pair<std::vector<ReportVO>, int> getReportsByFilters(sql::Connection *conn, int city_id, int district_id, int canteen_id, int type, int days, int page, int page_size);
 };
 
 /************************内容消息类DAO*******************************/

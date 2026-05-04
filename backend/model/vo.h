@@ -905,3 +905,10 @@ public:
     void addCanteenConsumption(const ConsumptionItem& item) { canteen_consumption.push_back(item); }
     void addDishConsumption(const ConsumptionItem& item) { dish_consumption.push_back(item); }
 };
+
+// 举报统计VO
+struct ReportStatisticsVO {
+    int unprocessed_count;
+    int total_count;
+    int today_count;
+};

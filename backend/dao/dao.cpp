@@ -1280,20 +1280,31 @@ bool CanteenDAO::updateCanteenStatus(sql::Connection *conn, int canteen_id, int 
     }
 }
 
-std::vector<CanteenManagerVO> CanteenDAO::getCanteensWithManagers(sql::Connection *conn) {
+std::vector<CanteenManagerVO> CanteenDAO::getCanteensWithManagers(sql::Connection *conn, int city_id, int district_id) {
     std::vector<CanteenManagerVO> canteens;
     try {
-        auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement(
-                "SELECT c.canteen_id, c.name, c.address, c.region_id, r.region_name, "
+        std::string sql = "SELECT c.canteen_id, c.name, c.address, c.region_id, r.region_name, "
                 "m.user_id as manager_id, u.username as manager_name, c.status "
                 "FROM canteen c "
                 "LEFT JOIN region r ON c.region_id = r.region_id "
                 "LEFT JOIN canteen_manager m ON c.canteen_id = m.canteen_id "
-                "LEFT JOIN users u ON m.user_id = u.user_id"
-            )
-        );
-
+                "LEFT JOIN users u ON m.user_id = u.user_id WHERE 1=1";
+        
+        std::vector<int> params;
+        if (city_id > 0) {
+            sql += " AND c.region_id IN (SELECT region_id FROM region WHERE parent_id = ?)";
+            params.push_back(city_id);
+        }
+        if (district_id > 0) {
+            sql += " AND c.region_id = ?";
+            params.push_back(district_id);
+        }
+        
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(sql));
+        for (size_t i = 0; i < params.size(); i++) {
+            stmt->setInt(i + 1, params[i]);
+        }
+        
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
         while (res->next()) {
             CanteenManagerVO canteen;
@@ -2706,53 +2717,268 @@ int ReportDAO::getUnprocessedCountByScope(sql::Connection *conn, int viewer_id, 
     return count;
 }
 
-std::vector<std::pair<std::string, int>> ReportDAO::getReportSummaryByScope(sql::Connection *conn, int viewer_id, int range_type, const std::string& time_period, int complaint_type)
+ReportStatisticsVO ReportDAO::getReportStatistics(sql::Connection *conn, int city_id, int district_id, int canteen_id, int days)
+{
+    ReportStatisticsVO stats = {0, 0, 0};
+    try {
+        std::string sql = "SELECT COUNT(*) AS cnt FROM report r JOIN canteen c ON c.canteen_id = r.canteen_id WHERE 1=1";
+        
+        std::vector<int> params;
+        
+        if (city_id > 0) {
+            sql += " AND c.region_id IN (SELECT region_id FROM region WHERE parent_id = ?)";
+            params.push_back(city_id);
+        }
+        if (district_id > 0) {
+            sql += " AND c.region_id = ?";
+            params.push_back(district_id);
+        }
+        if (canteen_id > 0) {
+            sql += " AND c.canteen_id = ?";
+            params.push_back(canteen_id);
+        }
+        
+        std::string unprocessedSql = sql + " AND r.status = 0";
+        auto unprocessedStmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(unprocessedSql));
+        for (size_t i = 0; i < params.size(); i++) {
+            unprocessedStmt->setInt(i + 1, params[i]);
+        }
+        auto unprocessedRes = std::unique_ptr<sql::ResultSet>(unprocessedStmt->executeQuery());
+        if (unprocessedRes->next()) {
+            stats.unprocessed_count = unprocessedRes->getInt("cnt");
+        }
+
+        std::string totalSql = sql + " AND r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(days) + " DAY)";
+        auto totalStmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(totalSql));
+        for (size_t i = 0; i < params.size(); i++) {
+            totalStmt->setInt(i + 1, params[i]);
+        }
+        auto totalRes = std::unique_ptr<sql::ResultSet>(totalStmt->executeQuery());
+        if (totalRes->next()) {
+            stats.total_count = totalRes->getInt("cnt");
+        }
+
+        std::string todaySql = sql + " AND DATE(r.create_time) = CURDATE()";
+        auto todayStmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(todaySql));
+        for (size_t i = 0; i < params.size(); i++) {
+            todayStmt->setInt(i + 1, params[i]);
+        }
+        auto todayRes = std::unique_ptr<sql::ResultSet>(todayStmt->executeQuery());
+        if (todayRes->next()) {
+            stats.today_count = todayRes->getInt("cnt");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ReportDAO::getReportStatistics] Error: " << e.what() << std::endl;
+    }
+    return stats;
+}
+
+std::vector<std::pair<std::string, int>> ReportDAO::getReportTrend(sql::Connection *conn, int city_id, int district_id, int canteen_id, int days)
 {
     std::vector<std::pair<std::string, int>> result;
     try {
-        std::string dateCondition;
-        if (time_period == "day") {
-            dateCondition = "DATE(r.create_time) = CURDATE()";
-        } else if (time_period == "month") {
-            dateCondition = "YEAR(r.create_time) = YEAR(CURDATE()) AND MONTH(r.create_time) = MONTH(CURDATE())";
-        } else {
-            dateCondition = "YEAR(r.create_time) = YEAR(CURDATE())";
+        std::string sql = "SELECT DATE(r.create_time) AS date, COUNT(*) AS cnt "
+                          "FROM report r "
+                          "JOIN canteen c ON c.canteen_id = r.canteen_id "
+                          "WHERE r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(days) + " DAY)";
+
+        std::vector<int> params;
+        
+        if (city_id > 0) {
+            sql += " AND c.region_id IN (SELECT region_id FROM region WHERE parent_id = ?)";
+            params.push_back(city_id);
+        }
+        if (district_id > 0) {
+            sql += " AND c.region_id = ?";
+            params.push_back(district_id);
+        }
+        if (canteen_id > 0) {
+            sql += " AND c.canteen_id = ?";
+            params.push_back(canteen_id);
         }
 
-        std::string typeCondition = complaint_type > 0 ? "AND r.type = ? " : "";
-
-        std::string scopeCondition;
-        if (range_type == 0) {
-            scopeCondition = "";
-        } else if (range_type == 1) {
-            scopeCondition = "AND c.region_id IN (SELECT region_id FROM region WHERE parent_id = (SELECT region_id FROM admin WHERE user_id = ?)) ";
-        } else {
-            scopeCondition = "AND c.region_id = (SELECT region_id FROM admin WHERE user_id = ?) ";
-        }
-
-        std::string sql = R"(
-            SELECT c.name AS canteen_name, COUNT(*) AS cnt
-            FROM report r
-            JOIN canteen c ON c.canteen_id = r.canteen_id
-            WHERE )" + dateCondition + " " + typeCondition + scopeCondition +
-            "GROUP BY c.canteen_id, c.name ORDER BY cnt DESC";
+        sql += " GROUP BY DATE(r.create_time) ORDER BY date ASC";
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(sql));
-
-        int paramIdx = 1;
-        if (complaint_type > 0) {
-            stmt->setInt(paramIdx++, complaint_type);
+        for (size_t i = 0; i < params.size(); i++) {
+            stmt->setInt(i + 1, params[i]);
         }
-        if (range_type != 0) {
-            stmt->setInt(paramIdx, viewer_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            result.push_back({res->getString("date"), res->getInt("cnt")});
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ReportDAO::getReportTrend] Error: " << e.what() << std::endl;
+    }
+    return result;
+}
+
+std::vector<std::pair<int, std::pair<std::string, int>>> ReportDAO::getReportTypeDistribution(sql::Connection *conn, int city_id, int district_id, int canteen_id, int days)
+{
+    std::vector<std::pair<int, std::pair<std::string, int>>> result;
+    try {
+        std::string sql = "SELECT r.type, COUNT(*) AS cnt "
+                          "FROM report r "
+                          "JOIN canteen c ON c.canteen_id = r.canteen_id "
+                          "WHERE r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(days) + " DAY)";
+
+        std::vector<int> params;
+        
+        if (city_id > 0) {
+            sql += " AND c.region_id IN (SELECT region_id FROM region WHERE parent_id = ?)";
+            params.push_back(city_id);
+        }
+        if (district_id > 0) {
+            sql += " AND c.region_id = ?";
+            params.push_back(district_id);
+        }
+        if (canteen_id > 0) {
+            sql += " AND c.canteen_id = ?";
+            params.push_back(canteen_id);
         }
 
+        sql += " GROUP BY r.type ORDER BY cnt DESC";
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(sql));
+        for (size_t i = 0; i < params.size(); i++) {
+            stmt->setInt(i + 1, params[i]);
+        }
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            int type = res->getInt("type");
+            std::string typeName;
+            switch (type) {
+                case 1: typeName = "食品安全"; break;
+                case 2: typeName = "服务态度"; break;
+                case 3: typeName = "环境卫生"; break;
+                case 4: typeName = "其他"; break;
+                default: typeName = "未知"; break;
+            }
+            result.push_back({type, {typeName, res->getInt("cnt")}});
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ReportDAO::getReportTypeDistribution] Error: " << e.what() << std::endl;
+    }
+    return result;
+}
+
+std::vector<std::pair<std::string, int>> ReportDAO::getTopCanteenReports(sql::Connection *conn, int city_id, int district_id, int canteen_id, int days, int limit)
+{
+    std::vector<std::pair<std::string, int>> result;
+    try {
+        std::string sql = "SELECT c.name AS canteen_name, COUNT(*) AS cnt "
+                          "FROM report r "
+                          "JOIN canteen c ON c.canteen_id = r.canteen_id "
+                          "WHERE r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(days) + " DAY)";
+
+        std::vector<int> params;
+        
+        if (city_id > 0) {
+            sql += " AND c.region_id IN (SELECT region_id FROM region WHERE parent_id = ?)";
+            params.push_back(city_id);
+        }
+        if (district_id > 0) {
+            sql += " AND c.region_id = ?";
+            params.push_back(district_id);
+        }
+        if (canteen_id > 0) {
+            sql += " AND c.canteen_id = ?";
+            params.push_back(canteen_id);
+        }
+
+        sql += " GROUP BY c.canteen_id, c.name ORDER BY cnt DESC LIMIT " + std::to_string(limit);
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(sql));
+        for (size_t i = 0; i < params.size(); i++) {
+            stmt->setInt(i + 1, params[i]);
+        }
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
         while (res->next()) {
             result.push_back({res->getString("canteen_name"), res->getInt("cnt")});
         }
     } catch (const std::exception& e) {
-        std::cerr << "[ReportDAO::getReportSummaryByScope] Error: " << e.what() << std::endl;
+        std::cerr << "[ReportDAO::getTopCanteenReports] Error: " << e.what() << std::endl;
+    }
+    return result;
+}
+
+std::pair<std::vector<ReportVO>, int> ReportDAO::getReportsByFilters(sql::Connection *conn, int city_id, int district_id, int canteen_id, int type, int days, int page, int page_size)
+{
+    std::pair<std::vector<ReportVO>, int> result;
+    try {
+        std::string sql = " WHERE 1=1";
+        
+        std::vector<int> params;
+        
+        if (city_id > 0) {
+            sql += " AND c.region_id IN (SELECT region_id FROM region WHERE parent_id = ?)";
+            params.push_back(city_id);
+        }
+        if (district_id > 0) {
+            sql += " AND c.region_id = ?";
+            params.push_back(district_id);
+        }
+        if (canteen_id > 0) {
+            sql += " AND r.canteen_id = ?";
+            params.push_back(canteen_id);
+        }
+        if (type > 0) {
+            sql += " AND r.type = ?";
+            params.push_back(type);
+        }
+        if (days > 0) {
+            sql += " AND r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(days) + " DAY)";
+        }
+
+        std::string countSql = "SELECT COUNT(*) AS total FROM report r JOIN canteen c ON c.canteen_id = r.canteen_id" + sql;
+        auto countStmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(countSql));
+        for (size_t i = 0; i < params.size(); i++) {
+            countStmt->setInt(i + 1, params[i]);
+        }
+        auto countRes = std::unique_ptr<sql::ResultSet>(countStmt->executeQuery());
+        if (countRes->next()) {
+            result.second = countRes->getInt("total");
+        }
+
+        int offset = (page - 1) * page_size;
+        std::string dataSql = "SELECT r.report_id, r.user_id, u.username, r.canteen_id, c.name AS canteen_name, "
+                              "r.type, r.content, r.status, r.create_time, r.handle_time, r.handler_id, "
+                              "hu.username AS handler_name "
+                              "FROM report r JOIN users u ON u.user_id = r.user_id "
+                              "JOIN canteen c ON c.canteen_id = r.canteen_id "
+                              "LEFT JOIN users hu ON hu.user_id = r.handler_id" + sql +
+                              " ORDER BY r.create_time DESC LIMIT ? OFFSET ?";
+
+        auto dataStmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(dataSql));
+        for (size_t i = 0; i < params.size(); i++) {
+            dataStmt->setInt(i + 1, params[i]);
+        }
+        dataStmt->setInt(params.size() + 1, page_size);
+        dataStmt->setInt(params.size() + 2, offset);
+        auto dataRes = std::unique_ptr<sql::ResultSet>(dataStmt->executeQuery());
+
+        while (dataRes->next()) {
+            ReportVO vo;
+            vo.setReportId(dataRes->getInt("report_id"));
+            vo.setUserId(dataRes->getInt("user_id"));
+            vo.setUsername(dataRes->getString("username"));
+            vo.setCanteenId(dataRes->getInt("canteen_id"));
+            vo.setCanteenName(dataRes->getString("canteen_name"));
+            vo.setType(dataRes->getInt("type"));
+            vo.setContent(dataRes->getString("content"));
+            vo.setStatus(dataRes->getInt("status"));
+            vo.setCreateTime(dataRes->getString("create_time"));
+            if (!dataRes->isNull("handle_time")) {
+                vo.setHandleTime(dataRes->getString("handle_time"));
+            }
+            vo.setHandlerId(dataRes->getInt("handler_id"));
+            if (!dataRes->isNull("handler_name")) {
+                vo.setHandlerName(dataRes->getString("handler_name"));
+            }
+            result.first.push_back(vo);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ReportDAO::getReportsByFilters] Error: " << e.what() << std::endl;
     }
     return result;
 }

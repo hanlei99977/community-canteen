@@ -22,6 +22,7 @@ import Purchase from '../views/manager/Purchase.vue'
 import FinancialStatistics from '../views/manager/FinancialStatistics.vue'
 import MessageBoard from '../views/manager/MessageBoard.vue'
 import CanteenOrders from '../views/manager/CanteenOrders.vue'
+import ManagerReportView from '../views/manager/ManagerReportView.vue'
 // diner
 import CanteenList from '../views/diner/CanteenList.vue'
 import Menu from '../views/diner/Menu.vue'
@@ -51,6 +52,7 @@ const routes = [
       { path: '/financialStatistics', component: FinancialStatistics},
       { path: '/canteenOrders', component: CanteenOrders},
       { path: '/messageBoard', component: MessageBoard},
+      { path: '/managerReport', component: ManagerReportView},
       { path: '/adminManage', component: AdminManage},
       { path: '/adminApply', component: AdminApply},
       { path: '/managerApply', component: ManagerApply},

@@ -82,6 +82,10 @@
           留言板
         </el-menu-item>
 
+        <el-menu-item v-if="isCanteenAdmin" index="/managerReport">
+          举报汇总
+        </el-menu-item>
+
         <!-- ================== 所有用户 ================== -->
         <el-menu-item index="/userCenter">用户中心</el-menu-item>
       </el-menu>

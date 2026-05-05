@@ -106,6 +106,7 @@ void Controller::registerOrderRoutes(httplib::Server& server) {
     server.Get("/getOrders", handleGetOrders);
     server.Get("/orderDetails", handleOrderDetails);
     server.Post("/rating", handleRating);
+    server.Get("/getRating", handleGetRating);
     // 食堂订单相关
     server.Get("/canteenOrders", handleCanteenOrders);
     server.Post("/updateOrderStatus", handleUpdateOrderStatus);
@@ -903,6 +904,33 @@ void Controller::handleRating(const httplib::Request& req, httplib::Response& re
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleRating] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleGetRating(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int order_id = std::stoi(req.get_param_value("order_id"));
+
+        RatingService service;
+        auto ratingOpt = service.getRatingByOrderId(order_id);
+
+        if (ratingOpt.has_value()) {
+            auto rating = ratingOpt.value();
+            json data;
+            data["order_id"] = rating.getOrderId();
+            data["username"] = rating.getUsername();
+            data["score"] = rating.getScore();
+            data["comment"] = rating.getComment();
+            data["time"] = rating.getTime();
+            res.set_content(Response::success(data), "application/json");
+        } else {
+            res.set_content(Response::error(404, "暂无评价"), "application/json");
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetRating] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
 

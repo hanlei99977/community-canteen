@@ -1758,6 +1758,13 @@ std::pair<std::vector<RatingVO>, int> RatingService::getCanteenRatingsPaginated(
     return dao.getRatingsByCanteenPaginated(conn, canteen_id, page, page_size);
 }
 
+std::optional<RatingVO> RatingService::getRatingByOrderId(int order_id) {
+    RatingDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getRatingByOrderId(conn, order_id);
+}
+
 /**********************************************
  * ReportService
  *********************************************/

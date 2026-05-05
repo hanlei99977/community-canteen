@@ -202,6 +202,7 @@ public:
     std::vector<Rating> getRatings(int canteen_id);
     std::vector<CanteenRatingVO> getCanteenRatingDetails(int canteen_id);
     std::pair<std::vector<RatingVO>, int> getCanteenRatingsPaginated(int canteen_id, int page, int page_size);
+    std::optional<RatingVO> getRatingByOrderId(int order_id);
 };
 
 // ================================

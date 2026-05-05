@@ -108,6 +108,7 @@ private:
     
     /*************************************评价**************************************/
     static void handleRating(const httplib::Request& req, httplib::Response& res);
+    static void handleGetRating(const httplib::Request& req, httplib::Response& res);
     static void handleReport(const httplib::Request& req, httplib::Response& res);
     /*************************************数据统计**************************************/
     static void handleFinancialStatistics(const httplib::Request& req, httplib::Response& res);

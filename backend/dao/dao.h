@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <vector>
+#include <optional>
 #include "../model/model.h"
 #include "../model/vo.h"
 #include "../model/dto.h"
@@ -222,6 +223,7 @@ public:
     std::vector<Rating> getRatingsByCanteen(sql::Connection *conn, int canteen_id);
     std::vector<CanteenRatingVO> getCanteenRatingDetails(sql::Connection *conn, int canteen_id);
     std::pair<std::vector<RatingVO>, int> getRatingsByCanteenPaginated(sql::Connection *conn, int canteen_id, int page, int page_size);
+    std::optional<RatingVO> getRatingByOrderId(sql::Connection *conn, int order_id);
 };
 
 // ================================

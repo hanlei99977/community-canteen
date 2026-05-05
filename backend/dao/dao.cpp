@@ -2473,6 +2473,38 @@ std::pair<std::vector<RatingVO>, int> RatingDAO::getRatingsByCanteenPaginated(sq
     return result;
 }
 
+std::optional<RatingVO> RatingDAO::getRatingByOrderId(sql::Connection *conn, int order_id)
+{
+    RatingVO vo;
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(R"(
+                SELECT r.user_id, u.username, r.canteen_id, r.order_id, r.score, r.comment, r.time
+                FROM rating r
+                JOIN users u ON u.user_id = r.user_id
+                WHERE r.order_id = ?
+            )")
+        );
+        stmt->setInt(1, order_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            vo.setUserId(res->getInt("user_id"));
+            vo.setUsername(res->getString("username"));
+            vo.setCanteenId(res->getInt("canteen_id"));
+            vo.setOrderId(res->getInt("order_id"));
+            vo.setScore(res->getInt("score"));
+            vo.setComment(res->getString("comment"));
+            vo.setTime(res->getString("time"));
+        }
+        else {
+            return std::nullopt;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[RatingDAO::getRatingByOrderId] Error: " << e.what() << std::endl;
+    }
+    return vo;
+}
+
 /***************************************************************************************
  * ReportDao
 ***************************************************************************************/

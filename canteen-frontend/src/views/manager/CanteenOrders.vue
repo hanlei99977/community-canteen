@@ -65,7 +65,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="250">
+      <el-table-column label="操作" width="320">
         <template #default="scope">
           <el-button
             type="primary"
@@ -81,6 +81,14 @@
             @click="updateOrderStatus(scope.row.order_id, 1)"
           >
             标记为已完成
+          </el-button>
+          <el-button
+            v-if="scope.row.status === 1"
+            type="info"
+            size="small"
+            @click="viewRating(scope.row.order_id)"
+          >
+            查看评价
           </el-button>
         </template>
       </el-table-column>
@@ -156,6 +164,46 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 评价弹窗 -->
+    <el-dialog
+      v-model="ratingDialogVisible"
+      title="订单评价"
+      width="500px"
+    >
+      <div v-if="currentRating">
+        <el-form label-width="100px">
+          <el-form-item label="订单ID">
+            <span>{{ currentRating.order_id }}</span>
+          </el-form-item>
+          <el-form-item label="用餐者">
+            <span>{{ currentRating.username }}</span>
+          </el-form-item>
+          <el-form-item label="评分">
+            <div class="rating-stars">
+              <span v-for="i in 5" :key="i" class="star">
+                {{ i <= currentRating.score ? '★' : '☆' }}
+              </span>
+              <span class="score-text">({{ currentRating.score }}分)</span>
+            </div>
+          </el-form-item>
+          <el-form-item label="评价内容">
+            <span>{{ currentRating.comment }}</span>
+          </el-form-item>
+          <el-form-item label="评价时间">
+            <span>{{ currentRating.time }}</span>
+          </el-form-item>
+        </el-form>
+      </div>
+      <div v-else class="no-rating">
+        <p>该订单暂无评价</p>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="ratingDialogVisible = false">关闭</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -168,8 +216,10 @@ const orders = ref([])
 const cancelApplies = ref([])
 const rejectDialogVisible = ref(false)
 const orderDetailsDialogVisible = ref(false)
+const ratingDialogVisible = ref(false)
 const currentCancelApply = ref(null)
 const currentOrderDetails = ref(null)
+const currentRating = ref(null)
 const activeStatusTab = ref('0') // 默认显示未完成订单
 const rejectForm = ref({
   reject_reason: ''
@@ -338,6 +388,27 @@ const viewOrderDetails = async (order) => {
   } catch (error) {
     console.error('获取订单详情失败:', error)
     ElMessage.error('获取订单详情失败')
+  }
+}
+
+// 查看评价
+const viewRating = async (order_id) => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/getRating', {
+      params: {
+        order_id
+      }
+    })
+    if (res.data.code === 0) {
+      currentRating.value = res.data.data
+    } else {
+      currentRating.value = null
+    }
+    ratingDialogVisible.value = true
+  } catch (error) {
+    console.error('获取评价失败:', error)
+    currentRating.value = null
+    ratingDialogVisible.value = true
   }
 }
 

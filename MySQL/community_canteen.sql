@@ -81,7 +81,6 @@ CREATE TABLE diner(
     family_id int DEFAULT 1,
     region_id INT,
     disease_history varchar(100),  -- 疾病史
-    taste_preference varchar(100),  -- 口味偏好
     FOREIGN KEY (region_id) REFERENCES region(region_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (family_id) REFERENCES family(family_id)

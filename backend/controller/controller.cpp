@@ -1011,7 +1011,6 @@ void Controller::handleUserCenter(const httplib::Request& req, httplib::Response
                 {"familyId", user->getFamilyId()},
                 {"familyName", user->getFamilyName()},
                 {"diseaseHistory", user->getDiseaseHistory()},
-                {"tastePreference", user->getTastePreference()},
                 {"canteenId", user->getCanteenId()},
                 {"canteenName", user->getCanteenName()},
                 {"adminLevel", user->getAdminLevel()},
@@ -1046,7 +1045,6 @@ void Controller::handleUserCenterUpdate(const httplib::Request& req, httplib::Re
         user.setPhone(getStringSafe(body, "phone"));
         user.setIdCard(getStringSafe(body, "id_card"));
         user.setDiseaseHistory(getStringSafe(body, "disease_history"));
-        user.setTastePreference(getStringSafe(body, "taste_preference"));
         user.setRegionId(getIntSafe(body, "region_id"));
         user.setFamilyId(getIntSafe(body, "family_id"));
 
@@ -1317,7 +1315,6 @@ void Controller::handleDinerList(const httplib::Request& req, httplib::Response&
                 {"region_id", dinerInfo.getRegionId()},
                 {"region_name", dinerInfo.getRegionName()},
                 {"disease_history", dinerInfo.getDiseaseHistory()},
-                {"taste_preference", dinerInfo.getTastePreference()}
             });
         }
         res.set_content(Response::success(arr), "application/json");

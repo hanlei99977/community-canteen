@@ -24,18 +24,6 @@
         <!-- ================== 用餐者专属信息 ================== -->
         <template v-if="isDiner">
           <el-divider content-position="left">用餐者信息</el-divider>
-
-          <!-- 饮食习惯 -->
-          <el-form-item label="饮食偏好">
-            <el-select v-model="form.taste_preference" placeholder="请选择">
-              <el-option label="清淡" value="清淡" />
-              <el-option label="低糖" value="低糖" />
-              <el-option label="低脂" value="低脂" />
-              <el-option label="咸口" value="咸口" />
-              <el-option label="辣口" value="辣口" />
-            </el-select>
-          </el-form-item>
-
           <!-- 疾病史 -->
           <el-form-item label="疾病史(如有)">
             <el-select v-model="form.disease_history" placeholder="请选择">
@@ -188,7 +176,6 @@ const form = ref({
   phone: '',
   id_card: '',
   address: '',
-  taste_preference: '',
   disease_history: '',
   family_id: '',
   family_name: '',
@@ -267,7 +254,6 @@ const getUserInfo = async () => {
       phone: data.phone,
       id_card: data.id_card,
       address: data.address,
-      taste_preference: data.tastePreference || '',
       disease_history: data.diseaseHistory || '',
       family_id: data.familyId || '',
       family_name: data.familyName || '',
@@ -316,7 +302,6 @@ const updateUser = async () => {
       phone: form.value.phone,
       address: form.value.address,
       id_card: form.value.id_card,
-      taste_preference: form.value.taste_preference,
       disease_history: form.value.disease_history,
       family_id: form.value.family_id,
       region_id: form.value.region_id

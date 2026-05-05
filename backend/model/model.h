@@ -130,7 +130,6 @@ private:
     int family_id;
     int region_id;
     std::string disease_history;
-    std::string taste_preference;
 
 public:
     int getUserId() const { return user_id; }
@@ -144,9 +143,6 @@ public:
 
     std::string getDiseaseHistory() const { return disease_history; }
     void setDiseaseHistory(const std::string& d) { disease_history = d; }
-
-    std::string getTastePreference() const { return taste_preference; }
-    void setTastePreference(const std::string& t) { taste_preference = t; }
 };
 
 // ================================

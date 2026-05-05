@@ -835,7 +835,6 @@ std::shared_ptr<Diner> DinerDAO::getDinerByUserId(sql::Connection *conn, int use
             d->setUserId(res->getInt("user_id"));
             d->setFamilyId(res->getInt("family_id"));
             d->setDiseaseHistory(res->getString("disease_history"));
-            d->setTastePreference(res->getString("taste_preference"));
             return d;
         }
     } catch (const std::exception& e) {
@@ -849,7 +848,7 @@ std::shared_ptr<UserCenterVO> DinerDAO::getDinerCenterByUserId(sql::Connection *
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "SELECT u.username, u.age, u.phone, u.id_card, r.region_id, r.region_name, d.family_id, f.family_name, d.disease_history, d.taste_preference "
+                "SELECT u.username, u.age, u.phone, u.id_card, r.region_id, r.region_name, d.family_id, f.family_name, d.disease_history "
                 "FROM users u JOIN diner d ON u.user_id = d.user_id "
                 "JOIN region r ON r.region_id = d.region_id "
                 "LEFT JOIN family f ON d.family_id = f.family_id "
@@ -872,7 +871,7 @@ std::shared_ptr<UserCenterVO> DinerDAO::getDinerCenterByUserId(sql::Connection *
             vo->setFamilyId(res->getInt("family_id"));
             vo->setFamilyName(res->getString("family_name"));
             vo->setDiseaseHistory(res->getString("disease_history"));
-            vo->setTastePreference(res->getString("taste_preference"));
+
             return vo;
         }
     } catch (const std::exception& e) {
@@ -922,16 +921,15 @@ bool DinerDAO::updateDiner(sql::Connection *conn, const UserCenterVO& diner) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "UPDATE diner SET family_id=?, disease_history=?, taste_preference=?, region_id=?  "
+                "UPDATE diner SET family_id=?, disease_history=?, region_id=?  "
                 "WHERE user_id=?"
             )
         );
 
         stmt->setInt(1, diner.getFamilyId());
         stmt->setString(2, diner.getDiseaseHistory());
-        stmt->setString(3, diner.getTastePreference());
-        stmt->setInt(4, diner.getRegionId());
-        stmt->setInt(5, diner.getUserId());
+        stmt->setInt(3, diner.getRegionId());
+        stmt->setInt(4, diner.getUserId());
         if (stmt->executeUpdate() == 0) {
             std::cout<<"没有对diner表进行更新"<<std::endl; 
         }
@@ -972,7 +970,7 @@ std::vector<DinerInformation> DinerDAO::getDinerList(sql::Connection *conn)
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "SELECT u.user_id, u.username, u.age, u.phone, u.status, r.region_id, r.region_name, d.disease_history, d.taste_preference "
+                "SELECT u.user_id, u.username, u.age, u.phone, u.status, r.region_id, r.region_name, d.disease_history, "
                 "FROM users u "
                 "JOIN diner d ON u.user_id = d.user_id "
                 "LEFT JOIN region r ON d.region_id = r.region_id "
@@ -991,7 +989,6 @@ std::vector<DinerInformation> DinerDAO::getDinerList(sql::Connection *conn)
             dinerInfo.setRegionName(res->getString("region_name"));
             dinerInfo.setStatus(res->getInt("status"));
             dinerInfo.setDiseaseHistory(res->getString("disease_history"));
-            dinerInfo.setTastePreference(res->getString("taste_preference"));
 
             list.push_back(dinerInfo);
         }

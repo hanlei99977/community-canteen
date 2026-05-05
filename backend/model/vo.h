@@ -483,7 +483,6 @@ private:
     std::string region_name;
     int status;
     std::string disease_history;
-    std::string taste_preference;
 
 public:
     // GETTER & SETTER 完全统一风格
@@ -509,9 +508,6 @@ public:
 
     std::string getDiseaseHistory() const { return disease_history; }
     void setDiseaseHistory(const std::string& d) { disease_history = d; }
-
-    std::string getTastePreference() const { return taste_preference; }
-    void setTastePreference(const std::string& t) { taste_preference = t; }
 };
 
 // 家庭成员（下单对象）VO

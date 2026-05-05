@@ -143,6 +143,7 @@ public:
     int updateDish(sql::Connection *conn, int dish_id, double price, int calories, const std::string& nutrition_info);
     bool disableDishByDishId(sql::Connection *conn, const int dish_id);
     bool enableDishByDishId(sql::Connection *conn, const int dish_id);
+    std::vector<std::pair<std::string, int>> getDishSales(sql::Connection *conn, int canteen_id, const std::string& time_range, int limit);
 };
 
 // ================================

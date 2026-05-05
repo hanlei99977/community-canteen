@@ -1,6 +1,17 @@
 <template>
   <div>
 
+    <!-- 销量统计卡片 -->
+    <el-card class="sales-card" style="margin-bottom: 20px;">
+      <template #header>
+        <div class="card-header">
+          <span>销量排行榜</span>
+          <el-button type="text" @click="openSalesDialog">查看更多</el-button>
+        </div>
+      </template>
+      <div ref="salesChartRef" style="height: 200px;"></div>
+    </el-card>
+
     <!-- 标题 + 新建 -->
     <div style="display:flex;justify-content: space-between;align-items: center;margin-bottom: 20px;">
       <h2>菜品管理</h2>
@@ -175,13 +186,29 @@
 
     </el-dialog>
 
+    <!-- 销量排行弹窗 -->
+    <el-dialog v-model="salesDialogVisible" title="销量排行榜" width="700px">
+      <div style="margin-bottom: 20px;">
+        <el-radio-group v-model="salesTimeRange" size="small" @change="handleTimeRangeChange">
+          <el-radio label="today">今日</el-radio>
+          <el-radio label="7days">近7天</el-radio>
+          <el-radio label="30days">近30天</el-radio>
+        </el-radio-group>
+      </div>
+      <div ref="salesDialogChartRef" style="height: 400px;"></div>
+      <template #footer>
+        <el-button @click="salesDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import * as echarts from 'echarts'
 
 const getUser = () => JSON.parse(localStorage.getItem("user"))
 
@@ -200,6 +227,13 @@ const offDishList = computed(() =>
 
 const addDialogVisible = ref(false)
 const editDialogVisible = ref(false)
+const salesDialogVisible = ref(false)
+const salesTimeRange = ref('7days')
+const salesChartRef = ref(null)
+const salesDialogChartRef = ref(null)
+const salesChart = ref(null)
+const salesDialogChart = ref(null)
+const salesData = ref([])
 
 const addForm = ref({
   canteen_id: '',
@@ -379,8 +413,157 @@ const enableDish = async (dish_id) => {
   getDishes()
 }
 
+// 获取销量数据
+const getSalesData = async (timeRange = '7days', limit = 3) => {
+  const user = getUser()
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/dishSales', {
+      params: {
+        canteen_id: user.canteen_id,
+        time_range: timeRange,
+        limit: limit
+      }
+    })
+    if (res.data.code === 0) {
+      return res.data.data
+    }
+  } catch (error) {
+    console.error('获取销量数据失败:', error)
+  }
+  return []
+}
+
+// 渲染顶部销量图表（显示前3名）
+const renderSalesChart = async () => {
+  await nextTick()
+  if (!salesChartRef.value) return
+  
+  salesData.value = await getSalesData('7days', 3)
+  
+  if (salesChart.value) {
+    salesChart.value.dispose()
+  }
+  
+  salesChart.value = echarts.init(salesChartRef.value)
+  
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    grid: {
+      left: '15%',
+      right: '15%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'value',
+      name: '销量'
+    },
+    yAxis: {
+      type: 'category',
+      data: salesData.value.length > 0 ? salesData.value.map(item => item.name) : ['暂无数据'],
+      inverse: true
+    },
+    series: [
+      {
+        name: '销量',
+        type: 'bar',
+        data: salesData.value.length > 0 ? salesData.value.map(item => ({
+          value: item.sales,
+          label: {
+            show: true,
+            position: 'right',
+            formatter: '{c}份'
+          }
+        })) : [0],
+        barWidth: '60%'
+      }
+    ]
+  }
+  
+  salesChart.value.setOption(option)
+}
+
+// 渲染弹窗销量图表（显示前20名）
+const renderSalesDialogChart = async () => {
+  await nextTick()
+  if (!salesDialogChartRef.value) return
+  
+  const data = await getSalesData(salesTimeRange.value, 15)
+  
+  if (salesDialogChart.value) {
+    salesDialogChart.value.dispose()
+  }
+  
+  salesDialogChart.value = echarts.init(salesDialogChartRef.value)
+  
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    grid: {
+      left: '18%',
+      right: '15%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'value',
+      name: '销量'
+    },
+    yAxis: {
+      type: 'category',
+      data: data.length > 0 ? data.map(item => item.name) : ['暂无数据'],
+      inverse: true
+    },
+    series: [
+      {
+        name: '销量',
+        type: 'bar',
+        data: data.length > 0 ? data.map(item => ({
+          value: item.sales,
+          label: {
+            show: true,
+            position: 'right',
+            formatter: '{c}份'
+          }
+        })) : [0],
+        barWidth: '50%'
+      }
+    ]
+  }
+  
+  salesDialogChart.value.setOption(option)
+}
+
+// 打开销量弹窗
+const openSalesDialog = async () => {
+  salesDialogVisible.value = true
+  salesTimeRange.value = '7days'
+  await nextTick()
+  renderSalesDialogChart()
+}
+
+// 时间范围改变时重新加载图表
+const handleTimeRangeChange = () => {
+  renderSalesDialogChart()
+}
+
 onMounted(() => {
   getAllTags()
   getDishes()
+  renderSalesChart()
+  
+  window.addEventListener('resize', () => {
+    salesChart.value?.resize()
+    salesDialogChart.value?.resize()
+  })
 })
 </script>

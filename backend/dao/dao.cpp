@@ -1561,6 +1561,44 @@ bool DishDAO::enableDishByDishId(sql::Connection *conn, const int dish_id){
 
 }
 
+std::vector<std::pair<std::string, int>> DishDAO::getDishSales(sql::Connection *conn, int canteen_id, const std::string& time_range, int limit) {
+    std::vector<std::pair<std::string, int>> result;
+    try {
+        int days = 7;
+        if (time_range == "today") {
+            days = 1;
+        } else if (time_range == "7days") {
+            days = 7;
+        } else if (time_range == "30days") {
+            days = 30;
+        }
+
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(R"(
+                SELECT d.name, SUM(oi.quantity) as sales
+                FROM order_item oi
+                JOIN `orders` o ON oi.order_id = o.order_id
+                JOIN dish d ON oi.dish_id = d.dish_id
+                WHERE d.canteen_id = ? AND o.status = 1 AND o.order_time >= DATE_SUB(NOW(), INTERVAL ? DAY)
+                GROUP BY d.dish_id, d.name
+                ORDER BY sales DESC
+                LIMIT ?
+            )")
+        );
+        stmt->setInt(1, canteen_id);
+        stmt->setInt(2, days);
+        stmt->setInt(3, limit);
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            result.emplace_back(res->getString("name"), res->getInt("sales"));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DishDAO::getDishSales] Error: " << e.what() << std::endl;
+    }
+    return result;
+}
+
 /***************************************************************************************
  * MenuDao
  ***************************************************************************************/

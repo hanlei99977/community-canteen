@@ -61,6 +61,7 @@ private:
     static void handleCreateDish(const httplib::Request& req, httplib::Response& res);
     static void handleDisableDish(const httplib::Request& req, httplib::Response& res);
     static void handleEnableDish(const httplib::Request& req, httplib::Response& res);
+    static void handleDishSales(const httplib::Request& req, httplib::Response& res);
     // 留言板
     static void handleCreateMessage(const httplib::Request& req, httplib::Response& res);
     static void handleGetUserMessages(const httplib::Request& req, httplib::Response& res);

@@ -133,6 +133,7 @@ void Controller::registerCanteenRoutes(httplib::Server& server) {
     server.Post("/dishDisable", handleDisableDish);
     server.Post("/dishEnable", handleEnableDish);
     server.Post("/dishUpdate", handleUpdateDish);
+    server.Get("/dishSales", handleDishSales);
     //标签
     server.Get("/getAllTags", handleGetAllTags);
     server.Get("/getDishTags", handleGetDishTags);
@@ -560,6 +561,32 @@ void Controller::handleEnableDish(const httplib::Request& req, httplib::Response
     } catch (const std::exception& e) {
         std::cerr << "上架菜品失败: " << e.what() << std::endl;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleDishSales(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        std::string time_range = req.get_param_value("time_range");
+        int limit = std::stoi(req.get_param_value("limit"));
+
+        DishService service;
+        auto sales = service.getDishSales(canteen_id, time_range, limit);
+
+        json data = json::array();
+        for (const auto& pair : sales) {
+            json item;
+            item["name"] = pair.first;
+            item["sales"] = pair.second;
+            data.push_back(item);
+        }
+
+        res.set_content(Response::success(data), "application/json");
+
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleDishSales] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
 

@@ -1463,6 +1463,13 @@ bool DishService::enableDishByDishId(int dish_id) {
     return dao.enableDishByDishId(conn, dish_id);
 }
 
+std::vector<std::pair<std::string, int>> DishService::getDishSales(int canteen_id, const std::string& time_range, int limit) {
+    DishDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getDishSales(conn, canteen_id, time_range, limit);
+}
+
 /**********************************************
  * OrderService
  *********************************************/

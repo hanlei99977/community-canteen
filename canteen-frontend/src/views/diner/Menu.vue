@@ -81,7 +81,14 @@
 
     <el-table v-else :data="dishes" style="width: 100%">
       <el-table-column prop="id" label="ID" width="100" />
-      <el-table-column prop="name" label="菜品名称" />
+      <el-table-column label="菜品名称">
+        <template #default="scope">
+          <span>{{ scope.row.name }}</span>
+          <el-tag v-for="(tag, index) in scope.row.tags" :key="index" size="small" style="margin-left: 8px;">
+            {{ tag }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="价格" width="180">
         <template #default="scope">
           <div>

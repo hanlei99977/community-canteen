@@ -362,16 +362,26 @@ void Controller::handleMenu(const httplib::Request& req, httplib::Response& res)
         MenuService service;
         auto dishes = service.getMenuByMealType(canteen_id, meal_type);
 
+        TagService tagService;
+
         json arr = json::array();
 
         for (const auto& d : dishes) {
+            auto tags = tagService.getTagsByDishId(d.getId());
+            
+            json tagNames = json::array();
+            for (const auto& tag : tags) {
+                tagNames.push_back(tag.getName());
+            }
+
             arr.push_back({
                 {"id", d.getId()},
                 {"name", d.getName()},
                 {"price", d.getPrice()},
                 {"type", d.getType()},
                 {"calories", d.getCalories()},
-                {"nutrition_info", d.getNutritionInfo()}
+                {"nutrition_info", d.getNutritionInfo()},
+                {"tags", tagNames}
             });
             std::cout << "菜单项：id=" << d.getId() << ", name=" << d.getName() << ", price=" << d.getPrice() << ", type=" << d.getType() << ", calories=" << d.getCalories() << std::endl;
         }

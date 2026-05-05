@@ -10,7 +10,6 @@
           style="width: 120px"
           @change="getMenu"
         >
-          <el-option label="早餐" value="早餐"/>
           <el-option label="午餐" value="午餐"/>
           <el-option label="晚餐" value="晚餐"/>
         </el-select>

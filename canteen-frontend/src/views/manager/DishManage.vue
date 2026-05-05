@@ -5,7 +5,7 @@
     <el-card class="sales-card" style="margin-bottom: 20px;">
       <template #header>
         <div class="card-header">
-          <span>销量排行榜</span>
+          <span>销量排行榜(7天)</span>
           <el-button type="text" @click="openSalesDialog">查看更多</el-button>
         </div>
       </template>

@@ -140,6 +140,7 @@ class DishDAO {
 public:
     std::vector<Dish> getDishesByCanteen(sql::Connection *conn, int canteen_id);
     std::shared_ptr<Dish> getDishById(sql::Connection *conn, int dish_id);
+    DishDetailVO getDishDetail(sql::Connection *conn, int dish_id);
     int insertDish(sql::Connection *conn, const Dish& dish);
     int updateDish(sql::Connection *conn, int dish_id, double price, int calories, const std::string& nutrition_info);
     bool disableDishByDishId(sql::Connection *conn, const int dish_id);
@@ -185,9 +186,7 @@ public:
     // 获取最近订单
     std::shared_ptr<RecentOrderVO> getRecentOrder(sql::Connection *conn, int user_id, int order_for_user_id, int canteen_id);
     // 用餐偏好相关方法
-    DiningPreferenceSummary getDiningPreferenceSummary(sql::Connection *conn, int user_id, const std::string& time_dimension);
-    std::vector<std::pair<std::string, int>> getCanteenConsumptionCount(sql::Connection *conn, int user_id, const std::string& time_dimension);
-    std::vector<std::pair<std::string, int>> getDishConsumptionCount(sql::Connection *conn, int user_id, const std::string& time_dimension);
+    std::vector<DishPurchaseRankingItem> getDishPurchaseRanking(sql::Connection *conn, int user_id, const std::string& time_dimension);
     // 获取食堂订单
     std::vector<OrderVO> getOrdersByCanteen(sql::Connection *conn, int canteen_id);
     // 更新订单状态
@@ -310,6 +309,14 @@ public:
     bool deleteFavorite(sql::Connection *conn, int user_id, int dish_id);
     bool existsFavorite(sql::Connection *conn, int user_id, int dish_id);
     std::vector<Favorite> getFavoritesByUserId(sql::Connection *conn, int user_id);
+};
+
+// ================================
+// 用户用餐偏好
+// ================================
+class DinerPreferenceDAO {
+public:
+    std::vector<std::pair<int, int>> getUserPreferences(sql::Connection *conn, int user_id);
 };
 
 

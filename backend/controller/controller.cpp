@@ -117,6 +117,8 @@ void Controller::registerOrderRoutes(httplib::Server& server) {
     server.Post("/report", handleReport);
     // 用餐偏好
     server.Get("/diningPreference", handleDiningPreference);
+    server.Get("/dishPurchaseRanking", handleGetDishPurchaseRanking);
+    server.Get("/dishDetail", handleGetDishDetail);
 }
 
 // 食堂相关路由
@@ -2311,44 +2313,84 @@ void Controller::handleMarkMessageAsRead(const httplib::Request& req, httplib::R
 void Controller::handleDiningPreference(const httplib::Request& req, httplib::Response& res) {
     try {
         int user_id = std::stoi(req.get_param_value("user_id"));
-        std::string time_dimension = req.get_param_value("time_dimension");
-        
-        if (time_dimension.empty()) {
-            time_dimension = "month"; // 默认显示最近一月
-        }
-        
+
         OrderService service;
-        auto preference = service.getDiningPreference(user_id, time_dimension);
-        
-        // 构建返回数据
+        auto preference = service.getDiningPreference(user_id, "month");
+
         json data;
-        data["total_amount"] = preference.getSummary().getTotalAmount();
-        data["order_count"] = preference.getSummary().getOrderCount();
-        data["canteen_count"] = preference.getSummary().getCanteenCount();
-        
-        json canteen_consumption = json::array();
-        for (const auto& item : preference.getCanteenConsumption()) {
+        json tag_preference = json::array();
+        for (const auto& item : preference.getTagPreference()) {
             json item_data;
             item_data["name"] = item.getName();
             item_data["count"] = item.getCount();
-            canteen_consumption.push_back(item_data);
+            tag_preference.push_back(item_data);
         }
-        data["canteen_consumption"] = canteen_consumption;
-        
-        json dish_consumption = json::array();
-        for (const auto& item : preference.getDishConsumption()) {
-            json item_data;
-            item_data["name"] = item.getName();
-            item_data["count"] = item.getCount();
-            dish_consumption.push_back(item_data);
-        }
-        data["dish_consumption"] = dish_consumption;
-        
+        data["tag_preference"] = tag_preference;
+
         res.status = 200;
         res.set_content(Response::success(data), "application/json");
-        
+
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleGetMessages] Error: " << e.what() << std::endl;
+        res.status = 500;
+        res.set_content(Response::error(500, "服务器错误"), "application/json");
+    }
+}
+
+// 处理菜品购买排行榜请求
+void Controller::handleGetDishPurchaseRanking(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        std::string time_dimension = req.get_param_value("time_dimension");
+
+        if (time_dimension.empty()) {
+            time_dimension = "month";
+        }
+
+        OrderService service;
+        auto ranking = service.getDishPurchaseRanking(user_id, time_dimension);
+
+        json data = json::array();
+        for (const auto& item : ranking) {
+            json item_data;
+            item_data["dish_id"] = item.getDishId();
+            item_data["dish_name"] = item.getDishName();
+            item_data["canteen_name"] = item.getCanteenName();
+            item_data["quantity"] = item.getQuantity();
+            data.push_back(item_data);
+        }
+
+        res.status = 200;
+        res.set_content(Response::success(data), "application/json");
+
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetDishPurchaseRanking] Error: " << e.what() << std::endl;
+        res.status = 500;
+        res.set_content(Response::error(500, "服务器错误"), "application/json");
+    }
+}
+
+void Controller::handleGetDishDetail(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int dish_id = std::stoi(req.get_param_value("dish_id"));
+
+        DishService service;
+        auto detail = service.getDishDetail(dish_id);
+
+        json data;
+        data["dish_id"] = detail.getDishId();
+        data["dish_name"] = detail.getDishName();
+        data["canteen_name"] = detail.getCanteenName();
+        data["price"] = detail.getPrice();
+        data["calories"] = detail.getCalories();
+        data["nutrition_info"] = detail.getNutritionInfo();
+        data["tags"] = detail.getTags();
+
+        res.status = 200;
+        res.set_content(Response::success(data), "application/json");
+
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetDishDetail] Error: " << e.what() << std::endl;
         res.status = 500;
         res.set_content(Response::error(500, "服务器错误"), "application/json");
     }

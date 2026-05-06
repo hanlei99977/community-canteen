@@ -30,6 +30,8 @@ private:
     /*************************************用餐者**************************************/
     // 用餐偏好
     static void handleDiningPreference(const httplib::Request& req, httplib::Response& res);
+    static void handleGetDishPurchaseRanking(const httplib::Request& req, httplib::Response& res);
+    static void handleGetDishDetail(const httplib::Request& req, httplib::Response& res);
     // 家庭
     static void handleFamilyList(const httplib::Request& req, httplib::Response& res);
     static void handleCreateFamily(const httplib::Request& req, httplib::Response& res);

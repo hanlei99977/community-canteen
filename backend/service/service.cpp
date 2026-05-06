@@ -1406,6 +1406,13 @@ std::shared_ptr<Dish> DishService::getDishById(int dish_id) {
     return dao.getDishById(conn, dish_id);
 }
 
+DishDetailVO DishService::getDishDetail(int dish_id) {
+    DishDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getDishDetail(conn, dish_id);
+}
+
 int DishService::insertDish(const Dish& dish, const std::vector<int>& tag_ids) {
     DishDAO dao;
     DBConnectionGuard guard;
@@ -1691,36 +1698,79 @@ DiningPreference OrderService::getDiningPreference(int user_id, const std::strin
         OrderDAO dao;
         DBConnectionGuard guard;
         auto* conn = guard.get();
-        
-        // 获取用餐偏好摘要
-        auto summary = dao.getDiningPreferenceSummary(conn, user_id, time_dimension);
-        DiningPreferenceSummary summary_vo;
-        summary_vo.setTotalAmount(summary.getTotalAmount());
-        summary_vo.setOrderCount(summary.getOrderCount());
-        summary_vo.setCanteenCount(summary.getCanteenCount());
-        preference.setSummary(summary_vo);
-        
-        // 获取餐厅消费次数
-        auto canteen_consumption = dao.getCanteenConsumptionCount(conn, user_id, time_dimension);
-        for (const auto& item : canteen_consumption) {
-            ConsumptionItem consumption_item;
-            consumption_item.setName(item.first);
-            consumption_item.setCount(item.second);
-            preference.addCanteenConsumption(consumption_item);
+
+        // 计算标签偏好：收藏标签 × 0.7 + diner_preference × 0.3
+        std::map<int, double> tagWeights;
+        FavoriteDAO favoriteDao;
+        auto favorites = favoriteDao.getFavoritesByUserId(conn, user_id);
+        DishTagDAO dishTagDao;
+        for (const auto& fav : favorites) {
+            auto tagIds = dishTagDao.getTagIdsByDishId(conn, fav.getDishId());
+            for (int tagId : tagIds) {
+                tagWeights[tagId] += 0.7;
+            }
         }
-        
-        // 获取菜品消费次数
-        auto dish_consumption = dao.getDishConsumptionCount(conn, user_id, time_dimension);
-        for (const auto& item : dish_consumption) {
-            ConsumptionItem consumption_item;
-            consumption_item.setName(item.first);
-            consumption_item.setCount(item.second);
-            preference.addDishConsumption(consumption_item);
+        DinerPreferenceDAO dinerPrefDao;
+        auto dinerPrefs = dinerPrefDao.getUserPreferences(conn, user_id);
+        for (const auto& pref : dinerPrefs) {
+            tagWeights[pref.first] += pref.second * 0.3;
+        }
+        TagService tagService;
+        auto allTags = tagService.getAllTags();
+        std::map<int, std::string> tagNames;
+        for (const auto& tag : allTags) {
+            tagNames[tag.getId()] = tag.getName();
+        }
+
+        // 计算总数用于百分比计算
+        double totalWeight = 0;
+        for (const auto& tw : tagWeights) {
+            totalWeight += tw.second;
+        }
+
+        // 小于5%的合并为"其他"
+        std::vector<std::pair<std::string, int>> sortedTags;
+        int otherCount = 0;
+        for (const auto& tw : tagWeights) {
+            if (tw.second > 0) {
+                double percentage = (totalWeight > 0) ? (tw.second / totalWeight * 100) : 0;
+                if (percentage >= 5) {
+                    sortedTags.push_back({tagNames.count(tw.first) ? tagNames[tw.first] : "未知标签", static_cast<int>(tw.second * 10)});
+                } else {
+                    otherCount += static_cast<int>(tw.second * 10);
+                }
+            }
+        }
+        // 按权重排序
+        std::sort(sortedTags.begin(), sortedTags.end(), [](const auto& a, const auto& b) {
+            return a.second > b.second;
+        });
+        if (otherCount > 0) {
+            sortedTags.push_back({"其他", otherCount});
+        }
+
+        for (const auto& item : sortedTags) {
+            ConsumptionItem ci;
+            ci.setName(item.first);
+            ci.setCount(item.second);
+            preference.addTagPreference(ci);
         }
     } catch (const std::exception& e) {
         std::cerr << "获取用餐偏好失败: " << e.what() << std::endl;
     }
     return preference;
+}
+
+std::vector<DishPurchaseRankingItem> OrderService::getDishPurchaseRanking(int user_id, const std::string& time_dimension) {
+    try {
+        OrderDAO dao;
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        return dao.getDishPurchaseRanking(conn, user_id, time_dimension);
+    } catch (const std::exception& e) {
+        std::cerr << "获取菜品购买排行榜失败: " << e.what() << std::endl;
+        return {};
+    }
 }
 
 std::shared_ptr<RecentOrderVO> OrderService::getRecentOrder(int user_id, int order_for_user_id, int canteen_id) {
@@ -2252,6 +2302,18 @@ std::vector<Favorite> FavoriteService::getFavoritesByUserId(int user_id) {
         return dao.getFavoritesByUserId(conn, user_id);
     } catch (const std::exception& e) {
         std::cerr << "[FavoriteService::getFavoritesByUserId] Error: " << e.what() << std::endl;
+        return {};
+    }
+}
+
+std::vector<std::pair<int, int>> DinerPreferenceService::getUserPreferences(int user_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        DinerPreferenceDAO dao;
+        return dao.getUserPreferences(conn, user_id);
+    } catch (const std::exception& e) {
+        std::cerr << "[DinerPreferenceService::getUserPreferences] Error: " << e.what() << std::endl;
         return {};
     }
 }

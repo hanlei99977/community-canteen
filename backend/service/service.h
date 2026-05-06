@@ -146,6 +146,7 @@ class DishService{
 public:
     std::vector<Dish> getDishsByCanteen(int canteen_id);
     std::shared_ptr<Dish> getDishById(int dish_id);
+    DishDetailVO getDishDetail(int dish_id);
     int insertDish(const Dish& dish, const std::vector<int>& tag_ids);
     bool updateDish(int dish_id, double price, int calories, const std::string& nutrition_info, const std::vector<int>& tag_ids);
     bool disableDishByDishId(const int dish_id);
@@ -170,6 +171,8 @@ public:
     std::vector<OrderDetailVO> getOrdersDetailsByOrderId(int order_id);
     // 用餐偏好相关方法
     DiningPreference getDiningPreference(int user_id, const std::string& time_dimension);
+    // 获取菜品购买排行榜
+    std::vector<DishPurchaseRankingItem> getDishPurchaseRanking(int user_id, const std::string& time_dimension);
     // 获取最近订单
     std::shared_ptr<RecentOrderVO> getRecentOrder(int user_id, int order_for_user_id, int canteen_id);
     // 获取食堂订单
@@ -289,4 +292,12 @@ public:
     bool removeFavorite(int user_id, int dish_id);
     bool isFavorite(int user_id, int dish_id);
     std::vector<Favorite> getFavoritesByUserId(int user_id);
+};
+
+// ================================
+// 用户用餐偏好服务
+// ================================
+class DinerPreferenceService {
+public:
+    std::vector<std::pair<int, int>> getUserPreferences(int user_id);
 };

@@ -855,22 +855,6 @@ public:
 };
 
 // 用餐偏好相关 VO
-class DiningPreferenceSummary {
-private:
-    double total_amount;
-    int order_count;
-    int canteen_count;
-public:
-    double getTotalAmount() const { return total_amount; }
-    void setTotalAmount(double value) { total_amount = value; }
-
-    int getOrderCount() const { return order_count; }
-    void setOrderCount(int value) { order_count = value; }
-
-    int getCanteenCount() const { return canteen_count; }
-    void setCanteenCount(int value) { canteen_count = value; }
-};
-
 class ConsumptionItem {
 private:
     std::string name;
@@ -885,12 +869,10 @@ public:
 
 class DiningPreference {
 private:
-    DiningPreferenceSummary summary;
     std::vector<ConsumptionItem> canteen_consumption;
     std::vector<ConsumptionItem> dish_consumption;
+    std::vector<ConsumptionItem> tag_preference;
 public:
-    DiningPreferenceSummary getSummary() const { return summary; }
-    void setSummary(const DiningPreferenceSummary& value) { summary = value; }
 
     std::vector<ConsumptionItem> getCanteenConsumption() const { return canteen_consumption; }
     void setCanteenConsumption(const std::vector<ConsumptionItem>& value) { canteen_consumption = value; }
@@ -898,8 +880,66 @@ public:
     std::vector<ConsumptionItem> getDishConsumption() const { return dish_consumption; }
     void setDishConsumption(const std::vector<ConsumptionItem>& value) { dish_consumption = value; }
 
+    std::vector<ConsumptionItem> getTagPreference() const { return tag_preference; }
+    void setTagPreference(const std::vector<ConsumptionItem>& value) { tag_preference = value; }
+
     void addCanteenConsumption(const ConsumptionItem& item) { canteen_consumption.push_back(item); }
     void addDishConsumption(const ConsumptionItem& item) { dish_consumption.push_back(item); }
+    void addTagPreference(const ConsumptionItem& item) { tag_preference.push_back(item); }
+};
+
+// 餐品购买排名项
+class DishPurchaseRankingItem {
+private:
+    int dishId;
+    std::string dishName;
+    std::string canteenName;
+    int quantity;
+public:
+    int getDishId() const { return dishId; }
+    void setDishId(int value) { dishId = value; }
+
+    std::string getDishName() const { return dishName; }
+    void setDishName(const std::string& value) { dishName = value; }
+
+    std::string getCanteenName() const { return canteenName; }
+    void setCanteenName(const std::string& value) { canteenName = value; }
+
+    int getQuantity() const { return quantity; }
+    void setQuantity(int value) { quantity = value; }
+};
+
+class DishDetailVO {
+private:
+    int dishId;
+    std::string dishName;
+    std::string canteenName;
+    double price;
+    int calories;
+    std::string nutritionInfo;
+    std::vector<std::string> tags;
+public:
+    int getDishId() const { return dishId; }
+    void setDishId(int value) { dishId = value; }
+
+    std::string getDishName() const { return dishName; }
+    void setDishName(const std::string& value) { dishName = value; }
+
+    std::string getCanteenName() const { return canteenName; }
+    void setCanteenName(const std::string& value) { canteenName = value; }
+
+    double getPrice() const { return price; }
+    void setPrice(double value) { price = value; }
+
+    int getCalories() const { return calories; }
+    void setCalories(int value) { calories = value; }
+
+    std::string getNutritionInfo() const { return nutritionInfo; }
+    void setNutritionInfo(const std::string& value) { nutritionInfo = value; }
+
+    std::vector<std::string> getTags() const { return tags; }
+    void setTags(const std::vector<std::string>& value) { tags = value; }
+    void addTag(const std::string& tag) { tags.push_back(tag); }
 };
 
 // 举报统计VO

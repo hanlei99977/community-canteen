@@ -1,114 +1,92 @@
 <template>
   <div>
     <h2>用餐偏好</h2>
-    
-    <!-- 时间维度选择 -->
-    <div class="filter-container">
-      <div class="filter-buttons">
-        <span class="filter-label">时间维度</span>
-        <el-radio-group v-model="timeDimension" @change="loadDiningPreference">
-          <el-radio-button label="year">年</el-radio-button>
-          <el-radio-button label="quarter">季</el-radio-button>
-          <el-radio-button label="month">月</el-radio-button>
-          <el-radio-button label="week">周</el-radio-button>
-          <el-radio-button label="day">日</el-radio-button>
-        </el-radio-group>
-      </div>
-    </div>
-    
-    <!-- 顶部数据卡片 -->
-    <div class="stats-cards">
-      <el-card class="stats-card">
-        <div class="card-content">
-          <div class="card-title">消费总额</div>
-          <div class="card-value">{{ totalAmount.toFixed(2) }}元</div>
-        </div>
-      </el-card>
-      <el-card class="stats-card">
-        <div class="card-content">
-          <div class="card-title">订单数</div>
-          <div class="card-value">{{ orderCount }}</div>
-        </div>
-      </el-card>
-      <el-card class="stats-card">
-        <div class="card-content">
-          <div class="card-title">消费餐厅数</div>
-          <div class="card-value">{{ canteenCount }}家</div>
-        </div>
-      </el-card>
-    </div>
-    
-    <!-- 扇形图 -->
+
+    <!-- 图表区域 -->
     <div class="chart-container">
       <el-card class="chart-card">
         <template #header>
           <div class="card-header">
-            <span>餐厅消费偏好</span>
+            <span>用餐偏好</span>
           </div>
         </template>
-        <div id="canteenChart" ref="canteenChartRef" class="chart"></div>
+        <div v-if="tagPreference.length === 0" class="empty-tip">暂无用餐偏好数据</div>
+        <div v-else id="tagChart" ref="tagChartRef" class="chart"></div>
       </el-card>
       <el-card class="chart-card">
         <template #header>
           <div class="card-header">
-            <span>菜品消费偏好</span>
+            <span>菜品购买排行榜</span>
+            <el-radio-group v-model="timeDimension" @change="loadDishPurchaseRanking" size="small">
+              <el-radio-button label="day">今天</el-radio-button>
+              <el-radio-button label="week">最近7天</el-radio-button>
+              <el-radio-button label="month">最近30天</el-radio-button>
+            </el-radio-group>
           </div>
         </template>
-        <div id="dishChart" ref="dishChartRef" class="chart"></div>
+        <div v-if="rankingData.length === 0" class="empty-tip">当前时间段内暂无购买记录</div>
+        <div v-else id="rankingChart" ref="rankingChartRef" class="chart"></div>
       </el-card>
     </div>
+
+    <!-- 菜品详情弹窗 -->
+    <el-dialog v-model="dishDetailVisible" title="菜品详情" width="500px">
+      <div v-if="dishDetail" class="dish-detail">
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="菜品名称">{{ dishDetail.dish_name }}</el-descriptions-item>
+          <el-descriptions-item label="所属食堂">{{ dishDetail.canteen_name }}</el-descriptions-item>
+          <el-descriptions-item label="价格">{{ dishDetail.price }}元</el-descriptions-item>
+          <el-descriptions-item label="卡路里">{{ dishDetail.calories }}kcal</el-descriptions-item>
+          <el-descriptions-item label="营养信息">{{ dishDetail.nutrition_info || '暂无' }}</el-descriptions-item>
+          <el-descriptions-item label="标签">
+            <el-tag v-for="tag in dishDetail.tags" :key="tag" size="small" style="margin-right: 5px">
+              {{ tag }}
+            </el-tag>
+            <span v-if="!dishDetail.tags || dishDetail.tags.length === 0">暂无</span>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
 
-// 数据
-const timeDimension = ref('month') // 默认显示最近一月
-const totalAmount = ref(0)
-const orderCount = ref(0)
-const canteenCount = ref(0)
-const canteenChartRef = ref(null)
-const dishChartRef = ref(null)
-let canteenChart = null
-let dishChart = null
+const timeDimension = ref('month')
+const tagChartRef = ref(null)
+const rankingChartRef = ref(null)
+const dishDetailVisible = ref(false)
+const dishDetail = ref(null)
+const rankingData = ref([])
+const tagPreference = ref([])
+let tagChart = null
+let rankingChart = null
 
-// 获取用户信息
 const getUser = () => JSON.parse(localStorage.getItem('user'))
 
-// 加载用餐偏好数据
 const loadDiningPreference = async () => {
   const user = getUser()
   if (!user || !user.user_id) {
     ElMessage.error('用户未登录')
     return
   }
-  
+
   try {
-    const res = await axios.get(
-      'http://192.168.56.100:8080/diningPreference',
-      {
-        params: {
-          user_id: user.user_id,
-          time_dimension: timeDimension.value
-        }
+    const res = await axios.get('http://192.168.56.100:8080/diningPreference', {
+      params: {
+        user_id: user.user_id,
+        time_dimension: 'month'
       }
-    )
-    
+    })
+
     if (res.data.code === 0) {
-      // 更新顶部数据
-      totalAmount.value = res.data.data.total_amount
-      orderCount.value = res.data.data.order_count
-      canteenCount.value = res.data.data.canteen_count
-      
-      // 渲染餐厅消费偏好图表
-      renderCanteenChart(res.data.data.canteen_consumption)
-      
-      // 渲染菜品消费偏好图表
-      renderDishChart(res.data.data.dish_consumption)
+      tagPreference.value = res.data.data.tag_preference || []
+      await nextTick()
+      renderTagChart(res.data.data.tag_preference)
     } else {
       ElMessage.error(res.data.msg || '获取用餐偏好数据失败')
     }
@@ -118,19 +96,65 @@ const loadDiningPreference = async () => {
   }
 }
 
-// 渲染餐厅消费偏好图表
-const renderCanteenChart = (canteenConsumption) => {
-  if (!canteenChartRef.value) return
-  
-  if (!canteenChart) {
-    canteenChart = echarts.init(canteenChartRef.value)
+const loadDishPurchaseRanking = async () => {
+  const user = getUser()
+  if (!user || !user.user_id) {
+    return
   }
-  
-  const data = canteenConsumption.map(item => ({
+
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/dishPurchaseRanking', {
+      params: {
+        user_id: user.user_id,
+        time_dimension: timeDimension.value
+      }
+    })
+
+    if (res.data.code === 0) {
+      rankingData.value = res.data.data
+      await nextTick()
+      renderRankingChart(res.data.data)
+    }
+  } catch (error) {
+    console.error('获取菜品购买排行榜失败:', error)
+  }
+}
+
+const loadDishDetail = async (dishId) => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/dishDetail', {
+      params: {
+        dish_id: dishId
+      }
+    })
+
+    if (res.data.code === 0) {
+      dishDetail.value = res.data.data
+      dishDetailVisible.value = true
+    }
+  } catch (error) {
+    console.error('获取菜品详情失败:', error)
+    ElMessage.error('获取菜品详情失败')
+  }
+}
+
+const renderTagChart = (tagPreference) => {
+  if (!tagChartRef.value) return
+
+  if (tagChart && (!tagChart._dom || tagChart._dom !== tagChartRef.value)) {
+    tagChart.dispose()
+    tagChart = null
+  }
+
+  if (!tagChart) {
+    tagChart = echarts.init(tagChartRef.value)
+  }
+
+  const data = tagPreference.map(item => ({
     name: item.name,
     value: item.count
   }))
-  
+
   const option = {
     tooltip: {
       trigger: 'item',
@@ -139,11 +163,11 @@ const renderCanteenChart = (canteenConsumption) => {
     legend: {
       orient: 'vertical',
       left: 'left',
-      data: canteenConsumption.map(item => item.name)
+      data: tagPreference.map(item => item.name)
     },
     series: [
       {
-        name: '餐厅消费次数',
+        name: '用餐偏好',
         type: 'pie',
         radius: '60%',
         center: ['50%', '50%'],
@@ -158,131 +182,121 @@ const renderCanteenChart = (canteenConsumption) => {
       }
     ]
   }
-  
-  canteenChart.setOption(option)
+
+  tagChart.setOption(option)
 }
 
-// 渲染菜品消费偏好图表
-const renderDishChart = (dishConsumption) => {
-  if (!dishChartRef.value) return
-  
-  if (!dishChart) {
-    dishChart = echarts.init(dishChartRef.value)
+const renderRankingChart = (rankingDataParam) => {
+  if (!rankingChartRef.value) return
+
+  if (rankingChart && (!rankingChart._dom || rankingChart._dom !== rankingChartRef.value)) {
+    rankingChart.dispose()
+    rankingChart = null
   }
-  
-  const data = dishConsumption.map(item => ({
-    name: item.name,
-    value: item.count
-  }))
-  
+
+  if (!rankingChart) {
+    rankingChart = echarts.init(rankingChartRef.value)
+  }
+
+  const sortedData = [...rankingDataParam].sort((a, b) => b.quantity - a.quantity)
+
   const option = {
     tooltip: {
-      trigger: 'item',
-      formatter: '{a} <br/>{b}: {c} ({d}%)'
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      },
+      formatter: (params) => {
+        const item = params[0]
+        const data = sortedData[item.dataIndex]
+        return `${data.dish_name}<br/>食堂: ${data.canteen_name}<br/>购买数量: ${data.quantity}<br/><span style="color: #409EFF">点击查看菜品详情</span>`
+      }
     },
-    legend: {
-      orient: 'vertical',
-      left: 'left',
-      data: dishConsumption.map(item => item.name),
-      type: 'scroll'
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      top: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'value'
+    },
+    yAxis: {
+      type: 'category',
+      inverse: true,
+      data: sortedData.map(item => item.dish_name),
+      axisLabel: {
+        interval: 0,
+        rotate: 0,
+        formatter: (value) => {
+          const data = sortedData.find(item => item.dish_name === value)
+          return value.length > 10 ? value.substring(0, 10) + '...' : value
+        }
+      }
     },
     series: [
       {
-        name: '菜品消费次数',
-        type: 'pie',
-        radius: '60%',
-        center: ['50%', '50%'],
-        data: data,
-        emphasis: {
+        name: '购买数量',
+        type: 'bar',
+        data: sortedData.map((item, index) => ({
+          value: item.quantity,
+          dishId: item.dish_id,
           itemStyle: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.5)'
+            color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc', '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272'][index % 15]
+          }
+        })),
+        label: {
+          show: true,
+          position: 'right',
+          formatter: (params) => {
+            const data = sortedData[params.dataIndex]
+            return `${data.quantity} (${data.canteen_name})`
           }
         }
       }
     ]
   }
-  
-  dishChart.setOption(option)
+
+  rankingChart.off('click')
+  rankingChart.on('click', (params) => {
+    const dataIndex = params.dataIndex
+    const dishId = sortedData[dataIndex]?.dish_id
+    if (dishId) {
+      loadDishDetail(dishId)
+    }
+  })
+
+  rankingChart.setOption(option)
 }
 
-// 监听窗口大小变化，重新调整图表大小
 const handleResize = () => {
-  if (canteenChart) {
-    canteenChart.resize()
+  if (tagChart) {
+    tagChart.resize()
   }
-  if (dishChart) {
-    dishChart.resize()
+  if (rankingChart) {
+    rankingChart.resize()
   }
 }
 
-// 初始化
 onMounted(() => {
   loadDiningPreference()
+  loadDishPurchaseRanking()
   window.addEventListener('resize', handleResize)
 })
 
-// 组件卸载时清理
 onUnmounted(() => {
-  if (canteenChart) {
-    canteenChart.dispose()
+  if (tagChart) {
+    tagChart.dispose()
   }
-  if (dishChart) {
-    dishChart.dispose()
+  if (rankingChart) {
+    rankingChart.dispose()
   }
   window.removeEventListener('resize', handleResize)
 })
 </script>
 
 <style scoped>
-.filter-container {
-  margin-bottom: 20px;
-}
-
-.filter-buttons {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.filter-label {
-  font-size: 14px;
-  color: #606266;
-  margin-right: 8px;
-}
-
-.el-radio-group {
-  margin-right: 10px;
-}
-
-.stats-cards {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.stats-card {
-  flex: 1;
-  min-width: 200px;
-}
-
-.card-content {
-  text-align: center;
-}
-
-.card-title {
-  font-size: 16px;
-  margin-bottom: 10px;
-  color: #606266;
-}
-
-.card-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #409EFF;
-}
-
 .chart-container {
   display: flex;
   gap: 20px;
@@ -305,11 +319,25 @@ onUnmounted(() => {
   height: 400px;
 }
 
+.empty-tip {
+  width: 100%;
+  height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #909399;
+  font-size: 14px;
+}
+
+.dish-detail {
+  padding: 10px;
+}
+
 @media screen and (max-width: 768px) {
   .chart-container {
     flex-direction: column;
   }
-  
+
   .chart-card {
     min-width: 100%;
   }

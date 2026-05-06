@@ -137,6 +137,12 @@ void Controller::registerCanteenRoutes(httplib::Server& server) {
     //标签
     server.Get("/getAllTags", handleGetAllTags);
     server.Get("/getDishTags", handleGetDishTags);
+    // 收藏
+    server.Post("/addFavorite", handleAddFavorite);
+    server.Post("/removeFavorite", handleRemoveFavorite);
+    server.Get("/getFavorites", handleGetFavorites);
+    server.Get("/checkFavorite", handleCheckFavorite);
+
     // 留言板
     server.Post("/messageCreate", handleCreateMessage);
     server.Get("/userMessages", handleGetUserMessages);
@@ -2622,3 +2628,110 @@ void Controller::handleUpdateDish(const httplib::Request& req, httplib::Response
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
+
+
+void Controller::handleAddFavorite(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json body = json::parse(req.body);
+        int user_id = getIntSafe(body, "user_id");
+        int dish_id = getIntSafe(body, "dish_id");
+
+        if (user_id <= 0 || dish_id <= 0) {
+            res.status = 400;
+            res.set_content(Response::error(400, "参数不完整"), "application/json");
+            return;
+        }
+
+        FavoriteService service;
+        if (service.addFavorite(user_id, dish_id)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "添加收藏失败"), "application/json");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleAddFavorite] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleRemoveFavorite(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json body = json::parse(req.body);
+        int user_id = getIntSafe(body, "user_id");
+        int dish_id = getIntSafe(body, "dish_id");
+
+        if (user_id <= 0 || dish_id <= 0) {
+            res.status = 400;
+            res.set_content(Response::error(400, "参数不完整"), "application/json");
+            return;
+        }
+
+        FavoriteService service;
+        if (service.removeFavorite(user_id, dish_id)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "移除收藏失败"), "application/json");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleRemoveFavorite] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleGetFavorites(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+
+        FavoriteService favoriteService;
+        DishService dishService;
+        TagService tagService;
+
+        auto favorites = favoriteService.getFavoritesByUserId(user_id);
+
+        json arr = json::array();
+        for (const auto& fav : favorites) {
+            auto dish = dishService.getDishById(fav.getDishId());
+            if (dish && dish->getCanteenId() == canteen_id) {
+                auto tags = tagService.getTagsByDishId(dish->getId());
+                
+                json tagNames = json::array();
+                for (const auto& tag : tags) {
+                    tagNames.push_back(tag.getName());
+                }
+
+                arr.push_back({
+                    {"dish_id", dish->getId()},
+                    {"name", dish->getName()},
+                    {"price", dish->getPrice()},
+                    {"type", dish->getType()},
+                    {"calories", dish->getCalories()},
+                    {"nutrition_info", dish->getNutritionInfo()},
+                    {"tags", tagNames},
+                    {"create_time", fav.getCreateTime()}
+                });
+            }
+        }
+
+        res.set_content(Response::success(arr), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetFavorites] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+void Controller::handleCheckFavorite(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        int dish_id = std::stoi(req.get_param_value("dish_id"));
+
+        FavoriteService service;
+        bool isFav = service.isFavorite(user_id, dish_id);
+
+        res.set_content(Response::success({{"is_favorite", isFav}}), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleCheckFavorite] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+

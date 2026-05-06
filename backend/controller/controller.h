@@ -117,4 +117,9 @@ private:
     static void handleGetAllTags(const httplib::Request& req, httplib::Response& res);
     static void handleGetDishTags(const httplib::Request& req, httplib::Response& res);
     static void handleUpdateDish(const httplib::Request& req, httplib::Response& res);
+    /*************************************收藏相关**************************************/
+    static void handleAddFavorite(const httplib::Request& req, httplib::Response& res);
+    static void handleRemoveFavorite(const httplib::Request& req, httplib::Response& res);
+    static void handleGetFavorites(const httplib::Request& req, httplib::Response& res);
+    static void handleCheckFavorite(const httplib::Request& req, httplib::Response& res);
 };

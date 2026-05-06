@@ -617,3 +617,23 @@ public:
     int getTagId() const { return tag_id; }
     void setTagId(int id) { tag_id = id; }
 };
+
+// ================================
+// Favorite
+// ================================
+class Favorite {
+private:
+    int user_id;
+    int dish_id;
+    std::string create_time;
+
+public:
+    int getUserId() const { return user_id; }
+    void setUserId(int id) { user_id = id; }
+
+    int getDishId() const { return dish_id; }
+    void setDishId(int id) { dish_id = id; }
+
+    std::string getCreateTime() const { return create_time; }
+    void setCreateTime(const std::string& time) { create_time = time; }
+};

@@ -1460,6 +1460,36 @@ std::vector<Dish> DishDAO::getDishesByCanteen(sql::Connection *conn, int canteen
     return list;
 }
 
+
+std::shared_ptr<Dish> DishDAO::getDishById(sql::Connection *conn, int dish_id)
+{
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT * FROM dish WHERE dish_id=?")
+        );
+
+        stmt->setInt(1, dish_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        if (res->next()) {
+            auto dish = std::make_shared<Dish>();
+            dish->setId(res->getInt("dish_id"));
+            dish->setCanteenId(res->getInt("canteen_id"));
+            dish->setName(res->getString("name"));
+            dish->setType(res->getString("type"));
+            dish->setPrice(res->getDouble("price"));
+            dish->setCalories(res->getInt("calories"));
+            dish->setNutritionInfo(res->getString("nutrition_info"));
+            dish->setStatus(res->getInt("status"));
+            return dish;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DishDAO::getDishById] Error: " << e.what() << std::endl;
+    }
+
+    return nullptr;
+}
+
 int DishDAO::insertDish(sql::Connection *conn, const Dish& dish){
     try {
         auto stmt1 = std::unique_ptr<sql::PreparedStatement>(
@@ -3812,5 +3842,86 @@ std::vector<int> DishTagDAO::getTagIdsByDishId(sql::Connection *conn, int dish_i
         std::cerr << "[DishTagDAO::getTagIdsByDishId] Error: " << e.what() << std::endl;
     }
 
+    return list;
+}
+
+/***************************************************************************************
+ * FavoriteDAO
+ ***************************************************************************************/
+
+bool FavoriteDAO::insertFavorite(sql::Connection *conn, int user_id, int dish_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "INSERT INTO favorite (user_id, dish_id, create_time) VALUES (?, ?, NOW())"
+            )
+        );
+        stmt->setInt(1, user_id);
+        stmt->setInt(2, dish_id);
+        stmt->executeUpdate();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[FavoriteDAO::insertFavorite] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool FavoriteDAO::deleteFavorite(sql::Connection *conn, int user_id, int dish_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "DELETE FROM favorite WHERE user_id = ? AND dish_id = ?"
+            )
+        );
+        stmt->setInt(1, user_id);
+        stmt->setInt(2, dish_id);
+        stmt->executeUpdate();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[FavoriteDAO::deleteFavorite] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool FavoriteDAO::existsFavorite(sql::Connection *conn, int user_id, int dish_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT COUNT(*) as count FROM favorite WHERE user_id = ? AND dish_id = ?"
+            )
+        );
+        stmt->setInt(1, user_id);
+        stmt->setInt(2, dish_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            return res->getInt("count") > 0;
+        }
+        return false;
+    } catch (const std::exception& e) {
+        std::cerr << "[FavoriteDAO::existsFavorite] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::vector<Favorite> FavoriteDAO::getFavoritesByUserId(sql::Connection *conn, int user_id) {
+    std::vector<Favorite> list;
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT user_id, dish_id, create_time FROM favorite WHERE user_id = ? ORDER BY create_time DESC"
+            )
+        );
+        stmt->setInt(1, user_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            Favorite fav;
+            fav.setUserId(res->getInt("user_id"));
+            fav.setDishId(res->getInt("dish_id"));
+            fav.setCreateTime(res->getString("create_time"));
+            list.push_back(fav);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[FavoriteDAO::getFavoritesByUserId] Error: " << e.what() << std::endl;
+    }
     return list;
 }

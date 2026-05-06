@@ -32,6 +32,11 @@
       <el-form-item v-if="selectedUserAge">
         <el-tag>{{ selectedUserAge }}岁 - {{ discountText }}</el-tag>
       </el-form-item>
+      <el-form-item>
+        <el-button type="warning" @click="openFavoriteDialog">
+          {{ isOrderingForSelf ? '我的收藏' : '他的收藏' }}
+        </el-button>
+      </el-form-item>
     </el-form>
 
     <!-- 最近订单信息 -->
@@ -123,6 +128,21 @@
         </template>
       </el-table-column>
 
+      <!-- ⭐ 收藏 -->
+      <el-table-column label="收藏" width="80">
+        <template #default="scope">
+          <el-button
+            :type="scope.row.isFavorite ? 'danger' : 'default'"
+            circle
+            size="small"
+            @click="toggleFavorite(scope.row)"
+          >
+            <el-icon v-if="scope.row.isFavorite"><StarFilled /></el-icon>
+            <el-icon v-else><Star /></el-icon>
+          </el-button>
+        </template>
+      </el-table-column>
+
     </el-table>
 
     <!-- ⭐ 营养信息弹窗 -->
@@ -145,6 +165,54 @@
       </div>
     </el-dialog>
 
+    <!-- ⭐ 收藏弹窗 -->
+    <el-dialog v-model="favoriteDialogVisible" :title="isOrderingForSelf ? '我的收藏' : '他的收藏'" width="800px">
+      <div v-if="favoriteDishes.length === 0" style="text-align: center; padding: 40px; color: #999;">
+        暂无收藏菜品
+      </div>
+      <div v-else>
+        <el-table :data="favoriteDishes" style="width: 100%">
+          <el-table-column prop="dish_id" label="ID" width="80" />
+          <el-table-column label="菜品名称">
+            <template #default="scope">
+              <span>{{ scope.row.name }}</span>
+              <el-tag v-for="(tag, index) in scope.row.tags" :key="index" size="small" style="margin-left: 8px;">
+                {{ tag }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="价格" width="120">
+            <template #default="scope">
+              <div>
+                <span v-if="discount < 1" style="text-decoration: line-through; color: #999;">
+                  ¥{{ scope.row.price.toFixed(2) }}
+                </span>
+                <span v-else>¥{{ scope.row.price.toFixed(2) }}</span>
+                <span v-if="discount < 1" style="margin-left: 10px; color: #f56c6c;">
+                  ¥{{ (scope.row.price * discount).toFixed(2) }}
+                </span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="数量" width="150">
+            <template #default="scope">
+              <el-input-number
+                v-model="scope.row.quantity"
+                :min="0"
+                :max="10"
+              />
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="favoriteDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="addToOrderFromFavorites">加入订单</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
   <!-- ⭐ 下单按钮 -->
     <el-button
       type="primary"
@@ -162,6 +230,7 @@ import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Star, StarFilled } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const dishes = ref([])
@@ -173,6 +242,10 @@ const nutritionDialogVisible = ref(false)
 const selectedDish = ref(null)
 const user = JSON.parse(localStorage.getItem('user'))
 
+// 收藏相关
+const favoriteDialogVisible = ref(false)
+const favoriteDishes = ref([])
+
 // 最近订单
 const recentOrder = ref(null)
 const recentOrderItems = ref([])
@@ -180,6 +253,11 @@ const showRecentOrder = ref(false)
 const outOfStockDishes = ref([])
 // 已选菜品
 const selectedDishes = ref([])
+
+// 计算是否为自己点餐
+const isOrderingForSelf = computed(() => {
+  return selectedOrderForUserId.value === user.user_id
+})
 
 // 计算折扣
 const discount = computed(() => {
@@ -232,6 +310,7 @@ const getUserAge = async (user_id) => {
 const handleOrderForUserChange = async (user_id) => {
   await getUserAge(user_id)
   await getRecentOrder()
+  await checkFavoritesStatus()
 }
 
 // 获取最近订单信息
@@ -363,8 +442,110 @@ const getMenu = async () => {
   // 初始化 quantity
   dishes.value = res.data.data.map(d => ({
     ...d,
-    quantity: 0
+    quantity: 0,
+    isFavorite: false
   }))
+
+  // 获取收藏状态
+  await checkFavoritesStatus()
+}
+
+// 检查收藏状态
+const checkFavoritesStatus = async () => {
+  const canteen_id = Number(route.query.canteen_id)
+  const user_id = selectedOrderForUserId.value
+
+  for (const dish of dishes.value) {
+    try {
+      const res = await axios.get('http://192.168.56.100:8080/checkFavorite', {
+        params: {
+          user_id: user_id,
+          dish_id: dish.id
+        }
+      })
+      if (res.data.code === 0) {
+        dish.isFavorite = res.data.data.is_favorite
+      }
+    } catch (error) {
+      console.error('检查收藏状态失败:', error)
+    }
+  }
+}
+
+// 切换收藏状态
+const toggleFavorite = async (dish) => {
+  const user_id = selectedOrderForUserId.value
+
+  try {
+    if (dish.isFavorite) {
+      const res = await axios.post('http://192.168.56.100:8080/removeFavorite', {
+        user_id: user_id,
+        dish_id: dish.id
+      })
+      if (res.data.code === 0) {
+        dish.isFavorite = false
+        ElMessage.success('已取消收藏')
+      } else {
+        ElMessage.error(res.data.message || '取消收藏失败')
+      }
+    } else {
+      const res = await axios.post('http://192.168.56.100:8080/addFavorite', {
+        user_id: user_id,
+        dish_id: dish.id
+      })
+      if (res.data.code === 0) {
+        dish.isFavorite = true
+        ElMessage.success('已添加收藏')
+      } else {
+        ElMessage.error(res.data.message || '添加收藏失败')
+      }
+    }
+  } catch (error) {
+    console.error('切换收藏失败:', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+// 打开收藏弹窗
+const openFavoriteDialog = async () => {
+  const canteen_id = Number(route.query.canteen_id)
+  const user_id = selectedOrderForUserId.value
+
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/getFavorites', {
+      params: {
+        user_id: user_id,
+        canteen_id: canteen_id
+      }
+    })
+
+    if (res.data.code === 0) {
+      favoriteDishes.value = res.data.data.map(d => ({
+        ...d,
+        quantity: 0
+      }))
+      favoriteDialogVisible.value = true
+    } else {
+      ElMessage.error(res.data.message || '获取收藏失败')
+    }
+  } catch (error) {
+    console.error('获取收藏失败:', error)
+    ElMessage.error('获取收藏失败')
+  }
+}
+
+// 从收藏中添加到订单
+const addToOrderFromFavorites = () => {
+  favoriteDishes.value.forEach(favDish => {
+    if (favDish.quantity > 0) {
+      const dish = dishes.value.find(d => d.id === favDish.dish_id)
+      if (dish) {
+        dish.quantity = favDish.quantity
+      }
+    }
+  })
+  favoriteDialogVisible.value = false
+  ElMessage.success('已添加到订单')
 }
 
 // 初始化

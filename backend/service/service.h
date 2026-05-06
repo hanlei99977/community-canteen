@@ -145,6 +145,7 @@ public:
 class DishService{
 public:
     std::vector<Dish> getDishsByCanteen(int canteen_id);
+    std::shared_ptr<Dish> getDishById(int dish_id);
     int insertDish(const Dish& dish, const std::vector<int>& tag_ids);
     bool updateDish(int dish_id, double price, int calories, const std::string& nutrition_info, const std::vector<int>& tag_ids);
     bool disableDishByDishId(const int dish_id);
@@ -276,4 +277,16 @@ public:
     bool updateDishTags(int dish_id, const std::vector<int>& tag_ids);
     bool updateDishTags(sql::Connection *conn, int dish_id, const std::vector<int>& tag_ids);
     std::vector<int> getTagIdsByDishId(int dish_id);
+};
+
+/*******************************收藏模块*******************************/
+// ================================
+// 收藏服务
+// ================================
+class FavoriteService {
+public:
+    bool addFavorite(int user_id, int dish_id);
+    bool removeFavorite(int user_id, int dish_id);
+    bool isFavorite(int user_id, int dish_id);
+    std::vector<Favorite> getFavoritesByUserId(int user_id);
 };

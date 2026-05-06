@@ -1399,6 +1399,13 @@ std::vector<Dish> DishService::getDishsByCanteen(int canteen_id) {
     return dao.getDishesByCanteen(conn, canteen_id);
 }
 
+std::shared_ptr<Dish> DishService::getDishById(int dish_id) {
+    DishDAO dao;
+    DBConnectionGuard guard;
+    auto* conn = guard.get();
+    return dao.getDishById(conn, dish_id);
+}
+
 int DishService::insertDish(const Dish& dish, const std::vector<int>& tag_ids) {
     DishDAO dao;
     DBConnectionGuard guard;
@@ -2193,6 +2200,58 @@ std::vector<int> DishTagService::getTagIdsByDishId(int dish_id) {
         return dao.getTagIdsByDishId(conn, dish_id);
     } catch (const std::exception& e) {
         std::cerr << "获取菜品标签ID失败: " << e.what() << std::endl;
+        return {};
+    }
+}
+
+/***************************************************************************************
+ * FavoriteService
+ ***************************************************************************************/
+
+bool FavoriteService::addFavorite(int user_id, int dish_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        FavoriteDAO dao;
+        return dao.insertFavorite(conn, user_id, dish_id);
+    } catch (const std::exception& e) {
+        std::cerr << "[FavoriteService::addFavorite] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool FavoriteService::removeFavorite(int user_id, int dish_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        FavoriteDAO dao;
+        return dao.deleteFavorite(conn, user_id, dish_id);
+    } catch (const std::exception& e) {
+        std::cerr << "[FavoriteService::removeFavorite] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool FavoriteService::isFavorite(int user_id, int dish_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        FavoriteDAO dao;
+        return dao.existsFavorite(conn, user_id, dish_id);
+    } catch (const std::exception& e) {
+        std::cerr << "[FavoriteService::isFavorite] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::vector<Favorite> FavoriteService::getFavoritesByUserId(int user_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        FavoriteDAO dao;
+        return dao.getFavoritesByUserId(conn, user_id);
+    } catch (const std::exception& e) {
+        std::cerr << "[FavoriteService::getFavoritesByUserId] Error: " << e.what() << std::endl;
         return {};
     }
 }

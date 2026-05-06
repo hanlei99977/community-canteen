@@ -338,6 +338,17 @@ CREATE TABLE diner_preference (
     FOREIGN KEY (user_id) REFERENCES diner(user_id),
     FOREIGN KEY (tag_id) REFERENCES tag(tag_id)
 );
+
+--  用户收藏菜品表
+CREATE TABLE favorite (
+    user_id INT,
+    dish_id INT,
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, dish_id),
+    FOREIGN KEY (user_id) REFERENCES diner(user_id),
+    FOREIGN KEY (dish_id) REFERENCES dish(dish_id)
+);
+
 --##################### 添加索引 #####################
 CREATE INDEX idx_order_id ON order_cancel(order_id);
 CREATE INDEX idx_status ON order_cancel(status);
@@ -449,3 +460,7 @@ CREATE INDEX idx_msg_status ON messageboard(status);
 CREATE INDEX idx_message_receiver ON message(receiver_id);
 CREATE INDEX idx_message_status ON message(status);
 CREATE INDEX idx_message_time ON message(create_time);
+
+-- favorite索引
+CREATE INDEX idx_favorite_user ON favorite(user_id);
+CREATE INDEX idx_favorite_dish ON favorite(dish_id);

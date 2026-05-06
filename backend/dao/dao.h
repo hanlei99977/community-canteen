@@ -139,6 +139,7 @@ public:
 class DishDAO {
 public:
     std::vector<Dish> getDishesByCanteen(sql::Connection *conn, int canteen_id);
+    std::shared_ptr<Dish> getDishById(sql::Connection *conn, int dish_id);
     int insertDish(sql::Connection *conn, const Dish& dish);
     int updateDish(sql::Connection *conn, int dish_id, double price, int calories, const std::string& nutrition_info);
     bool disableDishByDishId(sql::Connection *conn, const int dish_id);
@@ -298,6 +299,17 @@ public:
     bool insertDishTag(sql::Connection *conn, int dish_id, int tag_id);
     bool deleteDishTag(sql::Connection *conn, int dish_id, int tag_id);
     std::vector<int> getTagIdsByDishId(sql::Connection *conn, int dish_id);
+};
+
+// ================================
+// 收藏
+// ================================
+class FavoriteDAO {
+public:
+    bool insertFavorite(sql::Connection *conn, int user_id, int dish_id);
+    bool deleteFavorite(sql::Connection *conn, int user_id, int dish_id);
+    bool existsFavorite(sql::Connection *conn, int user_id, int dish_id);
+    std::vector<Favorite> getFavoritesByUserId(sql::Connection *conn, int user_id);
 };
 
 

@@ -981,7 +981,7 @@ std::vector<DinerInformation> DinerDAO::getDinerList(sql::Connection *conn)
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "SELECT u.user_id, u.username, u.age, u.phone, u.status, r.region_id, r.region_name, d.disease_history, "
+                "SELECT u.user_id, u.username, u.age, u.phone, u.status, r.region_id, r.region_name "
                 "FROM users u "
                 "JOIN diner d ON u.user_id = d.user_id "
                 "LEFT JOIN region r ON d.region_id = r.region_id "
@@ -989,6 +989,14 @@ std::vector<DinerInformation> DinerDAO::getDinerList(sql::Connection *conn)
         );
 
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        auto diseaseStmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT d.disease_name FROM disease d "
+                "JOIN diner_disease dd ON d.disease_id = dd.disease_id "
+                "WHERE dd.user_id = ?"
+            )
+        );
 
         while (res->next()) {
             DinerInformation dinerInfo;
@@ -999,6 +1007,12 @@ std::vector<DinerInformation> DinerDAO::getDinerList(sql::Connection *conn)
             dinerInfo.setRegionId(res->getInt("region_id"));
             dinerInfo.setRegionName(res->getString("region_name"));
             dinerInfo.setStatus(res->getInt("status"));
+
+            diseaseStmt->setInt(1, dinerInfo.getUserId());
+            auto diseaseRes = std::unique_ptr<sql::ResultSet>(diseaseStmt->executeQuery());
+            while (diseaseRes->next()) {
+                dinerInfo.addDisease(diseaseRes->getString("disease_name"));
+            }
 
             list.push_back(dinerInfo);
         }

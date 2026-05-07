@@ -1406,7 +1406,7 @@ void Controller::handleDinerList(const httplib::Request& req, httplib::Response&
                 {"status", dinerInfo.getStatus()},
                 {"region_id", dinerInfo.getRegionId()},
                 {"region_name", dinerInfo.getRegionName()},
-                {"disease_history", dinerInfo.getDiseases()},
+                {"diseases", dinerInfo.getDiseases()},
             });
         }
         res.set_content(Response::success(arr), "application/json");

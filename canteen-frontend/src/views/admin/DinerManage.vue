@@ -47,10 +47,14 @@
       <el-table-column prop="age" label="年龄" width="80" />
       <el-table-column prop="phone" label="电话" />
       <el-table-column prop="region_name" label="区域" />
-      <el-table-column prop="address" label="地址" />
-
-      <el-table-column prop="disease_history" label="疾病史" />
-      <el-table-column prop="taste_preference" label="口味偏好" />
+      <el-table-column label="疾病史">
+        <template #default="scope">
+          <span v-if="scope.row.diseases && scope.row.diseases.length > 0">
+            {{ scope.row.diseases.join('、') }}
+          </span>
+          <span v-else style="color: #909399;">暂无</span>
+        </template>
+      </el-table-column>
 
       <!-- 操作 -->
       <el-table-column label="操作" width="150">

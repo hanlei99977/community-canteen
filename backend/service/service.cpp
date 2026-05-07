@@ -3,7 +3,6 @@
 #include <map>
 #include <algorithm>
 #include "../../MySQL/ConnectionPool.h"
-#include "../model/vo.h"
 
 // 下单操作加锁
 std::mutex OrderService::userOrderMapMutex;
@@ -2225,6 +2224,152 @@ bool DiseaseService::updateUserDiseases(int user_id, const std::vector<int>& dis
     } catch (const std::exception& e) {
         std::cerr << "更新用户疾病失败: " << e.what() << std::endl;
         return false;
+    }
+}
+
+Disease DiseaseService::getDiseaseById(int disease_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        DiseaseDAO dao;
+        return dao.getDiseaseById(conn, disease_id);
+    } catch (const std::exception& e) {
+        std::cerr << "获取疾病失败: " << e.what() << std::endl;
+        return Disease();
+    }
+}
+
+int DiseaseService::createDisease(const DiseaseCreateDTO& dto) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        TransactionGuard tx(conn);
+        DiseaseDAO dao;
+        
+        int disease_id = dao.insertDisease(conn, dto.getDiseaseName());
+        if (disease_id == -1) {
+            return -1;
+        }
+        
+        for (const auto& tagDto : dto.getTags()) {
+            if (!dao.insertDiseaseTag(conn, disease_id, tagDto.getTagId(), tagDto.getRuleType())) {
+                return -1;
+            }
+        }
+        
+        tx.commit();
+        return disease_id;
+    } catch (const std::exception& e) {
+        std::cerr << "创建疾病失败: " << e.what() << std::endl;
+        return -1;
+    }
+}
+
+bool DiseaseService::updateDisease(const DiseaseUpdateDTO& dto) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        TransactionGuard tx(conn);
+        DiseaseDAO dao;
+        
+        int disease_id = dto.getDiseaseId();
+        const std::string& disease_name = dto.getDiseaseName();
+        const std::vector<DiseaseTagDTO>& tags = dto.getTags();
+        
+        if (!dao.updateDisease(conn, disease_id, disease_name)) {
+            return false;
+        }
+        
+        auto oldTags = dao.getDiseaseTags(conn, disease_id);
+        std::map<int, int> newTagsMap;
+        for (const auto& tagDto : tags) {
+            newTagsMap[tagDto.getTagId()] = tagDto.getRuleType();
+        }
+        
+        for (const auto& oldTag : oldTags) {
+            int tag_id = oldTag.getTagId();
+            auto it = newTagsMap.find(tag_id);
+            if (it == newTagsMap.end()) {
+                if (!dao.deleteDiseaseTag(conn, disease_id, tag_id)) {
+                    return false;
+                }
+            } else if (it->second != oldTag.getRuleType()) {
+                if (!dao.updateDiseaseTag(conn, disease_id, tag_id, it->second)) {
+                    return false;
+                }
+            }
+        }
+        
+        for (const auto& tagDto : tags) {
+            int tag_id = tagDto.getTagId();
+            bool exists = false;
+            for (const auto& oldTag : oldTags) {
+                if (oldTag.getTagId() == tag_id) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                if (!dao.insertDiseaseTag(conn, disease_id, tag_id, tagDto.getRuleType())) {
+                    return false;
+                }
+            }
+        }
+        
+        tx.commit();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "更新疾病失败: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+DiseaseDetailVO DiseaseService::getDiseaseDetailById(int disease_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        DiseaseDAO diseaseDao;
+        
+        Disease disease = diseaseDao.getDiseaseById(conn, disease_id);
+        auto tags = diseaseDao.getDiseaseTags(conn, disease_id);
+        
+        DiseaseDetailVO vo;
+        vo.setDiseaseId(disease.getId());
+        vo.setDiseaseName(disease.getName());
+        
+        for (const auto& tag : tags) {
+            DiseaseTagVO tagVO;
+            tagVO.setTagId(tag.getTagId());
+            tagVO.setTagName(tag.getTagName());
+            tagVO.setRuleType(tag.getRuleType());
+            vo.addTag(tagVO);
+        }
+        
+        return vo;
+    } catch (const std::exception& e) {
+        std::cerr << "获取疾病详情失败: " << e.what() << std::endl;
+        return DiseaseDetailVO();
+    }
+}
+
+std::vector<DiseaseDetailVO> DiseaseService::getAllDiseaseDetails() {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        DiseaseDAO diseaseDao;
+        
+        auto diseases = diseaseDao.getAllDiseases(conn);
+        std::vector<DiseaseDetailVO> result;
+        
+        for (const auto& disease : diseases) {
+            DiseaseDetailVO vo = getDiseaseDetailById(disease.getId());
+            result.push_back(vo);
+        }
+        
+        return result;
+    } catch (const std::exception& e) {
+        std::cerr << "获取所有疾病详情失败: " << e.what() << std::endl;
+        return {};
     }
 }
 

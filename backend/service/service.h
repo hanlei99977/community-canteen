@@ -280,6 +280,13 @@ public:
     std::vector<Disease> getAllDiseases();
     std::vector<Disease> getDiseasesByUserId(int user_id);
     bool updateUserDiseases(int user_id, const std::vector<int>& disease_ids);
+    
+    // 疾病管理相关方法
+    Disease getDiseaseById(int disease_id);
+    int createDisease(const DiseaseCreateDTO& dto);
+    bool updateDisease(const DiseaseUpdateDTO& dto);
+    DiseaseDetailVO getDiseaseDetailById(int disease_id);
+    std::vector<DiseaseDetailVO> getAllDiseaseDetails();
 };
 
 // ================================

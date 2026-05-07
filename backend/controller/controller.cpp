@@ -167,6 +167,10 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Get("/getAllDiseases", handleGetAllDiseases);
     server.Get("/getUserDiseases", handleGetUserDiseases);
     server.Post("/updateUserDiseases", handleUpdateUserDiseases);
+    // 疾病管理
+    server.Get("/diseaseList", handleGetAllDiseaseDetails);
+    server.Post("/diseaseCreate", handleCreateDisease);
+    server.Post("/diseaseUpdate", handleUpdateDisease);
     // 食堂管理
     server.Get("/myCanteen", handleMyCanteen);
     server.Post("/updateCanteenAddress", handleUpdateCanteenAddress);
@@ -1165,6 +1169,114 @@ void Controller::handleUpdateUserDiseases(const httplib::Request& req, httplib::
         }
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleUpdateUserDiseases] Error: " << e.what() << std::endl;
+        res.status = 400;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleGetAllDiseaseDetails(const httplib::Request& req, httplib::Response& res) {
+    std::cout << "管理员查看所有疾病详情" << std::endl;
+    try {
+        DiseaseService service;
+        auto diseases = service.getAllDiseaseDetails();
+
+        json arr = json::array();
+        for (const auto& vo : diseases) {
+            json tags = json::array();
+            for (const auto& tag : vo.getTags()) {
+                tags.push_back({
+                    {"tag_id", tag.getTagId()},
+                    {"tag_name", tag.getTagName()},
+                    {"rule_type", tag.getRuleType()}
+                });
+            }
+
+            arr.push_back({
+                {"disease_id", vo.getDiseaseId()},
+                {"disease_name", vo.getDiseaseName()},
+                {"tags", tags}
+            });
+        }
+        
+        std::cout << "疾病总数为：" << diseases.size() << std::endl;
+        res.set_content(Response::success(arr), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetAllDiseaseDetails] Error: " << e.what() << std::endl;
+        res.status = 500;
+        res.set_content(Response::error(500, "服务器错误"), "application/json");
+    }
+}
+
+void Controller::handleCreateDisease(const httplib::Request& req, httplib::Response& res) {
+    std::cout << "管理员创建疾病" << std::endl;
+    try {
+        json body = json::parse(req.body);
+        
+        DiseaseCreateDTO dto;
+        dto.setDiseaseName(getStringSafe(body, "disease_name"));
+        
+        std::vector<DiseaseTagDTO> tags;
+        if (body.contains("tags") && body["tags"].is_array()) {
+            for (auto& tag : body["tags"]) {
+                DiseaseTagDTO tagDto;
+                tagDto.setTagId(tag.contains("tag_id") ? tag["tag_id"].get<int>() : 0);
+                tagDto.setRuleType(tag.contains("rule_type") ? tag["rule_type"].get<int>() : 1);
+                if (tagDto.getTagId() > 0) {
+                    tags.push_back(tagDto);
+                }
+            }
+        }
+        dto.setTags(tags);
+
+        DiseaseService service;
+        int disease_id = service.createDisease(dto);
+
+        if (disease_id > 0) {
+            json data = {
+                {"disease_id", disease_id},
+                {"disease_name", dto.getDiseaseName()}
+            };
+            res.set_content(Response::success(data), "application/json");
+        } else {
+            res.set_content(Response::error(500, "创建失败"), "application/json");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleCreateDisease] Error: " << e.what() << std::endl;
+        res.status = 400;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
+    }
+}
+
+void Controller::handleUpdateDisease(const httplib::Request& req, httplib::Response& res) {
+    std::cout << "管理员更新疾病" << std::endl;
+    try {
+        json body = json::parse(req.body);
+        
+        DiseaseUpdateDTO dto;
+        dto.setDiseaseId(getIntSafe(body, "disease_id"));
+        dto.setDiseaseName(getStringSafe(body, "disease_name"));
+        
+        std::vector<DiseaseTagDTO> tags;
+        if (body.contains("tags") && body["tags"].is_array()) {
+            for (auto& tag : body["tags"]) {
+                DiseaseTagDTO tagDto;
+                tagDto.setTagId(tag.contains("tag_id") ? tag["tag_id"].get<int>() : 0);
+                tagDto.setRuleType(tag.contains("rule_type") ? tag["rule_type"].get<int>() : 1);
+                if (tagDto.getTagId() > 0) {
+                    tags.push_back(tagDto);
+                }
+            }
+        }
+        dto.setTags(tags);
+
+        DiseaseService service;
+        if (service.updateDisease(dto)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "更新失败"), "application/json");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleUpdateDisease] Error: " << e.what() << std::endl;
         res.status = 400;
         res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }

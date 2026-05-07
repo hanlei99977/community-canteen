@@ -3708,6 +3708,24 @@ std::vector<Tag> TagDAO::getTagsByDishId(sql::Connection *conn, int dish_id) {
     return list;
 }
 
+Tag TagDAO::getTagById(sql::Connection *conn, int tag_id) {
+    Tag tag;
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT tag_id, tag_name FROM tag WHERE tag_id = ?")
+        );
+        stmt->setInt(1, tag_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            tag.setId(res->getInt("tag_id"));
+            tag.setName(res->getString("tag_name"));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[TagDAO::getTagById] Error: " << e.what() << std::endl;
+    }
+    return tag;
+}
+
 /***************************************************************************************
  * DiseaseDAO
  ***************************************************************************************/
@@ -3805,6 +3823,142 @@ bool DiseaseDAO::deleteUserDisease(sql::Connection *conn, int user_id, int disea
         return true;
     } catch (const std::exception& e) {
         std::cerr << "[DiseaseDAO::deleteUserDisease] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+Disease DiseaseDAO::getDiseaseById(sql::Connection *conn, int disease_id) {
+    Disease disease;
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT disease_id, disease_name FROM disease WHERE disease_id = ?")
+        );
+        stmt->setInt(1, disease_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        if (res->next()) {
+            disease.setId(res->getInt("disease_id"));
+            disease.setName(res->getString("disease_name"));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::getDiseaseById] Error: " << e.what() << std::endl;
+    }
+    return disease;
+}
+
+int DiseaseDAO::insertDisease(sql::Connection *conn, const std::string& disease_name) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("INSERT INTO disease(disease_name) VALUES (?)")
+        );
+        stmt->setString(1, disease_name);
+        stmt->executeUpdate();
+        
+        auto idStmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT LAST_INSERT_ID()")
+        );
+        auto res = std::unique_ptr<sql::ResultSet>(idStmt->executeQuery());
+        if (res->next()) {
+            return res->getInt(1);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::insertDisease] Error: " << e.what() << std::endl;
+    }
+    return -1;
+}
+
+bool DiseaseDAO::updateDisease(sql::Connection *conn, int disease_id, const std::string& disease_name) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("UPDATE disease SET disease_name = ? WHERE disease_id = ?")
+        );
+        stmt->setString(1, disease_name);
+        stmt->setInt(2, disease_id);
+        stmt->executeUpdate();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::updateDisease] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+std::vector<DiseaseTagVO> DiseaseDAO::getDiseaseTags(sql::Connection *conn, int disease_id) {
+    std::vector<DiseaseTagVO> tags;
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT dt.tag_id, dt.rule_type, t.tag_name FROM disease_tag dt LEFT JOIN tag t ON dt.tag_id = t.tag_id WHERE dt.disease_id = ?")
+        );
+        stmt->setInt(1, disease_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            DiseaseTagVO vo;
+            vo.setTagId(res->getInt("tag_id"));
+            vo.setRuleType(res->getInt("rule_type"));
+            vo.setTagName(res->getString("tag_name"));
+            tags.push_back(vo);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::getDiseaseTags] Error: " << e.what() << std::endl;
+    }
+    return tags;
+}
+
+bool DiseaseDAO::insertDiseaseTag(sql::Connection *conn, int disease_id, int tag_id, int rule_type) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("INSERT INTO disease_tag(disease_id, tag_id, rule_type) VALUES (?, ?, ?)")
+        );
+        stmt->setInt(1, disease_id);
+        stmt->setInt(2, tag_id);
+        stmt->setInt(3, rule_type);
+        stmt->executeUpdate();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::insertDiseaseTag] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool DiseaseDAO::updateDiseaseTag(sql::Connection *conn, int disease_id, int tag_id, int rule_type) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("UPDATE disease_tag SET rule_type = ? WHERE disease_id = ? AND tag_id = ?")
+        );
+        stmt->setInt(1, rule_type);
+        stmt->setInt(2, disease_id);
+        stmt->setInt(3, tag_id);
+        stmt->executeUpdate();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::updateDiseaseTag] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool DiseaseDAO::deleteDiseaseTag(sql::Connection *conn, int disease_id, int tag_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("DELETE FROM disease_tag WHERE disease_id = ? AND tag_id = ?")
+        );
+        stmt->setInt(1, disease_id);
+        stmt->setInt(2, tag_id);
+        stmt->executeUpdate();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::deleteDiseaseTag] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool DiseaseDAO::deleteAllDiseaseTags(sql::Connection *conn, int disease_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("DELETE FROM disease_tag WHERE disease_id = ?")
+        );
+        stmt->setInt(1, disease_id);
+        stmt->executeUpdate();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::deleteAllDiseaseTags] Error: " << e.what() << std::endl;
         return false;
     }
 }

@@ -14,6 +14,7 @@ import ManagerApply from '../views/admin/ManagerApply.vue'
 import Announcement from '../views/admin/Announcement.vue'
 import ReportManage from '../views/admin/ReportManage.vue'
 import CanteenManage from '../views/admin/CanteenManage.vue'
+import DiseaseManage from '../views/admin/DiseaseManage.vue'
 // manager
 import MenuManage from '../views/manager/MenuManage.vue'
 import DishManage from '../views/manager/DishManage.vue'
@@ -59,7 +60,8 @@ const routes = [
       { path: '/dinerManage', component: DinerManage},
       { path: '/announcement', component: Announcement},
       { path: '/reportManage', component: ReportManage},
-      { path: '/canteenManage', component: CanteenManage}
+      { path: '/canteenManage', component: CanteenManage},
+      { path: '/diseaseManage', component: DiseaseManage}
     ]
   }
 ]

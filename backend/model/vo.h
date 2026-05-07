@@ -906,6 +906,41 @@ public:
     void addTag(const std::string& tag) { tags.push_back(tag); }
 };
 
+// 疾病标签关联项
+class DiseaseTagVO {
+private:
+    int tagId;
+    std::string tagName;
+    int ruleType;
+public:
+    int getTagId() const { return tagId; }
+    void setTagId(int value) { tagId = value; }
+
+    std::string getTagName() const { return tagName; }
+    void setTagName(const std::string& value) { tagName = value; }
+
+    int getRuleType() const { return ruleType; }
+    void setRuleType(int value) { ruleType = value; }
+};
+
+// 疾病详情VO（用于疾病管理）
+class DiseaseDetailVO {
+private:
+    int diseaseId;
+    std::string diseaseName;
+    std::vector<DiseaseTagVO> tags;
+public:
+    int getDiseaseId() const { return diseaseId; }
+    void setDiseaseId(int value) { diseaseId = value; }
+
+    std::string getDiseaseName() const { return diseaseName; }
+    void setDiseaseName(const std::string& value) { diseaseName = value; }
+
+    std::vector<DiseaseTagVO> getTags() const { return tags; }
+    void setTags(const std::vector<DiseaseTagVO>& value) { tags = value; }
+    void addTag(const DiseaseTagVO& tag) { tags.push_back(tag); }
+};
+
 // 餐品购买排名项
 class DishPurchaseRankingItem {
 private:

@@ -288,6 +288,7 @@ class TagDAO {
 public:
     std::vector<Tag> getAllTags(sql::Connection *conn);
     std::vector<Tag> getTagsByDishId(sql::Connection *conn, int dish_id);
+    Tag getTagById(sql::Connection *conn, int tag_id);
 };
 
 // ================================
@@ -300,6 +301,18 @@ public:
     std::vector<int> getDiseaseIdsByUserId(sql::Connection *conn, int user_id);
     bool insertUserDisease(sql::Connection *conn, int user_id, int disease_id);
     bool deleteUserDisease(sql::Connection *conn, int user_id, int disease_id);
+    
+    // 疾病管理相关方法
+    Disease getDiseaseById(sql::Connection *conn, int disease_id);
+    int insertDisease(sql::Connection *conn, const std::string& disease_name);
+    bool updateDisease(sql::Connection *conn, int disease_id, const std::string& disease_name);
+    
+    // 疾病标签关联方法
+    std::vector<DiseaseTagVO> getDiseaseTags(sql::Connection *conn, int disease_id);
+    bool insertDiseaseTag(sql::Connection *conn, int disease_id, int tag_id, int rule_type);
+    bool updateDiseaseTag(sql::Connection *conn, int disease_id, int tag_id, int rule_type);
+    bool deleteDiseaseTag(sql::Connection *conn, int disease_id, int tag_id);
+    bool deleteAllDiseaseTags(sql::Connection *conn, int disease_id);
 };
 
 // ================================

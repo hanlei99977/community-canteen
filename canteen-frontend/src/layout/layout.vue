@@ -45,6 +45,10 @@
           食堂管理
         </el-menu-item>
 
+        <el-menu-item v-if="isSystemAdmin" index="/diseaseManage">
+          疾病管理
+        </el-menu-item>
+
         <el-menu-item v-if="isAdmin" index="/announcement">
           公告发布
         </el-menu-item>

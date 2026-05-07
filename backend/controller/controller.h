@@ -32,6 +32,10 @@ private:
     static void handleDiningPreference(const httplib::Request& req, httplib::Response& res);
     static void handleGetDishPurchaseRanking(const httplib::Request& req, httplib::Response& res);
     static void handleGetDishDetail(const httplib::Request& req, httplib::Response& res);
+    // 疾病
+    static void handleGetAllDiseases(const httplib::Request& req, httplib::Response& res);
+    static void handleGetUserDiseases(const httplib::Request& req, httplib::Response& res);
+    static void handleUpdateUserDiseases(const httplib::Request& req, httplib::Response& res);
     // 家庭
     static void handleFamilyList(const httplib::Request& req, httplib::Response& res);
     static void handleCreateFamily(const httplib::Request& req, httplib::Response& res);

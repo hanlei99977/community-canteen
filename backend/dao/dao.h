@@ -291,6 +291,18 @@ public:
 };
 
 // ================================
+// 疾病
+// ================================
+class DiseaseDAO {
+public:
+    std::vector<Disease> getAllDiseases(sql::Connection *conn);
+    std::vector<Disease> getDiseasesByUserId(sql::Connection *conn, int user_id);
+    std::vector<int> getDiseaseIdsByUserId(sql::Connection *conn, int user_id);
+    bool insertUserDisease(sql::Connection *conn, int user_id, int disease_id);
+    bool deleteUserDisease(sql::Connection *conn, int user_id, int disease_id);
+};
+
+// ================================
 // 菜品标签关联
 // ================================
 class DishTagDAO {

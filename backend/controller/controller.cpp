@@ -163,6 +163,10 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Get("/districtRegionList", handleDistrictRegionList);
     server.Get("/cityRegionList", handleCityRegionList);
     server.Get("/getDistrictsByCity", handleGetDistrictsByCity);
+    // 疾病
+    server.Get("/getAllDiseases", handleGetAllDiseases);
+    server.Get("/getUserDiseases", handleGetUserDiseases);
+    server.Post("/updateUserDiseases", handleUpdateUserDiseases);
     // 食堂管理
     server.Get("/myCanteen", handleMyCanteen);
     server.Post("/updateCanteenAddress", handleUpdateCanteenAddress);
@@ -1028,7 +1032,7 @@ void Controller::handleUserCenter(const httplib::Request& req, httplib::Response
                 {"regionName", user->getRegionName()},
                 {"familyId", user->getFamilyId()},
                 {"familyName", user->getFamilyName()},
-                {"diseaseHistory", user->getDiseaseHistory()},
+                {"diseases", user->getDiseases()},
                 {"canteenId", user->getCanteenId()},
                 {"canteenName", user->getCanteenName()},
                 {"adminLevel", user->getAdminLevel()},
@@ -1062,7 +1066,6 @@ void Controller::handleUserCenterUpdate(const httplib::Request& req, httplib::Re
         user.setAge(getIntSafe(body, "age"));
         user.setPhone(getStringSafe(body, "phone"));
         user.setIdCard(getStringSafe(body, "id_card"));
-        user.setDiseaseHistory(getStringSafe(body, "disease_history"));
         user.setRegionId(getIntSafe(body, "region_id"));
         user.setFamilyId(getIntSafe(body, "family_id"));
 
@@ -1093,6 +1096,77 @@ void Controller::handleUserCenterUpdate(const httplib::Request& req, httplib::Re
        catch (const std::exception& e) {
             std::cerr << "更新异常: " << e.what() << std::endl;
             res.set_content(Response::error(500, "服务器错误"), "application/json");
+    }
+}
+
+void Controller::handleGetAllDiseases(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        DiseaseService service;
+        auto diseases = service.getAllDiseases();
+
+        json arr = json::array();
+        for (const auto& d : diseases) {
+            arr.push_back({
+                {"disease_id", d.getId()},
+                {"disease_name", d.getName()}
+            });
+        }
+
+        res.set_content(Response::success(arr), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetAllDiseases] Error: " << e.what() << std::endl;
+        res.status = 500;
+        res.set_content(Response::error(500, "服务器错误"), "application/json");
+    }
+}
+
+void Controller::handleGetUserDiseases(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        DiseaseService service;
+        auto diseases = service.getDiseasesByUserId(user_id);
+
+        json arr = json::array();
+        for (const auto& d : diseases) {
+            arr.push_back({
+                {"disease_id", d.getId()},
+                {"disease_name", d.getName()}
+            });
+        }
+
+        res.set_content(Response::success(arr), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetUserDiseases] Error: " << e.what() << std::endl;
+        res.status = 500;
+        res.set_content(Response::error(500, "服务器错误"), "application/json");
+    }
+}
+
+void Controller::handleUpdateUserDiseases(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        json body = json::parse(req.body);
+        int user_id = getIntSafe(body, "user_id");
+        std::vector<int> disease_ids;
+
+        if (body.contains("disease_ids") && body["disease_ids"].is_array()) {
+            for (auto& id : body["disease_ids"]) {
+                disease_ids.push_back(id.get<int>());
+            }
+        }
+
+        DiseaseService service;
+        if (service.updateUserDiseases(user_id, disease_ids)) {
+            res.set_content(Response::success(), "application/json");
+        } else {
+            res.set_content(Response::error(500, "更新失败"), "application/json");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleUpdateUserDiseases] Error: " << e.what() << std::endl;
+        res.status = 400;
+        res.set_content(Response::error(400, "JSON格式错误"), "application/json");
     }
 }
 
@@ -1332,7 +1406,7 @@ void Controller::handleDinerList(const httplib::Request& req, httplib::Response&
                 {"status", dinerInfo.getStatus()},
                 {"region_id", dinerInfo.getRegionId()},
                 {"region_name", dinerInfo.getRegionName()},
-                {"disease_history", dinerInfo.getDiseaseHistory()},
+                {"disease_history", dinerInfo.getDiseases()},
             });
         }
         res.set_content(Response::success(arr), "application/json");

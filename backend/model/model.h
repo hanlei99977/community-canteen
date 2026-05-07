@@ -129,7 +129,6 @@ private:
     int user_id;
     int family_id;
     int region_id;
-    std::string disease_history;
 
 public:
     int getUserId() const { return user_id; }
@@ -140,9 +139,6 @@ public:
 
     int getRegionId() const { return region_id; }
     void setRegionId(int id) { region_id = id;} 
-
-    std::string getDiseaseHistory() const { return disease_history; }
-    void setDiseaseHistory(const std::string& d) { disease_history = d; }
 };
 
 // ================================
@@ -600,6 +596,22 @@ public:
 
     std::string getName() const { return tag_name; }
     void setName(const std::string& name) { tag_name = name; }
+};
+
+// ================================
+// Disease
+// ================================
+class Disease {
+private:
+    int disease_id;
+    std::string disease_name;
+
+public:
+    int getId() const { return disease_id; }
+    void setId(int id) { disease_id = id; }
+
+    std::string getName() const { return disease_name; }
+    void setName(const std::string& name) { disease_name = name; }
 };
 
 // ================================

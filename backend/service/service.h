@@ -273,6 +273,16 @@ public:
 };
 
 // ================================
+// 疾病服务
+// ================================
+class DiseaseService {
+public:
+    std::vector<Disease> getAllDiseases();
+    std::vector<Disease> getDiseasesByUserId(int user_id);
+    bool updateUserDiseases(int user_id, const std::vector<int>& disease_ids);
+};
+
+// ================================
 // 菜品标签服务
 // ================================
 class DishTagService {

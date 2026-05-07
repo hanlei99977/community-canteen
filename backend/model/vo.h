@@ -338,8 +338,7 @@ private:
     std::string regionName;
     int familyId;
     std::string familyName;
-    std::string diseaseHistory;
-    std::string tastePreference;
+    std::vector<std::string> diseases;
     
     // 食堂管理者字段
     int canteenId;
@@ -379,12 +378,10 @@ public:
 
     std::string getFamilyName() const { return familyName; }
     void setFamilyName(const std::string& name) { familyName = name; }
-
-    std::string getDiseaseHistory() const { return diseaseHistory; }
-    void setDiseaseHistory(const std::string& history) { diseaseHistory = history; }
-
-    std::string getTastePreference() const { return tastePreference; }
-    void setTastePreference(const std::string& pref) { tastePreference = pref; }
+    
+    std::vector<std::string> getDiseases() const { return diseases; }
+    void setDiseases(const std::vector<std::string>& dis) { diseases = dis; }
+    void addDisease(const std::string& disease) { diseases.push_back(disease); }
 
     int getCanteenId() const { return canteenId; }
     void setCanteenId(int id) { canteenId = id; }
@@ -481,8 +478,9 @@ private:
     std::string phone;
     int region_id;
     std::string region_name;
+    std::vector<std::string> diseases;
     int status;
-    std::string disease_history;
+
 
 public:
     // GETTER & SETTER 完全统一风格
@@ -500,14 +498,16 @@ public:
 
     int getRegionId() const { return region_id; }
     void setRegionId(int id) { region_id = id; }
+
     std::string getRegionName() const { return region_name; }
     void setRegionName(const std::string& addr) { region_name = addr; }
 
+    std::vector<std::string> getDiseases() const { return diseases; }
+    void setDiseases(const std::vector<std::string>& dis) { diseases = dis; }
+    void addDisease(const std::string& disease) { diseases.push_back(disease); }
+
     int getStatus() const { return status; }
     void setStatus(int s) { status = s; }
-
-    std::string getDiseaseHistory() const { return disease_history; }
-    void setDiseaseHistory(const std::string& d) { disease_history = d; }
 };
 
 // 家庭成员（下单对象）VO
@@ -886,6 +886,24 @@ public:
     void addCanteenConsumption(const ConsumptionItem& item) { canteen_consumption.push_back(item); }
     void addDishConsumption(const ConsumptionItem& item) { dish_consumption.push_back(item); }
     void addTagPreference(const ConsumptionItem& item) { tag_preference.push_back(item); }
+};
+
+// 疾病VO
+class DiseaseVO {
+private:
+    int diseaseId;
+    std::string diseaseName;
+    std::vector<std::string> tags;
+public:
+    int getDiseaseId() const { return diseaseId; }
+    void setDiseaseId(int value) { diseaseId = value; }
+
+    std::string getDiseaseName() const { return diseaseName; }
+    void setDiseaseName(const std::string& value) { diseaseName = value; }
+
+    std::vector<std::string> getTags() const { return tags; }
+    void setTags(const std::vector<std::string>& value) { tags = value; }
+    void addTag(const std::string& tag) { tags.push_back(tag); }
 };
 
 // 餐品购买排名项

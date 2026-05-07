@@ -26,11 +26,21 @@
           <el-divider content-position="left">用餐者信息</el-divider>
           <!-- 疾病史 -->
           <el-form-item label="疾病史(如有)">
-            <el-select v-model="form.disease_history" placeholder="请选择">
-              <el-option label="无" value="无" />
-              <el-option label="高血压" value="高血压" />
-              <el-option label="糖尿病" value="糖尿病" />
-            </el-select>
+            <el-row :gutter="10">
+              <el-col :span="18">
+                <el-tag
+                  v-for="disease in form.diseases"
+                  :key="disease"
+                  style="margin-right: 5px; margin-bottom: 5px;"
+                >
+                  {{ disease }}
+                </el-tag>
+                <span v-if="form.diseases.length === 0" style="color: #909399;">暂无疾病史</span>
+              </el-col>
+              <el-col :span="6">
+                <el-button type="primary" @click="openDiseaseDialog">修改</el-button>
+              </el-col>
+            </el-row>
           </el-form-item>
 
           <!-- 家庭选择 -->
@@ -140,6 +150,29 @@
           </span>
         </template>
       </el-dialog>
+
+      <!-- 疾病选择对话框 -->
+      <el-dialog
+        v-model="diseaseDialogVisible"
+        title="选择疾病史"
+        width="500px"
+      >
+        <el-checkbox-group v-model="selectedDiseaseIds">
+          <el-checkbox
+            v-for="disease in allDiseases"
+            :key="disease.disease_id"
+            :label="disease.disease_id"
+          >
+            {{ disease.disease_name }}
+          </el-checkbox>
+        </el-checkbox-group>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="diseaseDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="saveDiseases">保存</el-button>
+          </span>
+        </template>
+      </el-dialog>
     </el-card>
   </div>
 </template>
@@ -163,6 +196,7 @@ onMounted(() => {
   getUserInfo()
   getFamilyList()
   getRegionList()
+  getAllDiseases()
 })
 
 const isDiner = computed(() => user.value.role === 'diner')
@@ -176,7 +210,7 @@ const form = ref({
   phone: '',
   id_card: '',
   address: '',
-  disease_history: '',
+  diseases: [],
   family_id: '',
   family_name: '',
   region_id: '',
@@ -189,6 +223,9 @@ const form = ref({
 
 const familyList = ref([])
 const regionList = ref([])
+const allDiseases = ref([])
+const selectedDiseaseIds = ref([])
+const diseaseDialogVisible = ref(false)
 
 const createFamilyDialogVisible = ref(false)
 const createFamilyForm = ref({
@@ -254,7 +291,7 @@ const getUserInfo = async () => {
       phone: data.phone,
       id_card: data.id_card,
       address: data.address,
-      disease_history: data.diseaseHistory || '',
+      diseases: Array.isArray(data.diseases) ? data.diseases : [],
       family_id: data.familyId || '',
       family_name: data.familyName || '',
       region_id: data.regionId || '',
@@ -293,6 +330,44 @@ const getRegionList = async () => {
   }
 }
 
+const getAllDiseases = async () => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/getAllDiseases')
+    allDiseases.value = res.data.data || []
+  } catch (err) {
+    ElMessage.error('获取疾病列表失败')
+    console.error(err)
+  }
+}
+
+const openDiseaseDialog = async () => {
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/getUserDiseases', {
+      params: { user_id: user.value.user_id }
+    })
+    selectedDiseaseIds.value = res.data.data.map(d => d.disease_id)
+    diseaseDialogVisible.value = true
+  } catch (err) {
+    ElMessage.error('获取用户疾病信息失败')
+    console.error(err)
+  }
+}
+
+const saveDiseases = async () => {
+  try {
+    await axios.post('http://192.168.56.100:8080/updateUserDiseases', {
+      user_id: user.value.user_id,
+      disease_ids: selectedDiseaseIds.value
+    })
+    ElMessage.success('更新成功')
+    diseaseDialogVisible.value = false
+    getUserInfo()
+  } catch (err) {
+    ElMessage.error('更新失败：' + (err.response?.data?.msg || '服务器异常'))
+    console.error(err)
+  }
+}
+
 const updateUser = async () => {
   try {
     await axios.post('http://192.168.56.100:8080/userCenterUpdate', {
@@ -302,7 +377,6 @@ const updateUser = async () => {
       phone: form.value.phone,
       address: form.value.address,
       id_card: form.value.id_card,
-      disease_history: form.value.disease_history,
       family_id: form.value.family_id,
       region_id: form.value.region_id
     })
@@ -393,13 +467,6 @@ const changePassword = async () => {
       return
     }
     ElMessage.error('密码修改失败：' + (err.response?.data?.msg || '服务器异常'))
-    console.error(err)
   }
 }
 </script>
-
-<style scoped>
-.user-center {
-  padding: 20px;
-}
-</style>

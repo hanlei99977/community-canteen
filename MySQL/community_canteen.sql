@@ -49,6 +49,20 @@ CREATE TABLE tag (
     tag_name VARCHAR(50) UNIQUE
 );
 
+-- 疾病表
+CREATE TABLE disease (
+    disease_id INT PRIMARY KEY AUTO_INCREMENT,
+    disease_name VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE disease_tag (
+    disease_id INT,
+    tag_id INT,
+    rule_type INT NOT NULL COMMENT '1-推荐 2-不推荐',
+    PRIMARY KEY (disease_id, tag_id),
+    FOREIGN KEY (disease_id) REFERENCES disease(disease_id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tag(tag_id) ON DELETE CASCADE
+);
 -- ##################### 用户表 #####################
 -- ===============================
 -- 用户信息
@@ -80,7 +94,6 @@ CREATE TABLE diner(
     user_id int primary key,
     family_id int DEFAULT 1,
     region_id INT,
-    disease_history varchar(100),  -- 疾病史
     FOREIGN KEY (region_id) REFERENCES region(region_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (family_id) REFERENCES family(family_id)
@@ -349,6 +362,14 @@ CREATE TABLE favorite (
     FOREIGN KEY (dish_id) REFERENCES dish(dish_id)
 );
 
+--  用户疾病表
+CREATE TABLE diner_disease (
+    user_id INT,
+    disease_id INT,
+    PRIMARY KEY (user_id, disease_id),
+    FOREIGN KEY (user_id) REFERENCES diner(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (disease_id) REFERENCES disease(disease_id) ON DELETE CASCADE
+);
 --##################### 添加索引 #####################
 CREATE INDEX idx_order_id ON order_cancel(order_id);
 CREATE INDEX idx_status ON order_cancel(status);

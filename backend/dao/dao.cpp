@@ -834,7 +834,6 @@ std::shared_ptr<Diner> DinerDAO::getDinerByUserId(sql::Connection *conn, int use
             auto d = std::make_shared<Diner>();
             d->setUserId(res->getInt("user_id"));
             d->setFamilyId(res->getInt("family_id"));
-            d->setDiseaseHistory(res->getString("disease_history"));
             return d;
         }
     } catch (const std::exception& e) {
@@ -848,7 +847,7 @@ std::shared_ptr<UserCenterVO> DinerDAO::getDinerCenterByUserId(sql::Connection *
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "SELECT u.username, u.age, u.phone, u.id_card, r.region_id, r.region_name, d.family_id, f.family_name, d.disease_history "
+                "SELECT u.username, u.age, u.phone, u.id_card, r.region_id, r.region_name, d.family_id, f.family_name "
                 "FROM users u JOIN diner d ON u.user_id = d.user_id "
                 "JOIN region r ON r.region_id = d.region_id "
                 "LEFT JOIN family f ON d.family_id = f.family_id "
@@ -870,7 +869,20 @@ std::shared_ptr<UserCenterVO> DinerDAO::getDinerCenterByUserId(sql::Connection *
             vo->setRegionName(res->getString("region_name"));
             vo->setFamilyId(res->getInt("family_id"));
             vo->setFamilyName(res->getString("family_name"));
-            vo->setDiseaseHistory(res->getString("disease_history"));
+
+            // 获取用户的疾病列表
+            auto diseaseStmt = std::unique_ptr<sql::PreparedStatement>(
+                conn->prepareStatement(
+                    "SELECT dis.disease_id, dis.disease_name FROM diner_disease dd "
+                    "JOIN disease dis ON dd.disease_id = dis.disease_id "
+                    "WHERE dd.user_id=?"
+                )
+            );
+            diseaseStmt->setInt(1, user_id);
+            auto diseaseRes = std::unique_ptr<sql::ResultSet>(diseaseStmt->executeQuery());
+            while (diseaseRes->next()) {
+                vo->addDisease(diseaseRes->getString("disease_name"));
+            }
 
             return vo;
         }
@@ -921,15 +933,14 @@ bool DinerDAO::updateDiner(sql::Connection *conn, const UserCenterVO& diner) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "UPDATE diner SET family_id=?, disease_history=?, region_id=?  "
+                "UPDATE diner SET family_id=?, region_id=?  "
                 "WHERE user_id=?"
             )
         );
 
         stmt->setInt(1, diner.getFamilyId());
-        stmt->setString(2, diner.getDiseaseHistory());
-        stmt->setInt(3, diner.getRegionId());
-        stmt->setInt(4, diner.getUserId());
+        stmt->setInt(2, diner.getRegionId());
+        stmt->setInt(3, diner.getUserId());
         if (stmt->executeUpdate() == 0) {
             std::cout<<"没有对diner表进行更新"<<std::endl; 
         }
@@ -988,7 +999,6 @@ std::vector<DinerInformation> DinerDAO::getDinerList(sql::Connection *conn)
             dinerInfo.setRegionId(res->getInt("region_id"));
             dinerInfo.setRegionName(res->getString("region_name"));
             dinerInfo.setStatus(res->getInt("status"));
-            dinerInfo.setDiseaseHistory(res->getString("disease_history"));
 
             list.push_back(dinerInfo);
         }
@@ -3682,6 +3692,107 @@ std::vector<Tag> TagDAO::getTagsByDishId(sql::Connection *conn, int dish_id) {
     }
 
     return list;
+}
+
+/***************************************************************************************
+ * DiseaseDAO
+ ***************************************************************************************/
+std::vector<Disease> DiseaseDAO::getAllDiseases(sql::Connection *conn) {
+    std::vector<Disease> list;
+
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT disease_id, disease_name FROM disease")
+        );
+
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            Disease disease;
+            disease.setId(res->getInt("disease_id"));
+            disease.setName(res->getString("disease_name"));
+            list.push_back(disease);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::getAllDiseases] Error: " << e.what() << std::endl;
+    }
+
+    return list;
+}
+
+std::vector<Disease> DiseaseDAO::getDiseasesByUserId(sql::Connection *conn, int user_id) {
+    std::vector<Disease> list;
+
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT d.disease_id, d.disease_name FROM disease d "
+                "JOIN diner_disease dd ON d.disease_id = dd.disease_id "
+                "WHERE dd.user_id = ?"
+            )
+        );
+
+        stmt->setInt(1, user_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+
+        while (res->next()) {
+            Disease disease;
+            disease.setId(res->getInt("disease_id"));
+            disease.setName(res->getString("disease_name"));
+            list.push_back(disease);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::getDiseasesByUserId] Error: " << e.what() << std::endl;
+    }
+
+    return list;
+}
+
+std::vector<int> DiseaseDAO::getDiseaseIdsByUserId(sql::Connection *conn, int user_id) {
+    std::vector<int> list;
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT disease_id FROM diner_disease WHERE user_id = ?")
+        );
+        stmt->setInt(1, user_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            list.push_back(res->getInt("disease_id"));
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::getDiseaseIdsByUserId] Error: " << e.what() << std::endl;
+    }
+    return list;
+}
+
+bool DiseaseDAO::insertUserDisease(sql::Connection *conn, int user_id, int disease_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("INSERT INTO diner_disease(user_id, disease_id) VALUES (?, ?)")
+        );
+        stmt->setInt(1, user_id);
+        stmt->setInt(2, disease_id);
+        stmt->executeUpdate();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::insertUserDisease] Error: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool DiseaseDAO::deleteUserDisease(sql::Connection *conn, int user_id, int disease_id) {
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("DELETE FROM diner_disease WHERE user_id = ? AND disease_id = ?")
+        );
+        stmt->setInt(1, user_id);
+        stmt->setInt(2, disease_id);
+        stmt->executeUpdate();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "[DiseaseDAO::deleteUserDisease] Error: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 /***************************************************************************************

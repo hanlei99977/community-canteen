@@ -195,8 +195,7 @@ std::shared_ptr<UserCenterVO> UserService::getUserCenterByUserId(int user_id) {
             result->setRegionName(diner->getRegionName());
             result->setFamilyId(diner->getFamilyId());
             result->setFamilyName(diner->getFamilyName());
-            result->setDiseaseHistory(diner->getDiseaseHistory());
-            result->setTastePreference(diner->getTastePreference());
+            result->setDiseases(diner->getDiseases());
         }
     } else if (role == "canteen_manager") {
         auto user = userDAO.getUserById(conn, user_id);
@@ -2155,6 +2154,77 @@ std::vector<Tag> TagService::getTagsByDishId(int dish_id) {
     } catch (const std::exception& e) {
         std::cerr << "获取菜品标签失败: " << e.what() << std::endl;
         return {};
+    }
+}
+
+/***************************************************************************************
+ * DiseaseService
+ ***************************************************************************************/
+std::vector<Disease> DiseaseService::getAllDiseases() {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        DiseaseDAO dao;
+        return dao.getAllDiseases(conn);
+    } catch (const std::exception& e) {
+        std::cerr << "获取所有疾病失败: " << e.what() << std::endl;
+        return {};
+    }
+}
+
+std::vector<Disease> DiseaseService::getDiseasesByUserId(int user_id) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        DiseaseDAO dao;
+        return dao.getDiseasesByUserId(conn, user_id);
+    } catch (const std::exception& e) {
+        std::cerr << "获取用户疾病失败: " << e.what() << std::endl;
+        return {};
+    }
+}
+
+bool DiseaseService::updateUserDiseases(int user_id, const std::vector<int>& disease_ids) {
+    try {
+        DBConnectionGuard guard;
+        auto* conn = guard.get();
+        TransactionGuard tx(conn);
+        DiseaseDAO dao;
+
+        std::vector<int> current_ids = dao.getDiseaseIdsByUserId(conn, user_id);
+
+        std::vector<int> to_add;
+        std::vector<int> to_remove;
+
+        for (int id : disease_ids) {
+            if (std::find(current_ids.begin(), current_ids.end(), id) == current_ids.end()) {
+                to_add.push_back(id);
+            }
+        }
+
+        for (int id : current_ids) {
+            if (std::find(disease_ids.begin(), disease_ids.end(), id) == disease_ids.end()) {
+                to_remove.push_back(id);
+            }
+        }
+
+        for (int disease_id : to_remove) {
+            if (!dao.deleteUserDisease(conn, user_id, disease_id)) {
+                return false;
+            }
+        }
+
+        for (int disease_id : to_add) {
+            if (!dao.insertUserDisease(conn, user_id, disease_id)) {
+                return false;
+            }
+        }
+
+        tx.commit();
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "更新用户疾病失败: " << e.what() << std::endl;
+        return false;
     }
 }
 

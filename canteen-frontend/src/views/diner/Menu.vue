@@ -39,6 +39,67 @@
       </el-form-item>
     </el-form>
 
+    <!-- 为您推荐 -->
+    <div v-if="recommendedDishes.length > 0" style="margin-bottom: 20px;">
+      <h3 style="margin-top: 0; margin-bottom: 15px; display: flex; align-items: center;">
+        <span style="font-size: 18px; margin-right: 8px;">🎯</span>
+        <span>为您推荐</span>
+      </h3>
+      <div style="display: flex; overflow-x: auto; gap: 15px; padding-bottom: 10px;">
+        <div
+          v-for="dish in recommendedDishes"
+          :key="dish.dishId"
+          style="flex: 0 0 280px; background-color: white; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); padding: 15px; min-width: 280px;"
+          :style="{ backgroundColor: dish.bgColor }"
+        >
+          <!-- 推荐类型图标 -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 24px;">{{ dish.icon }}</span>
+            <span style="font-size: 12px; color: #999;">推荐分: {{ dish.recommendationScore }}</span>
+          </div>
+          
+          <!-- 菜品名称 -->
+          <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold;">{{ dish.dishName }}</h4>
+          
+          <!-- 价格 -->
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 18px; color: #f56c6c; font-weight: bold;">¥{{ dish.price.toFixed(2) }}</span>
+          </div>
+          
+          <!-- 标签 -->
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px;">
+            <span
+              v-for="(tag, index) in dish.tags"
+              :key="index"
+              style="font-size: 12px; padding: 2px 8px; border-radius: 10px; background-color: white; color: #666;"
+            >
+              {{ tag }}
+            </span>
+          </div>
+          
+          <!-- 推荐原因 -->
+          <div style="margin-bottom: 12px;">
+            <span
+              style="font-size: 12px; padding: 4px 8px; border-radius: 4px; display: inline-block;"
+              :style="{ color: dish.color, backgroundColor: dish.bgColor, border: `1px solid ${dish.color}` }"
+            >
+              {{ dish.recommendationReason }}
+            </span>
+          </div>
+          
+          <!-- 添加按钮 -->
+          <el-button
+            type="primary"
+            size="small"
+            style="width: 100%;"
+            @click="addFromRecommendation(dish)"
+          >
+            添加到订单
+          </el-button>
+        </div>
+      </div>
+    </div>
+
     <!-- 最近订单信息 -->
     <div v-if="showRecentOrder" style="margin-bottom: 20px; padding: 15px; border: 1px solid #e4e7ed; border-radius: 4px; background-color: #f9f9f9;">
       <h3 style="margin-top: 0; margin-bottom: 10px;">最近订单</h3>
@@ -254,6 +315,9 @@ const outOfStockDishes = ref([])
 // 已选菜品
 const selectedDishes = ref([])
 
+// 推荐菜品
+const recommendedDishes = ref([])
+
 // 计算是否为自己点餐
 const isOrderingForSelf = computed(() => {
   return selectedOrderForUserId.value === user.user_id
@@ -311,6 +375,7 @@ const handleOrderForUserChange = async (user_id) => {
   await getUserAge(user_id)
   await getRecentOrder()
   await checkFavoritesStatus()
+  await getRecommendedDishes()
 }
 
 // 获取最近订单信息
@@ -346,6 +411,62 @@ const getRecentOrder = async () => {
     recentOrder.value = null
     recentOrderItems.value = []
     outOfStockDishes.value = []
+  }
+}
+
+// 获取推荐菜品
+const getRecommendedDishes = async () => {
+  const canteen_id = Number(route.query.canteen_id)
+  const order_for_user_id = Number(selectedOrderForUserId.value || user.user_id)
+  
+  try {
+    const res = await axios.get('http://192.168.56.100:8080/recommendedDishes', {
+      params: {
+        user_id: order_for_user_id,
+        canteen_id: canteen_id,
+        meal_type: selectedMealType.value
+      }
+    })
+    
+    if (res.data.code === 0) {
+      // 后端返回的数据结构是 { recommended_dishes: [...] }
+      const dishesData = res.data.data.recommended_dishes || []
+      recommendedDishes.value = dishesData.map(dish => ({
+        dishId: dish.dish_id,
+        dishName: dish.dish_name,
+        price: dish.price,
+        tags: dish.tags,
+        recommendationScore: dish.recommendation_score,
+        recommendationReason: dish.recommendation_reason,
+        quantity: 0,
+        ...getRecommendationType(dish.recommendation_reason)
+      }))
+    }
+  } catch (error) {
+    console.error('获取推荐菜品失败:', error)
+  }
+}
+
+// 判断推荐类型
+const getRecommendationType = (reason) => {
+  if (reason.includes('疾病推荐') || reason.includes('健康')) {
+    return { type: 'health', color: '#67c23a', icon: '❤', bgColor: '#f0f9eb' }
+  } else if (reason.includes('热门')) {
+    return { type: 'popular', color: '#e6a23c', icon: '🔥', bgColor: '#fdf6ec' }
+  } else if (reason.includes('偏好')) {
+    return { type: 'preference', color: '#409eff', icon: '👍', bgColor: '#ecf5ff' }
+  }
+  return { type: 'default', color: '#909399', icon: '⭐', bgColor: '#f5f5f5' }
+}
+
+// 从推荐菜品添加到订单
+const addFromRecommendation = (dish) => {
+  const targetDish = dishes.value.find(d => d.id === dish.dishId)
+  if (targetDish) {
+    targetDish.quantity += 1
+    ElMessage.success(`已添加 ${dish.dishName}`)
+  } else {
+    ElMessage.warning('该菜品不在当前餐单中')
   }
 }
 
@@ -578,6 +699,9 @@ onMounted(async () => {
   
   // 获取最近订单
   await getRecentOrder()
+  
+  // 获取推荐菜品
+  await getRecommendedDishes()
 })
 
 // ⭐ 提交订单

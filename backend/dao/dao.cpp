@@ -2300,6 +2300,30 @@ bool OrderItemDAO::insertOrderItems(sql::Connection *conn, int order_id, const s
     }
 }
 
+std::vector<OrderItem> OrderItemDAO::getOrderItemsByOrderId(sql::Connection *conn, int order_id) {
+    std::vector<OrderItem> items;
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT dish_id, quantity, unit_price, discount_price, subtotal FROM order_item WHERE order_id = ?")
+        );
+        stmt->setInt(1, order_id);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            OrderItem item;
+            item.setOrderId(order_id);
+            item.setDishId(res->getInt("dish_id"));
+            item.setQuantity(res->getInt("quantity"));
+            item.setUnitPrice(res->getDouble("unit_price"));
+            item.setDiscountPrice(res->getDouble("discount_price"));
+            item.setSubtotal(res->getDouble("subtotal"));
+            items.push_back(item);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[OrderItemDAO::getOrderItemsByOrderId] Error: " << e.what() << std::endl;
+    }
+    return items;
+}
+
 /***************************************************************************************
  * RatingDao
  ***************************************************************************************/
@@ -4157,4 +4181,36 @@ std::vector<DinerPreference> DinerPreferenceDAO::getTopPreferences(sql::Connecti
         std::cerr << "[DinerPreferenceDAO::getTopPreferences] Error: " << e.what() << std::endl;
     }
     return list;
+}
+
+bool DinerPreferenceDAO::updateOrInsertPreference(sql::Connection *conn, int user_id, int tag_id, int score_inc) {
+    try {
+        auto checkStmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement("SELECT 1 FROM diner_preference WHERE user_id = ? AND tag_id = ?")
+        );
+        checkStmt->setInt(1, user_id);
+        checkStmt->setInt(2, tag_id);
+        auto checkRes = std::unique_ptr<sql::ResultSet>(checkStmt->executeQuery());
+
+        if (checkRes->next()) {
+            auto updateStmt = std::unique_ptr<sql::PreparedStatement>(
+                conn->prepareStatement("UPDATE diner_preference SET score = score + ? WHERE user_id = ? AND tag_id = ?")
+            );
+            updateStmt->setInt(1, score_inc);
+            updateStmt->setInt(2, user_id);
+            updateStmt->setInt(3, tag_id);
+            return updateStmt->executeUpdate() > 0;
+        } else {
+            auto insertStmt = std::unique_ptr<sql::PreparedStatement>(
+                conn->prepareStatement("INSERT INTO diner_preference(user_id, tag_id, score) VALUES (?, ?, ?)")
+            );
+            insertStmt->setInt(1, user_id);
+            insertStmt->setInt(2, tag_id);
+            insertStmt->setInt(3, score_inc);
+            return insertStmt->executeUpdate() > 0;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DinerPreferenceDAO::updateOrInsertPreference] Error: " << e.what() << std::endl;
+        return false;
+    }
 }

@@ -1693,7 +1693,24 @@ bool OrderService::updateOrderStatus(int order_id, int status) {
     OrderDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.updateOrderStatus(conn, order_id, status);
+
+    TransactionGuard tx(conn);
+
+    auto order = dao.getOrderById(conn, order_id);
+    if (!order) {
+        return false;
+    }
+
+    int old_status = order->getStatus();
+    bool success = dao.updateOrderStatus(conn, order_id, status);
+
+    if (success && old_status != 1 && status == 1) {
+        DinerPreferenceService prefService;
+        prefService.updateDinerPreference(conn, order.get());
+    }
+
+    tx.commit(); // 提交事务
+    return success;
 }
 
 std::vector<OrderDetailVO> OrderService::getOrdersDetailsByOrderId(int order_id) {
@@ -2544,6 +2561,29 @@ std::vector<DinerPreference> DinerPreferenceService::getUserPreferences(int user
     } catch (const std::exception& e) {
         std::cerr << "[DinerPreferenceService::getUserPreferences] Error: " << e.what() << std::endl;
         return {};
+    }
+}
+
+void DinerPreferenceService::updateDinerPreference(sql::Connection *conn, Order *order) {
+    try {
+        int user_id = order->getOrderForUserId();
+        OrderItemDAO orderItemDao;
+        DishTagDAO dishTagDao;
+        DinerPreferenceDAO prefDao;
+
+        auto orderItems = orderItemDao.getOrderItemsByOrderId(conn, order->getId());
+        for (const auto& item : orderItems) {
+            int dish_id = item.getDishId();
+            int quantity = item.getQuantity();
+            auto tagIds = dishTagDao.getTagIdsByDishId(conn, dish_id);
+            for (int tag_id : tagIds) {
+                if (prefDao.updateOrInsertPreference(conn, user_id, tag_id, quantity)) {
+                    std::cout << "[Preference] user=" << user_id << " tag=" << tag_id << " +" << quantity << std::endl;
+                }
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DinerPreferenceService::updateDinerPreference] Error: " << e.what() << std::endl;
     }
 }
 

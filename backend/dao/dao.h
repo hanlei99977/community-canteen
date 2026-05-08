@@ -344,6 +344,7 @@ class DinerPreferenceDAO {
 public:
     std::vector<DinerPreference> getUserPreferences(sql::Connection *conn, int user_id);
     std::vector<DinerPreference> getTopPreferences(sql::Connection *conn, int user_id, int limit = 5);
+    bool updateOrInsertPreference(sql::Connection *conn, int user_id, int tag_id, int score_inc);
 };
 
 

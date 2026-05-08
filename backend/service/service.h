@@ -319,6 +319,7 @@ public:
 class DinerPreferenceService {
 public:
     std::vector<DinerPreference> getUserPreferences(int user_id);
+    void updateDinerPreference(sql::Connection *conn, Order* order);
 };
 
 // ================================

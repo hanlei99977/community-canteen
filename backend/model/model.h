@@ -330,9 +330,9 @@ public:
 };
 
 // ================================
-// Message
+// Comment (用户留言)
 // ================================
-class Message {
+class Comment {
 private:
     int id;
     int canteen_id;
@@ -550,11 +550,11 @@ public:
 };
 
 // ================================
-// MessageNotification
+// NotificationMessage (通知消息)
 // ================================
-class MessageNotification {
+class NotificationMessage {
 private:
-    int message_id;
+    int notification_id;
     int sender_id;
     int receiver_id;
     std::string content;
@@ -563,8 +563,8 @@ private:
 
 public:
     // Getters and setters
-    int getMessageId() const { return message_id; }
-    void setMessageId(int id) { message_id = id; }
+    int getNotificationId() const { return notification_id; }
+    void setNotificationId(int id) { notification_id = id; }
 
     int getSenderId() const { return sender_id; }
     void setSenderId(int id) { sender_id = id; }

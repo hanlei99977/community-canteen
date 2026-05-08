@@ -148,10 +148,10 @@ void Controller::registerCanteenRoutes(httplib::Server& server) {
     server.Get("/checkFavorite", handleCheckFavorite);
 
     // 留言板
-    server.Post("/messageCreate", handleCreateMessage);
-    server.Get("/userMessages", handleGetUserMessages);
-    server.Get("/canteenMessages", handleGetCanteenMessages);
-    server.Post("/messageReply", handleReplyMessage);
+    server.Post("/commentCreate", handleCreateComment);
+    server.Get("/commentUser", handleGetUserComments);
+    server.Get("/commentCanteen", handleGetCanteenComments);
+    server.Post("/commentReply", handleReplyComment);
 
 }
 
@@ -184,9 +184,9 @@ void Controller::registerUserCenterRoutes(httplib::Server& server) {
     server.Post("/deletePurchase", handleDeletePurchase);
     // 财务统计
     server.Get("/financialStatistics", handleFinancialStatistics);
-    // 消息中心
-    server.Get("/messages", handleGetMessages);
-    server.Post("/markMessageAsRead", handleMarkMessageAsRead);
+    // 通知中心
+    server.Get("/notificationList", handleGetNotifications);
+    server.Post("/notificationRead", handleMarkNotificationAsRead);
     // 修改密码
     server.Post("/changePassword", handleChangePassword);
 }
@@ -2447,48 +2447,48 @@ void Controller::handleFinancialStatistics(const httplib::Request& req, httplib:
     }
 }
 
-// 获取消息列表
-void Controller::handleGetMessages(const httplib::Request& req, httplib::Response& res) {
+// 获取通知列表
+void Controller::handleGetNotifications(const httplib::Request& req, httplib::Response& res) {
     try {
         int user_id = std::stoi(req.get_param_value("user_id"));
         std::cout<<"user_id is "<<user_id<<std::endl;
-        MessageCenterService service;
-        auto messages = service.getMessagesByReceiver(user_id);
+        NotificationService service;
+        auto notifications = service.getNotificationsByReceiver(user_id);
         
         json arr = json::array();
-        for (const auto& message : messages) {
-            json message_json = {
-                {"message_id", message.getMessageId()},
-                {"sender_id", message.getSenderId()},
-                {"receiver_id", message.getReceiverId()},
-                {"content", message.getContent()},
-                {"status", message.getStatus()},
-                {"create_time", message.getCreateTime()}
+        for (const auto& notification : notifications) {
+            json notification_json = {
+                {"notification_id", notification.getNotificationId()},
+                {"sender_id", notification.getSenderId()},
+                {"receiver_id", notification.getReceiverId()},
+                {"content", notification.getContent()},
+                {"status", notification.getStatus()},
+                {"create_time", notification.getCreateTime()}
             };
-            arr.push_back(message_json);
+            arr.push_back(notification_json);
         }
         
         res.set_content(Response::success(arr), "application/json");
         
     } catch (const std::exception& e) {
-        std::cerr << "获取消息失败: " << e.what() << std::endl;
+        std::cerr << "获取通知失败: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
 
-// 标记消息为已读
-void Controller::handleMarkMessageAsRead(const httplib::Request& req, httplib::Response& res) {
+// 标记通知为已读
+void Controller::handleMarkNotificationAsRead(const httplib::Request& req, httplib::Response& res) {
     try {
         json body = json::parse(req.body);
-        int message_id = getIntSafe(body, "message_id");
+        int notification_id = getIntSafe(body, "notification_id");
         
-        MessageCenterService service;
-        bool success = service.updateMessageStatus(message_id, 1);
+        NotificationService service;
+        bool success = service.updateNotificationStatus(notification_id, 1);
         
         if (success) {
             res.set_content(Response::success(), "application/json");
         } else {
-            res.set_content(Response::error(500, "标记消息为已读失败"), "application/json");
+            res.set_content(Response::error(500, "标记通知为已读失败"), "application/json");
         }
         
     } catch (const std::exception& e) {
@@ -2646,16 +2646,16 @@ void Controller::handleUpdateOrderStatus(const httplib::Request& req, httplib::R
 // ================================
 // 留言板相关
 // ================================
-void Controller::handleCreateMessage(const httplib::Request& req, httplib::Response& res) {
+void Controller::handleCreateComment(const httplib::Request& req, httplib::Response& res) {
     try {
         json body = json::parse(req.body);
-        Message message;
-        message.setCanteenId(getIntSafe(body, "canteen_id"));
-        message.setUserId(getIntSafe(body, "user_id"));
-        message.setContent(getStringSafe(body, "content"));
+        Comment comment;
+        comment.setCanteenId(getIntSafe(body, "canteen_id"));
+        comment.setUserId(getIntSafe(body, "user_id"));
+        comment.setContent(getStringSafe(body, "content"));
 
-        MessageService service;
-        bool success = service.createMessage(message);
+        CommentService service;
+        bool success = service.createComment(comment);
 
         if (success) {
             res.set_content(Response::success({}), "application/json");
@@ -2663,79 +2663,78 @@ void Controller::handleCreateMessage(const httplib::Request& req, httplib::Respo
             res.set_content(Response::error(400, "创建留言失败"), "application/json");
         }
     } catch (const std::exception& e) {
-        std::cerr << "[Controller::handleCreateMessage] Error: " << e.what() << std::endl;
+        std::cerr << "[Controller::handleCreateComment] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
 
-void Controller::handleGetUserMessages(const httplib::Request& req, httplib::Response& res) {
+void Controller::handleGetUserComments(const httplib::Request& req, httplib::Response& res) {
     try {
         int user_id = std::stoi(req.get_param_value("user_id"));
         int canteen_id = std::stoi(req.get_param_value("canteen_id"));
 
-        MessageService service;
-        auto messages = service.getMessagesByUser(user_id, canteen_id);
+        CommentService service;
+        auto comments = service.getCommentsByUser(user_id, canteen_id);
 
         json arr = json::array();
-        for (const auto& msg : messages) {
+        for (const auto& comment : comments) {
             arr.push_back({
-                {"id", msg.getId()},
-                {"canteen_id", msg.getCanteenId()},
-                {"create_time", msg.getCreateTime()},
-                {"reply_time", msg.getReplyTime()},
-                {"user_id", msg.getUserId()},
-                {"content", msg.getContent()},
-                {"reply_content", msg.getReplyContent()},
-                {"status", msg.getStatus()}
+                {"id", comment.getId()},
+                {"canteen_id", comment.getCanteenId()},
+                {"create_time", comment.getCreateTime()},
+                {"reply_time", comment.getReplyTime()},
+                {"user_id", comment.getUserId()},
+                {"content", comment.getContent()},
+                {"reply_content", comment.getReplyContent()},
+                {"status", comment.getStatus()}
             });
         }
 
         res.set_content(Response::success(arr), "application/json");
     } catch (const std::exception& e) {
-        std::cerr << "[Controller::handleGetUserMessages] Error: " << e.what() << std::endl;
+        std::cerr << "[Controller::handleGetUserComments] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
 
-void Controller::handleGetCanteenMessages(const httplib::Request& req, httplib::Response& res) {
+void Controller::handleGetCanteenComments(const httplib::Request& req, httplib::Response& res) {
     try {
         int canteen_id = std::stoi(req.get_param_value("canteen_id"));
         std::cout << "获取食堂ID为" << canteen_id << "的留言" << std::endl;
-        MessageService service;
-        auto messages = service.getMessagesByCanteen(canteen_id);
+        CommentService service;
+        auto comments = service.getCommentsByCanteen(canteen_id);
 
         json arr = json::array();
-        for (const auto& msg : messages) {
+        for (const auto& comment : comments) {
             arr.push_back({
-                {"id", msg.getId()},
-                {"canteen_id", msg.getCanteenId()},
-                {"create_time", msg.getCreateTime()},
-                {"reply_time", msg.getReplyTime()},
-                {"user_id", msg.getUserId()},
-                {"content", msg.getContent()},
-                {"reply_content", msg.getReplyContent()},
-                {"status", msg.getStatus()}
+                {"id", comment.getId()},
+                {"canteen_id", comment.getCanteenId()},
+                {"create_time", comment.getCreateTime()},
+                {"reply_time", comment.getReplyTime()},
+                {"user_id", comment.getUserId()},
+                {"content", comment.getContent()},
+                {"reply_content", comment.getReplyContent()},
+                {"status", comment.getStatus()}
             });
         }
-        std::cout << "获取到 " << messages.size() << " 条留言" << std::endl;
+        std::cout << "获取到 " << comments.size() << " 条留言" << std::endl;
         res.set_content(Response::success(arr), "application/json");
     } catch (const std::exception& e) {
-        std::cerr << "[Controller::handleGetCanteenMessages] Error: " << e.what() << std::endl;
+        std::cerr << "[Controller::handleGetCanteenComments] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }
 
-void Controller::handleReplyMessage(const httplib::Request& req, httplib::Response& res) {
+void Controller::handleReplyComment(const httplib::Request& req, httplib::Response& res) {
     try {
         json body = json::parse(req.body);
-        Message message;
-        message.setId(getIntSafe(body, "id"));
-        message.setReplyContent(getStringSafe(body, "reply_content"));
+        Comment comment;
+        comment.setId(getIntSafe(body, "id"));
+        comment.setReplyContent(getStringSafe(body, "reply_content"));
 
 
-
-        MessageService service;
-        bool success = service.replyMessage(message);
+        CommentService service;
+        bool success = service.replyComment(comment);
 
         if (success) {
             res.set_content(Response::success({}), "application/json");
@@ -2743,7 +2742,7 @@ void Controller::handleReplyMessage(const httplib::Request& req, httplib::Respon
             res.set_content(Response::error(400, "回复留言失败"), "application/json");
         }
     } catch (const std::exception& e) {
-        std::cerr << "[Controller::handleReplyMessage] Error: " << e.what() << std::endl;
+        std::cerr << "[Controller::handleReplyComment] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }

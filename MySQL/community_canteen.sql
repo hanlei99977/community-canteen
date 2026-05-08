@@ -148,8 +148,8 @@ CREATE TABLE announcement (
 );
 
 -- 消息表
-CREATE TABLE message (
-    message_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '消息ID',
+CREATE TABLE notification_message (
+    notification_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '消息ID',
     sender_id INT NOT NULL COMMENT '发送人ID',
     receiver_id INT NOT NULL COMMENT '接收人ID',
     content TEXT NOT NULL COMMENT '发送内容',
@@ -313,8 +313,8 @@ CREATE TABLE report (
 );
 
 --  留言板
-CREATE TABLE messageboard (
-    message_id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+CREATE TABLE comment_board (
+    comment_id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
 
     canteen_id INT NOT NULL COMMENT '食堂ID',
     user_id INT NOT NULL COMMENT '留言用户ID',
@@ -472,15 +472,15 @@ CREATE INDEX idx_region_parent ON region(parent_id);
 CREATE INDEX idx_region_level ON region(region_level);
 CREATE INDEX idx_region_name ON region(region_name);
 
--- messageboard
-CREATE INDEX idx_msg_canteen ON messageboard(canteen_id);
-CREATE INDEX idx_msg_user ON messageboard(user_id);
-CREATE INDEX idx_msg_status ON messageboard(status);
+-- comment_board
+CREATE INDEX idx_comment_canteen ON comment_board(canteen_id);
+CREATE INDEX idx_comment_user ON comment_board(user_id);
+CREATE INDEX idx_comment_status ON comment_board(status);
 
--- message索引
-CREATE INDEX idx_message_receiver ON message(receiver_id);
-CREATE INDEX idx_message_status ON message(status);
-CREATE INDEX idx_message_time ON message(create_time);
+-- notification_message
+CREATE INDEX idx_notification_receiver ON notification_message(receiver_id);
+CREATE INDEX idx_notification_status ON notification_message(status);
+CREATE INDEX idx_notification_time ON notification_message(create_time);
 
 -- favorite索引
 CREATE INDEX idx_favorite_user ON favorite(user_id);

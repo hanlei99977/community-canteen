@@ -3081,30 +3081,30 @@ bool AnnouncementDAO::deleteAnnouncement(sql::Connection *conn, int announce_id,
 }
 
 /***************************************************************************************
- * MessageDAO
+ * CommentDAO (留言板)
  ***************************************************************************************/
-bool MessageDAO::insertMessage(sql::Connection *conn, const Message& message) {
+bool CommentDAO::insertComment(sql::Connection *conn, const Comment& comment) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("INSERT INTO messageboard(canteen_id, create_time, user_id, content, status) VALUES (?, NOW(), ?, ?, 0)")
+            conn->prepareStatement("INSERT INTO comment_board(canteen_id, create_time, user_id, content, status) VALUES (?, NOW(), ?, ?, 0)")
         );
 
-        stmt->setInt(1, message.getCanteenId());
-        stmt->setInt(2, message.getUserId());
-        stmt->setString(3, message.getContent());
+        stmt->setInt(1, comment.getCanteenId());
+        stmt->setInt(2, comment.getUserId());
+        stmt->setString(3, comment.getContent());
 
         return stmt->executeUpdate() > 0;
     } catch (const std::exception& e) {
-        std::cerr << "[MessageDAO::insertMessage] Error: " << e.what() << std::endl;
+        std::cerr << "[CommentDAO::insertComment] Error: " << e.what() << std::endl;
         return false;
     }
 }
 
-std::vector<Message> MessageDAO::getMessagesByCanteen(sql::Connection *conn, int canteen_id) {
-    std::vector<Message> list;
+std::vector<Comment> CommentDAO::getCommentsByCanteen(sql::Connection *conn, int canteen_id) {
+    std::vector<Comment> list;
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("SELECT * FROM messageboard WHERE canteen_id = ? ORDER BY status ASC, create_time DESC")
+            conn->prepareStatement("SELECT * FROM comment_board WHERE canteen_id = ? ORDER BY status ASC, create_time DESC")
         );
 
         stmt->setInt(1, canteen_id);
@@ -3112,29 +3112,29 @@ std::vector<Message> MessageDAO::getMessagesByCanteen(sql::Connection *conn, int
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
 
         while (res->next()) {
-            Message msg;
-            msg.setId(res->getInt("message_id"));
-            msg.setCanteenId(res->getInt("canteen_id"));
-            msg.setCreateTime(res->getString("create_time"));
-            msg.setReplyTime(res->getString("reply_time"));
-            msg.setUserId(res->getInt("user_id"));
-            msg.setContent(res->getString("content"));
-            msg.setReplyContent(res->getString("reply_content"));
-            msg.setStatus(res->getInt("status"));
-            list.push_back(msg);
+            Comment comment;
+            comment.setId(res->getInt("comment_id"));
+            comment.setCanteenId(res->getInt("canteen_id"));
+            comment.setCreateTime(res->getString("create_time"));
+            comment.setReplyTime(res->getString("reply_time"));
+            comment.setUserId(res->getInt("user_id"));
+            comment.setContent(res->getString("content"));
+            comment.setReplyContent(res->getString("reply_content"));
+            comment.setStatus(res->getInt("status"));
+            list.push_back(comment);
         }
     } catch (const std::exception& e) {
-        std::cerr << "[MessageDAO::getMessagesByCanteen] Error: " << e.what() << std::endl;
+        std::cerr << "[CommentDAO::getCommentsByCanteen] Error: " << e.what() << std::endl;
     }
 
     return list;
 }
 
-std::vector<Message> MessageDAO::getMessagesByUser(sql::Connection *conn, int user_id, int canteen_id) {
-    std::vector<Message> list;
+std::vector<Comment> CommentDAO::getCommentsByUser(sql::Connection *conn, int user_id, int canteen_id) {
+    std::vector<Comment> list;
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("SELECT * FROM messageboard WHERE user_id = ? AND canteen_id = ? ORDER BY create_time DESC")
+            conn->prepareStatement("SELECT * FROM comment_board WHERE user_id = ? AND canteen_id = ? ORDER BY create_time DESC")
         );
 
         stmt->setInt(1, user_id);
@@ -3143,52 +3143,52 @@ std::vector<Message> MessageDAO::getMessagesByUser(sql::Connection *conn, int us
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
 
         while (res->next()) {
-            Message msg;
-            msg.setId(res->getInt("message_id"));
-            msg.setCanteenId(res->getInt("canteen_id"));
-            msg.setCreateTime(res->getString("create_time"));
-            msg.setReplyTime(res->getString("reply_time"));
-            msg.setUserId(res->getInt("user_id"));
-            msg.setContent(res->getString("content"));
-            msg.setReplyContent(res->getString("reply_content"));
-            msg.setStatus(res->getInt("status"));
-            list.push_back(msg);
+            Comment comment;
+            comment.setId(res->getInt("comment_id"));
+            comment.setCanteenId(res->getInt("canteen_id"));
+            comment.setCreateTime(res->getString("create_time"));
+            comment.setReplyTime(res->getString("reply_time"));
+            comment.setUserId(res->getInt("user_id"));
+            comment.setContent(res->getString("content"));
+            comment.setReplyContent(res->getString("reply_content"));
+            comment.setStatus(res->getInt("status"));
+            list.push_back(comment);
         }
     } catch (const std::exception& e) {
-        std::cerr << "[MessageDAO::getMessagesByUser] Error: " << e.what() << std::endl;
+        std::cerr << "[CommentDAO::getCommentsByUser] Error: " << e.what() << std::endl;
     }
 
     return list;
 }
 
-bool MessageDAO::replyMessage(sql::Connection *conn, const Message& message) {
+bool CommentDAO::replyComment(sql::Connection *conn, const Comment& comment) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("UPDATE messageboard SET reply = ?, reply_time = NOW(), status = 1 WHERE id = ?")
+            conn->prepareStatement("UPDATE comment_board SET reply_content = ?, reply_time = NOW(), status = 1 WHERE id = ?")
         );
 
-        stmt->setString(1, message.getReplyContent());
-        stmt->setInt(2, message.getId());
+        stmt->setString(1, comment.getReplyContent());
+        stmt->setInt(2, comment.getId());
 
         return stmt->executeUpdate() > 0;
     } catch (const std::exception& e) {
-        std::cerr << "[MessageDAO::replyMessage] Error: " << e.what() << std::endl;
+        std::cerr << "[CommentDAO::replyComment] Error: " << e.what() << std::endl;
         return false;
     }
 }
 
 /***************************************************************************************
- * MessageCenterDAO
+ * NotificationDAO (通知中心)
  ***************************************************************************************/
-int MessageCenterDAO::createMessage(sql::Connection *conn, const MessageNotification& message) {
+int NotificationDAO::createNotification(sql::Connection *conn, const NotificationMessage& notification) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("INSERT INTO message (sender_id, receiver_id, content, status, create_time) VALUES (?, ?, ?, ?, NOW())")
+            conn->prepareStatement("INSERT INTO notification_message (sender_id, receiver_id, content, status, create_time) VALUES (?, ?, ?, ?, NOW())")
         );
-        stmt->setInt(1, message.getSenderId());
-        stmt->setInt(2, message.getReceiverId());
-        stmt->setString(3, message.getContent());
-        stmt->setInt(4, message.getStatus());
+        stmt->setInt(1, notification.getSenderId());
+        stmt->setInt(2, notification.getReceiverId());
+        stmt->setString(3, notification.getContent());
+        stmt->setInt(4, notification.getStatus());
 
         stmt->executeUpdate();
 
@@ -3199,47 +3199,47 @@ int MessageCenterDAO::createMessage(sql::Connection *conn, const MessageNotifica
             return res->getInt(1);
         }
     } catch (const std::exception& e) {
-        std::cout << "创建消息失败: " << e.what() << std::endl;
+        std::cout << "创建通知失败: " << e.what() << std::endl;
     }
     return -1;
 }
 
-std::vector<MessageNotification> MessageCenterDAO::getMessagesByReceiver(sql::Connection *conn, int receiver_id) {
-    std::vector<MessageNotification> messages;
+std::vector<NotificationMessage> NotificationDAO::getNotificationsByReceiver(sql::Connection *conn, int receiver_id) {
+    std::vector<NotificationMessage> notifications;
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("SELECT message_id, sender_id, receiver_id, content, status, create_time FROM message WHERE receiver_id = ? ORDER BY status ASC, create_time DESC")
+            conn->prepareStatement("SELECT notification_id, sender_id, receiver_id, content, status, create_time FROM notification_message WHERE receiver_id = ? ORDER BY status ASC, create_time DESC")
         );
         stmt->setInt(1, receiver_id);
 
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
         while (res->next()) {
-            MessageNotification message;
-            message.setMessageId(res->getInt("message_id"));
-            message.setSenderId(res->getInt("sender_id"));
-            message.setReceiverId(res->getInt("receiver_id"));
-            message.setContent(res->getString("content"));
-            message.setStatus(res->getInt("status"));
-            message.setCreateTime(res->getString("create_time"));
-            messages.push_back(message);
+            NotificationMessage notification;
+            notification.setNotificationId(res->getInt("notification_id"));
+            notification.setSenderId(res->getInt("sender_id"));
+            notification.setReceiverId(res->getInt("receiver_id"));
+            notification.setContent(res->getString("content"));
+            notification.setStatus(res->getInt("status"));
+            notification.setCreateTime(res->getString("create_time"));
+            notifications.push_back(notification);
         }
     } catch (const std::exception& e) {
-        std::cout << "获取消息失败: " << e.what() << std::endl;
+        std::cout << "获取通知失败: " << e.what() << std::endl;
     }
-    return messages;
+    return notifications;
 }
 
-bool MessageCenterDAO::updateMessageStatus(sql::Connection *conn, int message_id, int status) {
+bool NotificationDAO::updateNotificationStatus(sql::Connection *conn, int notification_id, int status) {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("UPDATE message SET status = ? WHERE message_id = ?")
+            conn->prepareStatement("UPDATE notification_message SET status = ? WHERE notification_id = ?")
         );
         stmt->setInt(1, status);
-        stmt->setInt(2, message_id);
+        stmt->setInt(2, notification_id);
 
         return stmt->executeUpdate() > 0;
     } catch (const std::exception& e) {
-        std::cout << "更新消息状态失败: " << e.what() << std::endl;
+        std::cout << "更新通知状态失败: " << e.what() << std::endl;
         return false;
     }
 }

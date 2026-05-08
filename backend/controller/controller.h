@@ -43,9 +43,9 @@ private:
     // 家庭
     static void handleFamilyList(const httplib::Request& req, httplib::Response& res);
     static void handleCreateFamily(const httplib::Request& req, httplib::Response& res);
-    // 消息中心
-    static void handleGetMessages(const httplib::Request& req, httplib::Response& res);
-    static void handleMarkMessageAsRead(const httplib::Request& req, httplib::Response& res);
+    // 通知中心
+    static void handleGetNotifications(const httplib::Request& req, httplib::Response& res);
+    static void handleMarkNotificationAsRead(const httplib::Request& req, httplib::Response& res);
     /*************************************食堂**************************************/
     // 食堂管理
     static void handleCanteens(const httplib::Request& req, httplib::Response& res);
@@ -73,10 +73,10 @@ private:
     static void handleEnableDish(const httplib::Request& req, httplib::Response& res);
     static void handleDishSales(const httplib::Request& req, httplib::Response& res);
     // 留言板
-    static void handleCreateMessage(const httplib::Request& req, httplib::Response& res);
-    static void handleGetUserMessages(const httplib::Request& req, httplib::Response& res);
-    static void handleGetCanteenMessages(const httplib::Request& req, httplib::Response& res);
-    static void handleReplyMessage(const httplib::Request& req, httplib::Response& res);
+    static void handleCreateComment(const httplib::Request& req, httplib::Response& res);
+    static void handleGetUserComments(const httplib::Request& req, httplib::Response& res);
+    static void handleGetCanteenComments(const httplib::Request& req, httplib::Response& res);
+    static void handleReplyComment(const httplib::Request& req, httplib::Response& res);
     /*************************************管理员**************************************/
     //管理员
     static void handleAdminList(const httplib::Request& req, httplib::Response& res);

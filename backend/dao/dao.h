@@ -264,22 +264,22 @@ public:
 // ================================
 // 留言板
 // ================================
-class MessageDAO {
+class CommentDAO {
 public:
-    bool insertMessage(sql::Connection *conn, const Message& message);
-    std::vector<Message> getMessagesByCanteen(sql::Connection *conn, int canteen_id);
-    std::vector<Message> getMessagesByUser(sql::Connection *conn, int user_id, int canteen_id);
-    bool replyMessage(sql::Connection *conn, const Message& message);
+    bool insertComment(sql::Connection *conn, const Comment& comment);
+    std::vector<Comment> getCommentsByCanteen(sql::Connection *conn, int canteen_id);
+    std::vector<Comment> getCommentsByUser(sql::Connection *conn, int user_id, int canteen_id);
+    bool replyComment(sql::Connection *conn, const Comment& comment);
 };
 
 // ================================
-// 消息中心
+// 通知中心
 // ================================
-class MessageCenterDAO {
+class NotificationDAO {
 public:
-    int createMessage(sql::Connection *conn, const MessageNotification& message);
-    std::vector<MessageNotification> getMessagesByReceiver(sql::Connection *conn, int receiver_id);
-    bool updateMessageStatus(sql::Connection *conn, int message_id, int status);
+    int createNotification(sql::Connection *conn, const NotificationMessage& notification);
+    std::vector<NotificationMessage> getNotificationsByReceiver(sql::Connection *conn, int receiver_id);
+    bool updateNotificationStatus(sql::Connection *conn, int notification_id, int status);
 };
 
 // ================================

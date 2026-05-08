@@ -341,14 +341,14 @@ bool UserService::changePassword(int user_id, const std::string& old_password, c
             return false;
         }
         
-        // 写入消息中心通知
-        MessageCenterDAO messageDAO;
-        MessageNotification message;
-        message.setSenderId(1); // 系统发送
-        message.setReceiverId(user_id);
-        message.setContent("您的账户密码已成功修改。");
-        message.setStatus(0); // 未读
-        messageDAO.createMessage(conn, message);
+        // 写入通知中心
+        NotificationDAO notificationDAO;
+        NotificationMessage notification;
+        notification.setSenderId(1); // 系统发送
+        notification.setReceiverId(user_id);
+        notification.setContent("您的账户密码已成功修改。");
+        notification.setStatus(0); // 未读
+        notificationDAO.createNotification(conn, notification);
         
         tx.commit();
         std::cout << "密码修改成功" << std::endl;
@@ -1962,79 +1962,79 @@ bool AnnouncementService::deleteAnnouncement(int announce_id, int publisher_id) 
 }
 
 /**********************************************
- * MessageService
+ * CommentService (留言服务)
  *********************************************/
-bool MessageService::createMessage(const Message& message) {
-    if (message.getCanteenId() <= 0 || message.getUserId() <= 0 || message.getContent().empty()) {
+bool CommentService::createComment(const Comment& comment) {
+    if (comment.getCanteenId() <= 0 || comment.getUserId() <= 0 || comment.getContent().empty()) {
         return false;
     }
-    MessageDAO dao;
+    CommentDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.insertMessage(conn, message);
+    return dao.insertComment(conn, comment);
 }
 
-std::vector<Message> MessageService::getMessagesByCanteen(int canteen_id) {
+std::vector<Comment> CommentService::getCommentsByCanteen(int canteen_id) {
     if (canteen_id <= 0) {
         return {};
     }
-    MessageDAO dao;
+    CommentDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.getMessagesByCanteen(conn, canteen_id);
+    return dao.getCommentsByCanteen(conn, canteen_id);
 }
 
-std::vector<Message> MessageService::getMessagesByUser(int user_id, int canteen_id) {
+std::vector<Comment> CommentService::getCommentsByUser(int user_id, int canteen_id) {
     if (user_id <= 0 || canteen_id <= 0) {
         return {};
     }
-    MessageDAO dao;
+    CommentDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.getMessagesByUser(conn, user_id, canteen_id);
+    return dao.getCommentsByUser(conn, user_id, canteen_id);
 }
 
-bool MessageService::replyMessage(const Message& message) {
-    if (message.getId() <= 0 || message.getReplyContent().empty()) {
+bool CommentService::replyComment(const Comment& comment) {
+    if (comment.getId() <= 0 || comment.getReplyContent().empty()) {
         return false;
     }
-    MessageDAO dao;
+    CommentDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.replyMessage(conn, message);
+    return dao.replyComment(conn, comment);
 }
 
 /***************************************************************************************
- * MessageCenterService
+ * NotificationService (通知服务)
  ***************************************************************************************/
-int MessageCenterService::createMessage(const MessageNotification& message) {
-    if (message.getSenderId() <= 0 || message.getReceiverId() <= 0 || message.getContent().empty()) {
+int NotificationService::createNotification(const NotificationMessage& notification) {
+    if (notification.getSenderId() <= 0 || notification.getReceiverId() <= 0 || notification.getContent().empty()) {
         return -1;
     }
-    MessageCenterDAO dao;
+    NotificationDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.createMessage(conn, message);
+    return dao.createNotification(conn, notification);
 }
 
-std::vector<MessageNotification> MessageCenterService::getMessagesByReceiver(int receiver_id) {
+std::vector<NotificationMessage> NotificationService::getNotificationsByReceiver(int receiver_id) {
     if (receiver_id <= 0) {
         return {};
     }
-    MessageCenterDAO dao;
+    NotificationDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.getMessagesByReceiver(conn, receiver_id);
+    return dao.getNotificationsByReceiver(conn, receiver_id);
 }
 
-bool MessageCenterService::updateMessageStatus(int message_id, int status) {
-    if (message_id <= 0 || (status != 0 && status != 1)) {
+bool NotificationService::updateNotificationStatus(int notification_id, int status) {
+    if (notification_id <= 0 || (status != 0 && status != 1)) {
         return false;
     }
-    MessageCenterDAO dao;
+    NotificationDAO dao;
     DBConnectionGuard guard;
     auto* conn = guard.get();
-    return dao.updateMessageStatus(conn, message_id, status);
+    return dao.updateNotificationStatus(conn, notification_id, status);
 }
 
 /**********************************************
@@ -2100,18 +2100,18 @@ bool OrderCancelService::handleCancelApply(int cancel_id, int status, const std:
                     auto order = order_dao.getOrderById(conn, order_id);
                     if (order) {
                         int user_id = order->getUserId();
-                        // 构建消息内容
+                        // 构建通知内容
                         std::string content = "您申请取消的订单（订单号：" + std::to_string(order_id) + "）已被食堂拒绝。原因：" + reject_reason + "。";
-                        // 创建消息
-                        MessageNotification message;
-                        message.setSenderId(1); // 系统发送
-                        message.setReceiverId(user_id);
-                        message.setContent(content);
-                        message.setStatus(0); // 未读
-                        // 发送消息
-                        MessageCenterDAO message_dao;
-                        if (!message_dao.createMessage(conn, message)) {
-                            std::cout<<"createMessage failed"<<std::endl;
+                        // 创建通知
+                        NotificationMessage notification;
+                        notification.setSenderId(1); // 系统发送
+                        notification.setReceiverId(user_id);
+                        notification.setContent(content);
+                        notification.setStatus(0); // 未读
+                        // 发送通知
+                        NotificationDAO notification_dao;
+                        if (!notification_dao.createNotification(conn, notification)) {
+                            std::cout<<"createNotification failed"<<std::endl;
                             return false;
                         }
                     }

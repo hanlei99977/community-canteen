@@ -255,7 +255,7 @@ const openMessageDialog = async (canteen) => {
 const getMessages = async (canteen_id) => {
   try {
     const user = JSON.parse(localStorage.getItem('user') || '{}')
-    const res = await axios.get('http://192.168.56.100:8080/userMessages', {
+    const res = await axios.get('http://192.168.56.100:8080/commentUser', {
       params: {
         user_id: user.user_id,
         canteen_id: canteen_id
@@ -286,7 +286,7 @@ const submitNewMessage = async () => {
 
   try {
     const user = JSON.parse(localStorage.getItem('user') || '{}')
-    const res = await axios.post('http://192.168.56.100:8080/messageCreate', {
+    const res = await axios.post('http://192.168.56.100:8080/commentCreate', {
       canteen_id: messageTarget.value.id,
       user_id: user.user_id,
       content: newMessageForm.value.content.trim()

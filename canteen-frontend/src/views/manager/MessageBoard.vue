@@ -77,7 +77,7 @@ onMounted(async () => {
 const getMessages = async () => {
   try {
     const user = JSON.parse(localStorage.getItem('user') || '{}')
-    const res = await axios.get('http://192.168.56.100:8080/canteenMessages', {
+    const res = await axios.get('http://192.168.56.100:8080/commentCanteen', {
       params: {
         canteen_id: user.canteen_id
       }
@@ -106,9 +106,9 @@ const submitReply = async () => {
   }
 
   try {
-    const res = await axios.post('http://192.168.56.100:8080/messageReply', {
+    const res = await axios.post('http://192.168.56.100:8080/commentReply', {
       id: replyForm.value.id,
-      reply: replyForm.value.reply.trim()
+      reply_content: replyForm.value.reply.trim()
     })
 
     if (res.data.code === 0) {

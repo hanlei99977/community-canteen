@@ -1,7 +1,7 @@
 <template>
   <div class="message-center">
-    <h2>消息中心</h2>
-    <el-card v-for="message in messages" :key="message.message_id" class="message-card" @click="markAsRead(message.message_id)">
+    <h2>通知中心</h2>
+    <el-card v-for="message in messages" :key="message.notification_id" class="message-card" @click="markAsRead(message.notification_id)">
       <div class="message-header">
         <span class="message-time">{{ message.create_time }}</span>
         <el-tag v-if="message.status === 0" type="danger" size="small">未读</el-tag>
@@ -9,7 +9,7 @@
       </div>
       <div class="message-content">{{ message.content }}</div>
     </el-card>
-    <el-empty v-if="messages.length === 0" description="暂无消息" />
+    <el-empty v-if="messages.length === 0" description="暂无通知" />
   </div>
 </template>
 
@@ -23,7 +23,7 @@ const messages = ref([])
 const getMessages = async () => {
   try {
     const user = JSON.parse(localStorage.getItem('user'))
-    const res = await axios.get('http://192.168.56.100:8080/messages', {
+    const res = await axios.get('http://192.168.56.100:8080/notificationList', {
       params: { user_id: user.user_id }
     })
     if (res.data.code === 0) {
@@ -32,23 +32,23 @@ const getMessages = async () => {
       ElMessage.error(res.data.message)
     }
   } catch (error) {
-    console.error('获取消息失败', error)
-    ElMessage.error('获取消息失败')
+    console.error('获取通知失败', error)
+    ElMessage.error('获取通知失败')
   }
 }
 
-const markAsRead = async (message_id) => {
+const markAsRead = async (notification_id) => {
   try {
-    const res = await axios.post('http://192.168.56.100:8080/markMessageAsRead', {
-      message_id
+    const res = await axios.post('http://192.168.56.100:8080/notificationRead', {
+      notification_id
     })
     if (res.data.code === 0) {
-      // 更新本地消息状态
-      const message = messages.value.find(m => m.message_id === message_id)
+      // 更新本地通知状态
+      const message = messages.value.find(m => m.notification_id === notification_id)
       if (message) {
         message.status = 1
       }
-      ElMessage.success('消息已标记为已读')
+      ElMessage.success('通知已标记为已读')
     } else {
       ElMessage.error(res.data.message)
     }

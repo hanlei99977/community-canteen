@@ -246,22 +246,22 @@ public:
 // ================================
 // 留言板服务
 // ================================
-class MessageService {
+class CommentService {
 public:
-    bool createMessage(const Message& message);
-    std::vector<Message> getMessagesByCanteen(int canteen_id);
-    std::vector<Message> getMessagesByUser(int user_id, int canteen_id);
-    bool replyMessage(const Message& message);
+    bool createComment(const Comment& comment);
+    std::vector<Comment> getCommentsByCanteen(int canteen_id);
+    std::vector<Comment> getCommentsByUser(int user_id, int canteen_id);
+    bool replyComment(const Comment& comment);
 };
 
 // ================================
-// 消息中心服务
+// 通知服务
 // ================================
-class MessageCenterService {
+class NotificationService {
 public:
-    int createMessage(const MessageNotification& message);
-    std::vector<MessageNotification> getMessagesByReceiver(int receiver_id);
-    bool updateMessageStatus(int message_id, int status);
+    int createNotification(const NotificationMessage& notification);
+    std::vector<NotificationMessage> getNotificationsByReceiver(int receiver_id);
+    bool updateNotificationStatus(int notification_id, int status);
 };
 
 /*******************************标签模块*******************************/

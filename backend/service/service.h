@@ -151,7 +151,7 @@ public:
     bool updateDish(int dish_id, double price, int calories, const std::string& nutrition_info, const std::vector<int>& tag_ids);
     bool disableDishByDishId(const int dish_id);
     bool enableDishByDishId(const int dish_id);
-    std::vector<std::pair<std::string, int>> getDishSales(int canteen_id, const std::string& time_range, int limit);
+    std::vector<DishSaleVO> getDishSales(int canteen_id, const std::string& time_range, int limit);
 };
 
 /*******************************订单模块*******************************/
@@ -316,5 +316,13 @@ public:
 // ================================
 class DinerPreferenceService {
 public:
-    std::vector<std::pair<int, int>> getUserPreferences(int user_id);
+    std::vector<DinerPreference> getUserPreferences(int user_id);
+};
+
+// ================================
+// 菜品推荐服务
+// ================================
+class RecommendationService {
+public:
+    std::vector<RecommendedDishVO> getRecommendedDishes(int user_id, int canteen_id, const std::string& meal_type);
 };

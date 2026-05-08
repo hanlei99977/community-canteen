@@ -1652,8 +1652,8 @@ bool DishDAO::enableDishByDishId(sql::Connection *conn, const int dish_id){
 
 }
 
-std::vector<std::pair<std::string, int>> DishDAO::getDishSales(sql::Connection *conn, int canteen_id, const std::string& time_range, int limit) {
-    std::vector<std::pair<std::string, int>> result;
+std::vector<DishSaleVO> DishDAO::getDishSales(sql::Connection *conn, int canteen_id, const std::string& time_range, int limit) {
+    std::vector<DishSaleVO> result;
     try {
         int days = 7;
         if (time_range == "today") {
@@ -1682,7 +1682,10 @@ std::vector<std::pair<std::string, int>> DishDAO::getDishSales(sql::Connection *
 
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
         while (res->next()) {
-            result.emplace_back(res->getString("name"), res->getInt("sales"));
+            DishSaleVO vo;
+            vo.setDishName(res->getString("name"));
+            vo.setQuantity(res->getInt("sales"));
+            result.push_back(vo);
         }
     } catch (const std::exception& e) {
         std::cerr << "[DishDAO::getDishSales] Error: " << e.what() << std::endl;
@@ -4108,8 +4111,8 @@ std::vector<Favorite> FavoriteDAO::getFavoritesByUserId(sql::Connection *conn, i
     return list;
 }
 
-std::vector<std::pair<int, int>> DinerPreferenceDAO::getUserPreferences(sql::Connection *conn, int user_id) {
-    std::vector<std::pair<int, int>> list;
+std::vector<DinerPreference> DinerPreferenceDAO::getUserPreferences(sql::Connection *conn, int user_id) {
+    std::vector<DinerPreference> list;
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -4119,10 +4122,38 @@ std::vector<std::pair<int, int>> DinerPreferenceDAO::getUserPreferences(sql::Con
         stmt->setInt(1, user_id);
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
         while (res->next()) {
-            list.push_back({res->getInt("tag_id"), res->getInt("score")});
+            DinerPreference dp;
+            dp.setUserId(user_id);
+            dp.setTagId(res->getInt("tag_id"));
+            dp.setScore(res->getInt("score"));
+            list.push_back(dp);
         }
     } catch (const std::exception& e) {
         std::cerr << "[DinerPreferenceDAO::getUserPreferences] Error: " << e.what() << std::endl;
+    }
+    return list;
+}
+
+std::vector<DinerPreference> DinerPreferenceDAO::getTopPreferences(sql::Connection *conn, int user_id, int limit) {
+    std::vector<DinerPreference> list;
+    try {
+        auto stmt = std::unique_ptr<sql::PreparedStatement>(
+            conn->prepareStatement(
+                "SELECT tag_id, score FROM diner_preference WHERE user_id = ? ORDER BY score DESC LIMIT ?"
+            )
+        );
+        stmt->setInt(1, user_id);
+        stmt->setInt(2, limit);
+        auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
+        while (res->next()) {
+            DinerPreference dp;
+            dp.setUserId(user_id);
+            dp.setTagId(res->getInt("tag_id"));
+            dp.setScore(res->getInt("score"));
+            list.push_back(dp);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[DinerPreferenceDAO::getTopPreferences] Error: " << e.what() << std::endl;
     }
     return list;
 }

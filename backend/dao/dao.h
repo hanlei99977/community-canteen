@@ -145,7 +145,7 @@ public:
     int updateDish(sql::Connection *conn, int dish_id, double price, int calories, const std::string& nutrition_info);
     bool disableDishByDishId(sql::Connection *conn, const int dish_id);
     bool enableDishByDishId(sql::Connection *conn, const int dish_id);
-    std::vector<std::pair<std::string, int>> getDishSales(sql::Connection *conn, int canteen_id, const std::string& time_range, int limit);
+    std::vector<DishSaleVO> getDishSales(sql::Connection *conn, int canteen_id, const std::string& time_range, int limit);
 };
 
 // ================================
@@ -341,7 +341,8 @@ public:
 // ================================
 class DinerPreferenceDAO {
 public:
-    std::vector<std::pair<int, int>> getUserPreferences(sql::Connection *conn, int user_id);
+    std::vector<DinerPreference> getUserPreferences(sql::Connection *conn, int user_id);
+    std::vector<DinerPreference> getTopPreferences(sql::Connection *conn, int user_id, int limit = 5);
 };
 
 

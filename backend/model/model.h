@@ -615,6 +615,26 @@ public:
 };
 
 // ================================
+// DinerPreference
+// ================================
+class DinerPreference {
+private:
+    int user_id;
+    int tag_id;
+    int score;
+
+public:
+    int getUserId() const { return user_id; }
+    void setUserId(int id) { user_id = id; }
+
+    int getTagId() const { return tag_id; }
+    void setTagId(int id) { tag_id = id; }
+
+    int getScore() const { return score; }
+    void setScore(int s) { score = s; }
+};
+
+// ================================
 // DishTag
 // ================================
 class DishTag {

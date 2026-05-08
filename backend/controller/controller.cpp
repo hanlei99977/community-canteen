@@ -119,6 +119,8 @@ void Controller::registerOrderRoutes(httplib::Server& server) {
     server.Get("/diningPreference", handleDiningPreference);
     server.Get("/dishPurchaseRanking", handleGetDishPurchaseRanking);
     server.Get("/dishDetail", handleGetDishDetail);
+    // 菜品推荐
+    server.Get("/recommendedDishes", handleGetRecommendedDishes);
 }
 
 // 食堂相关路由
@@ -601,10 +603,10 @@ void Controller::handleDishSales(const httplib::Request& req, httplib::Response&
         auto sales = service.getDishSales(canteen_id, time_range, limit);
 
         json data = json::array();
-        for (const auto& pair : sales) {
+        for (const auto& sale : sales) {
             json item;
-            item["name"] = pair.first;
-            item["sales"] = pair.second;
+            item["name"] = sale.getDishName();
+            item["sales"] = sale.getQuantity();
             data.push_back(item);
         }
 
@@ -2959,6 +2961,37 @@ void Controller::handleCheckFavorite(const httplib::Request& req, httplib::Respo
         res.set_content(Response::success({{"is_favorite", isFav}}), "application/json");
     } catch (const std::exception& e) {
         std::cerr << "[Controller::handleCheckFavorite] Error: " << e.what() << std::endl;
+        res.set_content(Response::error(400, "参数错误"), "application/json");
+    }
+}
+
+void Controller::handleGetRecommendedDishes(const httplib::Request& req, httplib::Response& res) {
+    try {
+        int user_id = std::stoi(req.get_param_value("user_id"));
+        int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        std::string meal_type = req.get_param_value("meal_type");
+
+        RecommendationService service;
+        auto recommendedDishes = service.getRecommendedDishes(user_id, canteen_id, meal_type);
+
+        nlohmann::json jsonResult = nlohmann::json::array();
+        for (const auto& dish : recommendedDishes) {
+            nlohmann::json dishJson;
+            dishJson["dish_id"] = dish.getDishId();
+            dishJson["dish_name"] = dish.getDishName();
+            dishJson["canteen_name"] = dish.getCanteenName();
+            dishJson["price"] = dish.getPrice();
+            dishJson["calories"] = dish.getCalories();
+            dishJson["nutrition_info"] = dish.getNutritionInfo();
+            dishJson["tags"] = dish.getTags();
+            dishJson["recommendation_score"] = dish.getRecommendationScore();
+            dishJson["recommendation_reason"] = dish.getRecommendationReason();
+            jsonResult.push_back(dishJson);
+        }
+
+        res.set_content(Response::success({{"recommended_dishes", jsonResult}}), "application/json");
+    } catch (const std::exception& e) {
+        std::cerr << "[Controller::handleGetRecommendedDishes] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }

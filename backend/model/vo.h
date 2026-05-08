@@ -962,6 +962,22 @@ public:
     void setQuantity(int value) { quantity = value; }
 };
 
+// ================================
+// DishSaleVO
+// ================================
+class DishSaleVO {
+private:
+    std::string dishName;
+    int quantity;
+
+public:
+    std::string getDishName() const { return dishName; }
+    void setDishName(const std::string& value) { dishName = value; }
+
+    int getQuantity() const { return quantity; }
+    void setQuantity(int value) { quantity = value; }
+};
+
 class DishDetailVO {
 private:
     int dishId;
@@ -1000,4 +1016,47 @@ struct ReportStatisticsVO {
     int unprocessed_count;
     int total_count;
     int today_count;
+};
+
+// 推荐菜品VO
+class RecommendedDishVO {
+private:
+    int dishId;
+    std::string dishName;
+    std::string canteenName;
+    double price;
+    int calories;
+    std::string nutritionInfo;
+    std::vector<std::string> tags;
+    double recommendationScore;
+    std::string recommendationReason;
+    
+public:
+    int getDishId() const { return dishId; }
+    void setDishId(int value) { dishId = value; }
+
+    std::string getDishName() const { return dishName; }
+    void setDishName(const std::string& value) { dishName = value; }
+
+    std::string getCanteenName() const { return canteenName; }
+    void setCanteenName(const std::string& value) { canteenName = value; }
+
+    double getPrice() const { return price; }
+    void setPrice(double value) { price = value; }
+
+    int getCalories() const { return calories; }
+    void setCalories(int value) { calories = value; }
+
+    std::string getNutritionInfo() const { return nutritionInfo; }
+    void setNutritionInfo(const std::string& value) { nutritionInfo = value; }
+
+    std::vector<std::string> getTags() const { return tags; }
+    void setTags(const std::vector<std::string>& value) { tags = value; }
+    void addTag(const std::string& tag) { tags.push_back(tag); }
+
+    double getRecommendationScore() const { return recommendationScore; }
+    void setRecommendationScore(double value) { recommendationScore = value; }
+
+    std::string getRecommendationReason() const { return recommendationReason; }
+    void setRecommendationReason(const std::string& value) { recommendationReason = value; }
 };

@@ -132,4 +132,7 @@ private:
     static void handleRemoveFavorite(const httplib::Request& req, httplib::Response& res);
     static void handleGetFavorites(const httplib::Request& req, httplib::Response& res);
     static void handleCheckFavorite(const httplib::Request& req, httplib::Response& res);
+    
+    /*************************************推荐相关**************************************/
+    static void handleGetRecommendedDishes(const httplib::Request& req, httplib::Response& res);
 };

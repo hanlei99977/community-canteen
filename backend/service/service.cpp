@@ -2581,14 +2581,14 @@ std::vector<RecommendedDishVO> RecommendationService::getRecommendedDishes(int u
             
             // 仅保留分数大于0的菜品
             if (totalScore > 0) {
-                // 确定推荐原因（占比最高的类别）
+                // 确定推荐原因（优先级：健康推荐 > 偏好推荐 > 热门推荐）
                 std::string reason;
-                if (preferenceScore >= popularityScore && preferenceScore >= healthScore && !matchedPreferenceTags.empty()) {
+                if (!recommendedDiseases.empty() && healthScore >= preferenceScore && healthScore >= popularityScore) {
+                    reason = "符合您的健康推荐：" + recommendedDiseases[0];
+                } else if (!matchedPreferenceTags.empty() && preferenceScore >= popularityScore) {
                     reason = "符合您的用餐偏好：" + matchedPreferenceTags[0];
-                } else if (isPopular && popularityScore >= healthScore) {
+                } else if (isPopular) {
                     reason = "近期热门菜品";
-                } else if (!recommendedDiseases.empty()) {
-                    reason = "符合您的疾病推荐：" + recommendedDiseases[0];
                 } else {
                     reason = "推荐菜品";
                 }

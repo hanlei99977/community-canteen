@@ -342,13 +342,13 @@ bool UserService::changePassword(int user_id, const std::string& old_password, c
         }
         
         // 写入消息中心通知
-        MessageCenterService messageService;
+        MessageCenterDAO messageDAO;
         MessageNotification message;
         message.setSenderId(1); // 系统发送
         message.setReceiverId(user_id);
         message.setContent("您的账户密码已成功修改。");
         message.setStatus(0); // 未读
-        messageService.createMessage(message);
+        messageDAO.createMessage(conn, message);
         
         tx.commit();
         std::cout << "密码修改成功" << std::endl;

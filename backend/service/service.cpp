@@ -2580,15 +2580,6 @@ std::vector<RecommendedDishVO> RecommendationService::getRecommendedDishes(int u
         }
         
         // 5. 为每个菜品计算推荐分
-        struct DishScore {
-            Dish dish;
-            double preferenceScore;
-            double popularityScore;
-            double healthScore;
-            double totalScore;
-            std::string reason;
-        };
-        
         std::vector<DishScore> dishScores;
         
         for (const auto& dish : dishes) {
@@ -2660,13 +2651,13 @@ std::vector<RecommendedDishVO> RecommendationService::getRecommendedDishes(int u
                     reason = "推荐菜品";
                 }
                 
-                dishScores.push_back({dish, preferenceScore, popularityScore, healthScore, totalScore, reason});
+                dishScores.emplace_back(dish, preferenceScore, popularityScore, healthScore, totalScore, reason);
             }
         }
         
         // 6. 按总分排序
         std::sort(dishScores.begin(), dishScores.end(), [](const DishScore& a, const DishScore& b) {
-            return a.totalScore > b.totalScore;
+            return a.getTotalScore() > b.getTotalScore();
         });
         
         // 7. 取前10个
@@ -2679,23 +2670,24 @@ std::vector<RecommendedDishVO> RecommendationService::getRecommendedDishes(int u
         
         for (int i = 0; i < limit; ++i) {
             const auto& ds = dishScores[i];
+            const Dish& dish = ds.getDish();
             
             // 获取菜品标签名称
             TagDAO tagDAO;
-            std::vector<Tag> tags = tagDAO.getTagsByDishId(conn, ds.dish.getId());
+            std::vector<Tag> tags = tagDAO.getTagsByDishId(conn, dish.getId());
             
             RecommendedDishVO vo;
-            vo.setDishId(ds.dish.getId());
-            vo.setDishName(ds.dish.getName());
+            vo.setDishId(dish.getId());
+            vo.setDishName(dish.getName());
             vo.setCanteenName(canteenName);
-            vo.setPrice(ds.dish.getPrice());
-            vo.setCalories(ds.dish.getCalories());
-            vo.setNutritionInfo(ds.dish.getNutritionInfo());
+            vo.setPrice(dish.getPrice());
+            vo.setCalories(dish.getCalories());
+            vo.setNutritionInfo(dish.getNutritionInfo());
             for (const auto& tag : tags) {
                 vo.addTag(tag.getName());
             }
-            vo.setRecommendationScore(ds.totalScore);
-            vo.setRecommendationReason(ds.reason);
+            vo.setRecommendationScore(ds.getTotalScore());
+            vo.setRecommendationReason(ds.getReason());
             
             result.push_back(vo);
         }

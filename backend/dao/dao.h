@@ -5,6 +5,7 @@
 #include "../model/model.h"
 #include "../model/vo.h"
 #include "../model/dto.h"
+#include "../model/domain.h"
 #include "../../MySQL/ConnectionPool.h"
 
 /************************用户权限类DAO*******************************/

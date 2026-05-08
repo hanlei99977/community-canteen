@@ -21,7 +21,7 @@ import DishManage from '../views/manager/DishManage.vue'
 import MyCanteen from '../views/manager/MyCanteen.vue'
 import Purchase from '../views/manager/Purchase.vue'
 import FinancialStatistics from '../views/manager/FinancialStatistics.vue'
-import MessageBoard from '../views/manager/MessageBoard.vue'
+import CommentBoard from '../views/manager/CommentBoard.vue'
 import CanteenOrders from '../views/manager/CanteenOrders.vue'
 import ManagerReportView from '../views/manager/ManagerReportView.vue'
 // diner
@@ -29,7 +29,7 @@ import CanteenList from '../views/diner/CanteenList.vue'
 import Menu from '../views/diner/Menu.vue'
 import Orders from '../views/diner/Orders.vue'
 import DiningPreference from '../views/diner/DiningPreference.vue'
-import MessageCenter from '../views/diner/MessageCenter.vue'
+import NotificationCenter from '../views/diner/NotificationCenter.vue'
 
 const routes = [
   { path: '/login', component: Login },
@@ -45,14 +45,14 @@ const routes = [
       { path: '/orders', component: Orders},
       { path: '/userCenter', component: UserCenter},
       { path: '/diningPreference', component: DiningPreference},
-      { path: '/messageCenter', component: MessageCenter},
+      { path: '/notificationCenter', component: NotificationCenter},
       { path: '/myCanteen', component: MyCanteen},
       { path: '/menuManage', component: MenuManage},
       { path: '/dishManage', component: DishManage},
       { path: '/purchase', component: Purchase},
       { path: '/financialStatistics', component: FinancialStatistics},
       { path: '/canteenOrders', component: CanteenOrders},
-      { path: '/messageBoard', component: MessageBoard},
+      { path: '/commentBoard', component: CommentBoard},
       { path: '/managerReport', component: ManagerReportView},
       { path: '/adminManage', component: AdminManage},
       { path: '/adminApply', component: AdminApply},

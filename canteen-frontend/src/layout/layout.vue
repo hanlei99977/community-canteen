@@ -19,7 +19,7 @@
         <el-menu-item v-if="isDiner" index="/canteens">食堂列表</el-menu-item>
         <el-menu-item v-if="isDiner" index="/orders">我的订单</el-menu-item>
         <el-menu-item v-if="isDiner" index="/diningPreference">用餐偏好</el-menu-item>
-        <el-menu-item v-if="isDiner" index="/messageCenter">消息中心</el-menu-item>
+        <el-menu-item v-if="isDiner" index="/notificationCenter">通知中心</el-menu-item>
 
         <!-- ================== 管理员申请审核（系统管理员+市级管理员） ================== -->
         <el-menu-item v-if="canReviewAdminApply" index="/adminApply">
@@ -82,7 +82,7 @@
           食堂订单
         </el-menu-item>
 
-        <el-menu-item v-if="isCanteenAdmin" index="/messageBoard">
+        <el-menu-item v-if="isCanteenAdmin" index="/commentBoard">
           留言板
         </el-menu-item>
 

@@ -3,6 +3,7 @@
 #include <vector>
 #include <mutex>
 #include <unordered_map>
+#include <unordered_set>
 #include "../dao/dao.h"
 
 /*******************************用户权限模块*******************************/
@@ -325,4 +326,17 @@ public:
 class RecommendationService {
 public:
     std::vector<RecommendedDishVO> getRecommendedDishes(int user_id, int canteen_id, const std::string& meal_type);
+
+private:
+    // 计算用户偏好分
+    double calculatePreferenceScore(sql::Connection *conn, int user_id, const std::unordered_set<int>& dishTagIds,
+                                    std::vector<std::string>& matchedTags);
+    
+    // 计算热门度分
+    double calculatePopularityScore(sql::Connection *conn, int canteen_id, const std::string& dishName, bool& isPopular);
+    
+    // 计算健康适配分
+    double calculateHealthScore(sql::Connection *conn, int user_id, const std::vector<Tag>& dishTags,
+                                std::vector<std::string>& recommendedDiseases,
+                                std::vector<std::string>& notRecommendedDiseases);
 };

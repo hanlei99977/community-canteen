@@ -2,7 +2,6 @@
 #include <iostream>
 #include <map>
 #include <algorithm>
-#include <unordered_set>
 #include "../../MySQL/ConnectionPool.h"
 
 // 下单操作加锁
@@ -2544,7 +2543,7 @@ std::vector<RecommendedDishVO> RecommendationService::getRecommendedDishes(int u
         DBConnectionGuard guard;
         auto* conn = guard.get();
         
-        // 1. 获取当前餐单的菜品
+        // 获取当前餐单的菜品
         MenuDAO menuDAO;
         std::vector<Dish> dishes = menuDAO.getMenuByMealType(conn, canteen_id, meal_type);
         
@@ -2552,87 +2551,30 @@ std::vector<RecommendedDishVO> RecommendationService::getRecommendedDishes(int u
             return result;
         }
         
-        // 2. 获取用户偏好标签（前5个）
-        DinerPreferenceDAO preferenceDAO;
-        std::vector<DinerPreference> topPreferences = preferenceDAO.getTopPreferences(conn, user_id, 5);
-        
-        // 3. 获取近7天销量排行
-        DishDAO dishDAO;
-        auto salesData = dishDAO.getDishSales(conn, canteen_id, "7days", 3);
-        std::unordered_map<std::string, int> salesRanking;
-        for (size_t i = 0; i < salesData.size(); ++i) {
-            if (i == 0) salesRanking[salesData[i].getDishName()] = 5;   // 第一+5分
-            else if (i == 1) salesRanking[salesData[i].getDishName()] = 3; // 第二+3分
-            else if (i == 2) salesRanking[salesData[i].getDishName()] = 1; // 第三+1分
-        }
-        
-        // 4. 获取用户疾病信息及疾病标签规则
-        DiseaseDAO diseaseDAO;
-        std::vector<Disease> userDiseases = diseaseDAO.getDiseasesByUserId(conn, user_id);
-        
-        // 构建疾病标签规则映射: tag_id -> rule_type (1-推荐, 2-不推荐)
-        std::unordered_map<int, std::pair<int, std::string>> diseaseTagRules; // tag_id -> (rule_type, disease_name)
-        for (const auto& disease : userDiseases) {
-            std::vector<DiseaseTagVO> diseaseTags = diseaseDAO.getDiseaseTags(conn, disease.getId());
-            for (const auto& tag : diseaseTags) {
-                diseaseTagRules[tag.getTagId()] = {tag.getRuleType(), disease.getName()};
-            }
-        }
-        
-        // 5. 为每个菜品计算推荐分
+        // 为每个菜品计算推荐分
         std::vector<DishScore> dishScores;
+        TagDAO tagDAO;
         
         for (const auto& dish : dishes) {
-            // 获取菜品标签
-            TagDAO tagDAO;
+            // 获取菜品标签（统一获取）
             std::vector<Tag> dishTags = tagDAO.getTagsByDishId(conn, dish.getId());
             std::unordered_set<int> dishTagIds;
-            std::vector<std::string> dishTagNames;
             for (const auto& tag : dishTags) {
                 dishTagIds.insert(tag.getId());
-                dishTagNames.push_back(tag.getName());
             }
             
             // 计算用户偏好分
-            double preferenceScore = 0.0;
             std::vector<std::string> matchedPreferenceTags;
-            for (const auto& pref : topPreferences) {
-                int tag_id = pref.getTagId();
-                int score = pref.getScore();
-                if (dishTagIds.count(tag_id)) {
-                    preferenceScore += score / 2.0;
-                    Tag tag = tagDAO.getTagById(conn, tag_id);
-                    matchedPreferenceTags.push_back(tag.getName());
-                }
-            }
+            double preferenceScore = calculatePreferenceScore(conn, user_id, dishTagIds, matchedPreferenceTags);
             
             // 计算热门度分
-            double popularityScore = 0.0;
             bool isPopular = false;
-            auto salesIt = salesRanking.find(dish.getName());
-            if (salesIt != salesRanking.end()) {
-                popularityScore = salesIt->second;
-                isPopular = true;
-            }
+            double popularityScore = calculatePopularityScore(conn, canteen_id, dish.getName(), isPopular);
             
             // 计算健康适配分
-            double healthScore = 0.0;
             std::vector<std::string> recommendedDiseases;
             std::vector<std::string> notRecommendedDiseases;
-            for (const auto& tag : dishTags) {
-                auto ruleIt = diseaseTagRules.find(tag.getId());
-                if (ruleIt != diseaseTagRules.end()) {
-                    int ruleType = ruleIt->second.first;
-                    std::string diseaseName = ruleIt->second.second;
-                    if (ruleType == 1) {
-                        healthScore += 5.0;
-                        recommendedDiseases.push_back(diseaseName);
-                    } else if (ruleType == 2) {
-                        healthScore -= 15.0;
-                        notRecommendedDiseases.push_back(diseaseName);
-                    }
-                }
-            }
+            double healthScore = calculateHealthScore(conn, user_id, dishTags, recommendedDiseases, notRecommendedDiseases);
             
             // 总分
             double totalScore = preferenceScore + popularityScore + healthScore;
@@ -2655,15 +2597,15 @@ std::vector<RecommendedDishVO> RecommendationService::getRecommendedDishes(int u
             }
         }
         
-        // 6. 按总分排序
+        // 按总分排序
         std::sort(dishScores.begin(), dishScores.end(), [](const DishScore& a, const DishScore& b) {
             return a.getTotalScore() > b.getTotalScore();
         });
         
-        // 7. 取前10个
+        // 取前10个
         int limit = std::min((int)dishScores.size(), 10);
         
-        // 8. 构建返回结果
+        // 构建返回结果
         CanteenDAO canteenDAO;
         auto canteen = canteenDAO.getCanteenById(conn, canteen_id);
         std::string canteenName = canteen ? canteen->getName() : "";
@@ -2697,4 +2639,96 @@ std::vector<RecommendedDishVO> RecommendationService::getRecommendedDishes(int u
     }
     
     return result;
+}
+
+// 计算用户偏好分
+double RecommendationService::calculatePreferenceScore(sql::Connection *conn, int user_id, const std::unordered_set<int>& dishTagIds,
+                                                       std::vector<std::string>& matchedTags) {
+    double score = 0.0;
+    
+    try {       
+        // 获取用户偏好标签（前5个）
+        DinerPreferenceDAO preferenceDAO;
+        std::vector<DinerPreference> topPreferences = preferenceDAO.getTopPreferences(conn, user_id, 5);
+        
+        TagDAO tagDAO;
+        for (const auto& pref : topPreferences) {
+            int tag_id = pref.getTagId();
+            int prefScore = pref.getScore();
+            if (dishTagIds.count(tag_id)) {
+                score += prefScore / 2.0;
+                Tag tag = tagDAO.getTagById(conn, tag_id);
+                matchedTags.push_back(tag.getName());
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[RecommendationService::calculatePreferenceScore] Error: " << e.what() << std::endl;
+    }
+    
+    return score;
+}
+
+// 计算热门度分
+double RecommendationService::calculatePopularityScore(sql::Connection *conn, int canteen_id, const std::string& dishName, bool& isPopular) {
+    try {        
+        // 获取近7天销量排行
+        DishDAO dishDAO;
+        auto salesData = dishDAO.getDishSales(conn, canteen_id, "7days", 3);
+        
+        for (size_t i = 0; i < salesData.size(); ++i) {
+            if (salesData[i].getDishName() == dishName) {
+                isPopular = true;
+                if (i == 0) return 5;   // 第一+5分
+                else if (i == 1) return 3; // 第二+3分
+                else if (i == 2) return 1; // 第三+1分
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[RecommendationService::calculatePopularityScore] Error: " << e.what() << std::endl;
+    }
+    
+    isPopular = false;
+    return 0.0;
+}
+
+// 计算健康适配分
+double RecommendationService::calculateHealthScore(sql::Connection *conn, int user_id, const std::vector<Tag>& dishTags,
+                                                  std::vector<std::string>& recommendedDiseases,
+                                                  std::vector<std::string>& notRecommendedDiseases) {
+    double score = 0.0;
+    
+    try {        
+        // 获取用户疾病信息及疾病标签规则
+        DiseaseDAO diseaseDAO;
+        std::vector<Disease> userDiseases = diseaseDAO.getDiseasesByUserId(conn, user_id);
+        
+        // 构建疾病标签规则映射: tag_id -> rule_type (1-推荐, 2-不推荐)
+        std::unordered_map<int, std::pair<int, std::string>> diseaseTagRules;
+        for (const auto& disease : userDiseases) {
+            std::vector<DiseaseTagVO> diseaseTags = diseaseDAO.getDiseaseTags(conn, disease.getId());
+            for (const auto& tag : diseaseTags) {
+                diseaseTagRules[tag.getTagId()] = {tag.getRuleType(), disease.getName()};
+            }
+        }
+        
+        // 计算健康适配分
+        for (const auto& tag : dishTags) {
+            auto ruleIt = diseaseTagRules.find(tag.getId());
+            if (ruleIt != diseaseTagRules.end()) {
+                int ruleType = ruleIt->second.first;
+                std::string diseaseName = ruleIt->second.second;
+                if (ruleType == 1) {
+                    score += 5.0;
+                    recommendedDiseases.push_back(diseaseName);
+                } else if (ruleType == 2) {
+                    score -= 15.0;
+                    notRecommendedDiseases.push_back(diseaseName);
+                }
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[RecommendationService::calculateHealthScore] Error: " << e.what() << std::endl;
+    }
+    
+    return score;
 }

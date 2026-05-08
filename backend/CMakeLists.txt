@@ -22,6 +22,7 @@ include_directories(
     ./dao
     ./service
     ./controller
+    ./utils
     ../MySQL
     ./third_party
 )
@@ -33,6 +34,7 @@ file(GLOB MYSQL_SRC ../MySQL/*.cpp)
 file(GLOB DAO_SRC dao/*.cpp)
 file(GLOB SERVICE_SRC service/*.cpp)
 file(GLOB CONTROLLER_SRC controller/*.cpp)
+file(GLOB UTILS_SRC utils/*.cpp)
 
 # 主程序
 set(MAIN_SRC main.cpp)
@@ -45,6 +47,7 @@ add_executable(app
     ${DAO_SRC}
     ${SERVICE_SRC}
     ${CONTROLLER_SRC}
+    ${UTILS_SRC}
     ${MAIN_SRC}
 )
 
@@ -54,4 +57,5 @@ add_executable(app
 target_link_libraries(app
     mysqlcppconn
     Threads::Threads
+    crypt
 )

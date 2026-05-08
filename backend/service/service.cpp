@@ -47,7 +47,11 @@ bool UserService::registerUser(const User& user, int role, int region_id) {
             return false;
         }
 
-        int user_id = dao.insertUser(conn, user);
+        // 使用bcrypt哈希密码
+        User hashedUser = user;
+        hashedUser.setPassword(PasswordUtil::hashPassword(user.getPassword()));
+
+        int user_id = dao.insertUser(conn, hashedUser);
         if (user_id == -1) {
             return false;
         }
@@ -108,10 +112,19 @@ std::shared_ptr<User> UserService::login(
     password.erase(0, password.find_first_not_of(" "));
     password.erase(password.find_last_not_of(" ") + 1);
 
-    auto user = dao.getUserByUsernameAndPassword(conn, username, password);
-    if (user && user->getStatus() == 1) {
+    // 先根据用户名查询用户（不区分用户不存在和密码错误）
+    auto user = dao.getUserByUsername(conn, username);
+    
+    // 验证用户存在且状态正常
+    if (!user || user->getStatus() != 1) {
+        return nullptr;
+    }
+
+    // 使用bcrypt验证密码
+    if (PasswordUtil::verifyPassword(password, user->getPassword())) {
         return user;
     }
+
     return nullptr;
 }
 
@@ -314,15 +327,16 @@ bool UserService::changePassword(int user_id, const std::string& old_password, c
         TransactionGuard tx(conn);
         
         UserDAO userDAO;
-        // 验证旧密码是否正确
+        // 验证旧密码是否正确（使用bcrypt验证）
         auto user = userDAO.getUserById(conn, user_id);
-        if (!user || user->getPassword() != old_password) {
+        if (!user || !PasswordUtil::verifyPassword(old_password, user->getPassword())) {
             std::cout << "旧密码错误" << std::endl;
             return false;
         }
         
-        // 更新密码
-        if (!userDAO.updatePassword(conn, user_id, new_password)) {
+        // 使用bcrypt哈希新密码后更新
+        std::string hashedPassword = PasswordUtil::hashPassword(new_password);
+        if (!userDAO.updatePassword(conn, user_id, hashedPassword)) {
             std::cout << "更新密码失败" << std::endl;
             return false;
         }

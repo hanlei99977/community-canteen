@@ -35,7 +35,7 @@ class UserDAO {
 public:
     int insertUser(sql::Connection *conn, const User& user);
     bool existsByUsername(sql::Connection *conn, const std::string& username);
-    std::shared_ptr<User> getUserByUsernameAndPassword(sql::Connection *conn, const std::string&, const std::string&);
+    std::shared_ptr<User> getUserByUsername(sql::Connection *conn, const std::string& username);
     std::shared_ptr<User> getUserById(sql::Connection *conn, int user_id);
     bool updateUser(sql::Connection *conn, const UserCenterVO& user);
     std::string getUserRole(sql::Connection *conn, int user_id);

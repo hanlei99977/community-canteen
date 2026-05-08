@@ -329,17 +329,16 @@ bool ManagerDAO::insertManager(sql::Connection *conn, int user_id, int canteen_i
     }
 }
 
-std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(sql::Connection *conn, const std::string& username, const std::string& password)
+std::shared_ptr<User> UserDAO::getUserByUsername(sql::Connection *conn, const std::string& username)
 {
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
-                "SELECT * FROM users WHERE username=? AND password=?"
+                "SELECT * FROM users WHERE username=?"
             )
         );
 
         stmt->setString(1, username);
-        stmt->setString(2, password);
 
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
 
@@ -347,6 +346,7 @@ std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(sql::Connection *con
             auto u = std::make_shared<User>();
             u->setId(res->getInt("user_id"));
             u->setUsername(res->getString("username"));
+            u->setPassword(res->getString("password"));  // 获取哈希密码用于验证
             u->setAge(res->getInt("age"));
             u->setPhone(res->getString("phone"));
             u->setIdCard(res->getString("id_card"));
@@ -355,10 +355,11 @@ std::shared_ptr<User> UserDAO::getUserByUsernameAndPassword(sql::Connection *con
             return u;
         }
     } catch (const std::exception& e) {
-        std::cerr << "[UserDAO::getUserByUsernameAndPassword] Error: " << e.what() << std::endl;
+        std::cerr << "[UserDAO::getUserByUsername] Error: " << e.what() << std::endl;
     }
     return nullptr;
 }
+
 std::shared_ptr<User> UserDAO::getUserById(sql::Connection *conn, int user_id)
 {
     try {

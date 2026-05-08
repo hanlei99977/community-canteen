@@ -72,7 +72,7 @@ CREATE TABLE users (
     user_id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL,
     age INT,
-    password VARCHAR(50) NOT NULL,
+    password VARCHAR(100) NOT NULL,
     phone VARCHAR(11),  -- 联系电话
     id_card VARCHAR(18),  -- 身份证号码
     register_time DATETIME DEFAULT CURRENT_TIMESTAMP,

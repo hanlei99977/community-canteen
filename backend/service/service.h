@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "../dao/dao.h"
+#include "../utils/PasswordUtil.h"
 
 /*******************************用户权限模块*******************************/
 // ================================

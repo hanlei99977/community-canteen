@@ -1658,13 +1658,13 @@ bool DishDAO::enableDishByDishId(sql::Connection *conn, const int dish_id){
 std::vector<DishSaleVO> DishDAO::getDishSales(sql::Connection *conn, int canteen_id, const std::string& time_range, int limit) {
     std::vector<DishSaleVO> result;
     try {
-        int days = 7;
+        int days = 6;
         if (time_range == "today") {
-            days = 1;
+            days = 0;
         } else if (time_range == "7days") {
-            days = 7;
+            days = 6;
         } else if (time_range == "30days") {
-            days = 30;
+            days = 29;
         }
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
@@ -1673,7 +1673,7 @@ std::vector<DishSaleVO> DishDAO::getDishSales(sql::Connection *conn, int canteen
                 FROM order_item oi
                 JOIN `orders` o ON oi.order_id = o.order_id
                 JOIN dish d ON oi.dish_id = d.dish_id
-                WHERE d.canteen_id = ? AND o.status = 1 AND o.order_time >= DATE_SUB(NOW(), INTERVAL ? DAY)
+                WHERE d.canteen_id = ? AND o.status = 1 AND o.order_time >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
                 GROUP BY d.dish_id, d.name
                 ORDER BY sales DESC
                 LIMIT ?
@@ -2236,11 +2236,11 @@ std::vector<DishPurchaseRankingItem> OrderDAO::getDishPurchaseRanking(sql::Conne
     try {
         std::string time_condition = "";
         if (time_dimension == "day") {
-            time_condition = "AND DATE(o.order_time) = DATE(NOW())";
+            time_condition = "AND DATE(o.order_time) = CURDATE()";
         } else if (time_dimension == "week") {
-            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)";
         } else if (time_dimension == "month") {
-            time_condition = "AND DATE(o.order_time) >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+            time_condition = "AND DATE(o.order_time) >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)";
         }
 
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
@@ -2802,7 +2802,8 @@ ReportStatisticsVO ReportDAO::getReportStatistics(sql::Connection *conn, int cit
             stats.unprocessed_count = unprocessedRes->getInt("cnt");
         }
 
-        std::string totalSql = sql + " AND r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(days) + " DAY)";
+        int effective_days = (days > 0) ? (days - 1) : 0;
+        std::string totalSql = sql + " AND r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(effective_days) + " DAY)";
         auto totalStmt = std::unique_ptr<sql::PreparedStatement>(conn->prepareStatement(totalSql));
         for (size_t i = 0; i < params.size(); i++) {
             totalStmt->setInt(i + 1, params[i]);
@@ -2831,10 +2832,11 @@ std::vector<std::pair<std::string, int>> ReportDAO::getReportTrend(sql::Connecti
 {
     std::vector<std::pair<std::string, int>> result;
     try {
+        int effective_days = (days > 0) ? (days - 1) : 0;
         std::string sql = "SELECT DATE(r.create_time) AS date, COUNT(*) AS cnt "
                           "FROM report r "
                           "JOIN canteen c ON c.canteen_id = r.canteen_id "
-                          "WHERE r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(days) + " DAY)";
+                          "WHERE r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(effective_days) + " DAY)";
 
         std::vector<int> params;
         
@@ -2871,10 +2873,11 @@ std::vector<std::pair<int, std::pair<std::string, int>>> ReportDAO::getReportTyp
 {
     std::vector<std::pair<int, std::pair<std::string, int>>> result;
     try {
+        int effective_days = (days > 0) ? (days - 1) : 0;
         std::string sql = "SELECT r.type, COUNT(*) AS cnt "
                           "FROM report r "
                           "JOIN canteen c ON c.canteen_id = r.canteen_id "
-                          "WHERE r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(days) + " DAY)";
+                          "WHERE r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(effective_days) + " DAY)";
 
         std::vector<int> params;
         
@@ -2920,10 +2923,11 @@ std::vector<std::pair<std::string, int>> ReportDAO::getTopCanteenReports(sql::Co
 {
     std::vector<std::pair<std::string, int>> result;
     try {
+        int effective_days = (days > 0) ? (days - 1) : 0;
         std::string sql = "SELECT c.name AS canteen_name, COUNT(*) AS cnt "
                           "FROM report r "
                           "JOIN canteen c ON c.canteen_id = r.canteen_id "
-                          "WHERE r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(days) + " DAY)";
+                          "WHERE r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(effective_days) + " DAY)";
 
         std::vector<int> params;
         
@@ -2981,7 +2985,8 @@ std::pair<std::vector<ReportVO>, int> ReportDAO::getReportsByFilters(sql::Connec
             params.push_back(type);
         }
         if (days > 0) {
-            sql += " AND r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(days) + " DAY)";
+            int effective_days = days - 1;
+            sql += " AND r.create_time >= DATE_SUB(CURDATE(), INTERVAL " + std::to_string(effective_days) + " DAY)";
         }
 
         std::string countSql = "SELECT COUNT(*) AS total FROM report r JOIN canteen c ON c.canteen_id = r.canteen_id" + sql;

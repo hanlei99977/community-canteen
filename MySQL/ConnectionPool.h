@@ -39,6 +39,12 @@ private:
 
     int maxSize;
 
+    std::string host;
+    std::string port;
+    std::string username;
+    std::string password;
+    std::string database;
+
 };
 
 

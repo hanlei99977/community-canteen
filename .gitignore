@@ -49,4 +49,6 @@ dist/
 # ======================
 .env
 .env.*
+config.ini
+config.*
 

@@ -1,3 +1,9 @@
+/**
+ * @brief 密码迁移工具
+ * 
+ * 用于将旧密码迁移到新密码
+ */
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -5,12 +11,66 @@
 #include <cstring>
 #include <random>
 #include <stdexcept>
+#include <fstream>
+#include <sstream>
+#include <map>
 
 #include <mysql_connection.h>
 #include <mysql_driver.h>
 #include <cppconn/prepared_statement.h>
 #include <cppconn/resultset.h>
 #include <cppconn/statement.h>
+
+std::map<std::string, std::string> loadConfig(const std::string& filename) {
+    std::map<std::string, std::string> config;
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Warning: Config file " << filename << " not found, using default values." << std::endl;
+        return config;
+    }
+
+    std::string line;
+    std::string section;
+    while (std::getline(file, line)) {
+        size_t start = line.find_first_not_of(" \t");
+        size_t end = line.find_last_not_of(" \t");
+        if (start == std::string::npos || end == std::string::npos) continue;
+        line = line.substr(start, end - start + 1);
+
+        if (line.empty() || line[0] == '#' || line[0] == ';') continue;
+
+        if (line[0] == '[' && line.back() == ']') {
+            section = line.substr(1, line.size() - 2);
+            continue;
+        }
+
+        size_t pos = line.find('=');
+        if (pos == std::string::npos) continue;
+        std::string key = line.substr(0, pos);
+        std::string value = line.substr(pos + 1);
+        
+        start = key.find_first_not_of(" \t");
+        end = key.find_last_not_of(" \t");
+        if (start != std::string::npos && end != std::string::npos) {
+            key = key.substr(start, end - start + 1);
+        }
+        
+        start = value.find_first_not_of(" \t\"'");
+        end = value.find_last_not_of(" \t\"'");
+        if (start != std::string::npos && end != std::string::npos) {
+            value = value.substr(start, end - start + 1);
+        }
+
+        if (!section.empty()) {
+            config[section + "." + key] = value;
+        } else {
+            config[key] = value;
+        }
+    }
+
+    file.close();
+    return config;
+}
 
 const int BCRYPT_COST = 12;
 const char* BCRYPT_PREFIX = "$2b$";
@@ -118,10 +178,12 @@ int main(int argc, char* argv[]) {
     std::cout << "   用户密码迁移工具 (明文 -> bcrypt)" << std::endl;
     std::cout << "========================================" << std::endl;
 
-    std::string db_host = "tcp://127.0.0.1:3306";
-    std::string db_user = "user";
-    std::string db_password = "Hl@123456";
-    std::string db_name = "community_canteen";
+    std::map<std::string, std::string> config = loadConfig("config.ini");
+    
+    std::string db_host = "tcp://" + (config["database.host"]) +  ":" + (config["database.port"]);
+    std::string db_user = config["database.username"];
+    std::string db_password = config["database.password"];
+    std::string db_name = config["database.database"];
 
     try {
         sql::mysql::MySQL_Driver* driver = sql::mysql::get_mysql_driver_instance();

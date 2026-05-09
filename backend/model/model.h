@@ -179,6 +179,7 @@ private:
     std::string name;
     std::string address;
     int region_id;
+    std::string region_name;
     int status;
 
 public:
@@ -196,6 +197,9 @@ public:
 
     int getRegionId() const { return region_id; }
     void setRegionId(int id) { region_id = id; }
+
+    std::string getRegionName() const { return region_name; }
+    void setRegionName(const std::string& name) { region_name = name; }
 
     int getStatus() const { return status; }
     void setStatus(int s) { status = s; }

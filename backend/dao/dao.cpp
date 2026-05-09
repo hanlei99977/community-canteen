@@ -1116,7 +1116,12 @@ std::vector<Canteen> CanteenDAO::getAllCanteens(sql::Connection *conn) {
 
     try {
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement("SELECT * FROM canteen")
+            conn->prepareStatement(
+                "SELECT c.canteen_id, c.name, c.address, c.region_id, r.region_name "
+                "FROM canteen c "
+                "JOIN region r ON r.region_id = c.region_id "
+                "WHERE c.status = 1"
+            )
         );
 
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
@@ -1125,6 +1130,9 @@ std::vector<Canteen> CanteenDAO::getAllCanteens(sql::Connection *conn) {
             Canteen c;
             c.setId(res->getInt("canteen_id"));
             c.setName(res->getString("name"));
+            c.setAddress(res->getString("address"));
+            c.setRegionId(res->getInt("region_id"));
+            c.setRegionName(res->getString("region_name"));
             list.push_back(c);
         }
     } catch (const std::exception& e) {

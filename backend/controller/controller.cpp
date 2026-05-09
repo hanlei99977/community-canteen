@@ -361,6 +361,8 @@ void Controller::handleCanteens(const httplib::Request& req, httplib::Response& 
         arr.push_back({
             {"id", c.getId()},
             {"name", c.getName()},
+            {"address", c.getAddress()},
+            {"region", c.getRegionName()},
             {"rating_count", rating_count},
             {"avg_score", avg_score},
             {"rating_text", rating_count < 20 ? "评价过少" : std::to_string(avg_score)},

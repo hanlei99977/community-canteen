@@ -46,9 +46,9 @@ public:
     // 获取管理员信息（级别和区域）
     std::shared_ptr<Admin> getAdminInfo(int user_id);
     // 检查管理员是否有权限审核管理员申请
-    bool hasAdminApplyReviewPermission(int reviewer_id, int apply_region_id, int apply_level_id);
+    bool hasAdminApplyReviewPermission(sql::Connection *conn, int reviewer_id, int apply_region_id, int apply_level_id);
     // 检查管理员是否有权限审核食堂管理者申请
-    bool hasManagerApplyReviewPermission(int reviewer_id, int apply_region_id);
+    bool hasManagerApplyReviewPermission(sql::Connection *conn, int reviewer_id, int apply_region_id);
 };
 
 // ================================
@@ -84,7 +84,6 @@ public:
     std::vector<Region> getDistrictsByCity(int city_id);
     // 检查region_id是否在parent_region_id的管辖范围内（包含直接和间接子区域）
     bool isRegionInScope(sql::Connection *conn, int region_id, int parent_region_id);
-    bool isRegionInScope(int region_id, int parent_region_id);
 };
 
 /*******************************家庭模块*******************************/

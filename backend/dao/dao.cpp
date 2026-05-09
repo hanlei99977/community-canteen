@@ -1252,9 +1252,6 @@ bool CanteenDAO::updateCanteenAddress(sql::Connection *conn, int canteen_id, con
 
 bool CanteenDAO::updateCanteenStatus(sql::Connection *conn, int canteen_id, int status) {
     try {
-        // 开始事务
-        TransactionGuard tx(conn);
-
         // 更新餐厅状态
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(
@@ -1291,9 +1288,6 @@ bool CanteenDAO::updateCanteenStatus(sql::Connection *conn, int canteen_id, int 
             user_stmt->setInt(2, manager_id);
             user_stmt->executeUpdate();
         }
-
-        // 提交事务
-        tx.commit();
 
         return true;
     } catch (const std::exception& e) {

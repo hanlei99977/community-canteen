@@ -101,7 +101,7 @@ void Controller::registerUserRoutes(httplib::Server& server) {
 // 订单相关路由
 void Controller::registerOrderRoutes(httplib::Server& server) {
     server.Post("/placeOrder", handlePlaceOrder);
-    server.Get("/recentOrder", handleRecentOrder);
+    server.Get("/recentOrders", handleRecentOrders);
     server.Get("/orderTargets", handleOrderTargets);
     server.Get("/getOrders", handleGetOrders);
     server.Get("/orderDetails", handleOrderDetails);
@@ -798,30 +798,33 @@ void Controller::handleOrderDetails(const httplib::Request& req, httplib::Respon
     }
 }
 
-void Controller::handleRecentOrder(const httplib::Request& req, httplib::Response& res)
-{
+void Controller::handleRecentOrders(const httplib::Request& req, httplib::Response& res) {
     try {
-        std::cout << "最近订单请求参数：user_id=" << req.get_param_value("user_id") << ", order_for_user_id=" << req.get_param_value("order_for_user_id") << ", canteen_id=" << req.get_param_value("canteen_id") << std::endl;
         int user_id = std::stoi(req.get_param_value("user_id"));
         int order_for_user_id = std::stoi(req.get_param_value("order_for_user_id"));
         int canteen_id = std::stoi(req.get_param_value("canteen_id"));
+        int limit = 4;
+        if (req.has_param("limit")) {
+            limit = std::stoi(req.get_param_value("limit"));
+        }
 
         OrderService service;
-        auto recent_order = service.getRecentOrder(user_id, order_for_user_id, canteen_id);
+        auto orders = service.getRecentOrders(user_id, order_for_user_id, canteen_id, limit);
 
-        if (recent_order) {
-            json order_json;
-            order_json["order_id"] = recent_order->getOrderId();
-            order_json["canteen_id"] = recent_order->getCanteenId();
-            order_json["canteen_name"] = recent_order->getCanteenName();
-            order_json["order_time"] = recent_order->getOrderTime();
-            order_json["total_price"] = recent_order->getTotalPrice();
-            order_json["discount_rate"] = recent_order->getDiscountRate();
-            order_json["original_total"] = recent_order->getOriginalTotal();
-            order_json["saved_amount"] = recent_order->getSavedAmount();
+        json orders_json = json::array();
+        for (const auto& order : orders) {
+            json order_item;
+            order_item["order_id"] = order->getOrderId();
+            order_item["canteen_id"] = order->getCanteenId();
+            order_item["canteen_name"] = order->getCanteenName();
+            order_item["order_time"] = order->getOrderTime();
+            order_item["total_price"] = order->getTotalPrice();
+            order_item["discount_rate"] = order->getDiscountRate();
+            order_item["original_total"] = order->getOriginalTotal();
+            order_item["saved_amount"] = order->getSavedAmount();
             
             json items = json::array();
-            for (const auto& item : recent_order->getItems()) {
+            for (const auto& item : order->getItems()) {
                 json item_json;
                 item_json["dish_id"] = item.getDishId();
                 item_json["dish_name"] = item.getDishName();
@@ -831,15 +834,13 @@ void Controller::handleRecentOrder(const httplib::Request& req, httplib::Respons
                 item_json["subtotal"] = item.getSubtotal();
                 items.push_back(item_json);
             }
-            order_json["items"] = items;
-            
-            res.set_content(Response::success(order_json), "application/json");
-        } else {
-            res.set_content(Response::success(nullptr), "application/json");
+            order_item["items"] = items;
+            orders_json.push_back(order_item);
         }
-
+        
+        res.set_content(Response::success(orders_json), "application/json");
     } catch (const std::exception& e) {
-        std::cerr << "[Controller::handleRecentOrder] Error: " << e.what() << std::endl;
+        std::cerr << "[Controller::handleRecentOrders] Error: " << e.what() << std::endl;
         res.set_content(Response::error(400, "参数错误"), "application/json");
     }
 }

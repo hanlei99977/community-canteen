@@ -184,8 +184,8 @@ public:
     std::vector<OrderVO> getOrdersByUser(sql::Connection *conn, int user_id);
     std::vector<OrderDetailVO> getOrdersDetailsByOrderId(sql::Connection *conn, int order_id);
     std::shared_ptr<Order> getOrderById(sql::Connection *conn, int order_id);
-    // 获取最近订单
-    std::shared_ptr<RecentOrderVO> getRecentOrder(sql::Connection *conn, int user_id, int order_for_user_id, int canteen_id);
+    // 获取多个最近订单
+    std::vector<std::shared_ptr<RecentOrderVO>> getRecentOrders(sql::Connection *conn, int user_id, int order_for_user_id, int canteen_id, int limit = 4);
     // 用餐偏好相关方法
     std::vector<DishPurchaseRankingItem> getDishPurchaseRanking(sql::Connection *conn, int user_id, const std::string& time_dimension);
     // 获取食堂订单

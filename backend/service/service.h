@@ -174,8 +174,8 @@ public:
     DiningPreference getDiningPreference(int user_id, const std::string& time_dimension);
     // 获取菜品购买排行榜
     std::vector<DishPurchaseRankingItem> getDishPurchaseRanking(int user_id, const std::string& time_dimension);
-    // 获取最近订单
-    std::shared_ptr<RecentOrderVO> getRecentOrder(int user_id, int order_for_user_id, int canteen_id);
+    // 获取多个最近订单
+    std::vector<std::shared_ptr<RecentOrderVO>> getRecentOrders(int user_id, int order_for_user_id, int canteen_id, int limit = 4);
     // 获取食堂订单
     std::vector<OrderVO> getOrdersByCanteen(int canteen_id);
     // 更新订单状态

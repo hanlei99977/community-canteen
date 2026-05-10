@@ -2135,99 +2135,97 @@ std::shared_ptr<Order> OrderDAO::getOrderById(sql::Connection *conn, int order_i
     return order;
 }
 
-std::shared_ptr<RecentOrderVO> OrderDAO::getRecentOrder(sql::Connection *conn, int user_id, int order_for_user_id, int canteen_id) {
+std::vector<std::shared_ptr<RecentOrderVO>> OrderDAO::getRecentOrders(sql::Connection *conn, int user_id, int order_for_user_id, int canteen_id, int limit) {
+    std::vector<std::shared_ptr<RecentOrderVO>> result;
     try {
-        // 获取最近的订单ID
         auto stmt = std::unique_ptr<sql::PreparedStatement>(
             conn->prepareStatement(R"(
                 SELECT order_id
                 FROM orders
                 WHERE order_for_user_id = ? AND canteen_id = ? AND status = 1 
                 ORDER BY order_time DESC
-                LIMIT 1
+                LIMIT ?
             )")
         );
 
         stmt->setInt(1, order_for_user_id);
         stmt->setInt(2, canteen_id);
+        stmt->setInt(3, limit);
         auto res = std::unique_ptr<sql::ResultSet>(stmt->executeQuery());
 
-        if (!res->next()) {
-            return nullptr;
+        std::vector<int> order_ids;
+        while (res->next()) {
+            order_ids.push_back(res->getInt("order_id"));
         }
 
-        int order_id = res->getInt("order_id");
+        for (int order_id : order_ids) {
+            auto detail_stmt = std::unique_ptr<sql::PreparedStatement>(
+                conn->prepareStatement(R"(
+                    SELECT
+                        o.order_id,
+                        o.canteen_id,
+                        c.name AS canteen_name,
+                        o.order_time,
+                        o.total_price,
+                        o.discount_rate,
+                        o.original_total,
+                        o.saved_amount,
+                        d.dish_id,
+                        d.name AS dish_name,
+                        d.price AS unit_price,
+                        oi.discount_price,
+                        oi.quantity,
+                        oi.subtotal
+                    FROM orders o
+                    JOIN order_item oi ON o.order_id = oi.order_id
+                    JOIN dish d ON oi.dish_id = d.dish_id
+                    JOIN canteen c ON o.canteen_id = c.canteen_id
+                    WHERE o.order_id = ?
+                    ORDER BY d.dish_id ASC
+                )")
+            );
 
-        // 获取订单详情
-        auto detail_stmt = std::unique_ptr<sql::PreparedStatement>(
-            conn->prepareStatement(R"(
-                SELECT
-                    o.order_id,
-                    o.canteen_id,
-                    c.name AS canteen_name,
-                    o.order_time,
-                    o.total_price,
-                    o.discount_rate,
-                    o.original_total,
-                    o.saved_amount,
-                    d.dish_id,
-                    d.name AS dish_name,
-                    d.price AS unit_price,
-                    oi.discount_price,
-                    oi.quantity,
-                    oi.subtotal
-                FROM orders o
-                JOIN order_item oi ON o.order_id = oi.order_id
-                JOIN dish d ON oi.dish_id = d.dish_id
-                JOIN canteen c ON o.canteen_id = c.canteen_id
-                WHERE o.order_id = ?
-                ORDER BY d.dish_id ASC
-            )")
-        );
+            detail_stmt->setInt(1, order_id);
+            auto detail_res = std::unique_ptr<sql::ResultSet>(detail_stmt->executeQuery());
 
-        detail_stmt->setInt(1, order_id);
-        auto detail_res = std::unique_ptr<sql::ResultSet>(detail_stmt->executeQuery());
+            if (detail_res->next()) {
+                auto vo = std::make_shared<RecentOrderVO>();
+                vo->setOrderId(detail_res->getInt("order_id"));
+                vo->setCanteenId(detail_res->getInt("canteen_id"));
+                vo->setCanteenName(detail_res->getString("canteen_name"));
+                vo->setOrderTime(detail_res->getString("order_time"));
+                vo->setTotalPrice(detail_res->getDouble("total_price"));
+                vo->setDiscountRate(detail_res->getDouble("discount_rate"));
+                vo->setOriginalTotal(detail_res->getDouble("original_total"));
+                vo->setSavedAmount(detail_res->getDouble("saved_amount"));
 
-        if (!detail_res->next()) {
-            return nullptr;
+                RecentOrderItemVO item;
+                item.setDishId(detail_res->getInt("dish_id"));
+                item.setDishName(detail_res->getString("dish_name"));
+                item.setQuantity(detail_res->getInt("quantity"));
+                item.setUnitPrice(detail_res->getDouble("unit_price"));
+                item.setDiscountPrice(detail_res->getDouble("discount_price"));
+                item.setSubtotal(detail_res->getDouble("subtotal"));
+                vo->addItem(item);
+
+                while (detail_res->next()) {
+                    RecentOrderItemVO item;
+                    item.setDishId(detail_res->getInt("dish_id"));
+                    item.setDishName(detail_res->getString("dish_name"));
+                    item.setQuantity(detail_res->getInt("quantity"));
+                    item.setUnitPrice(detail_res->getDouble("unit_price"));
+                    item.setDiscountPrice(detail_res->getDouble("discount_price"));
+                    item.setSubtotal(detail_res->getDouble("subtotal"));
+                    vo->addItem(item);
+                }
+
+                result.push_back(vo);
+            }
         }
-
-        auto vo = std::make_shared<RecentOrderVO>();
-        vo->setOrderId(detail_res->getInt("order_id"));
-        vo->setCanteenId(detail_res->getInt("canteen_id"));
-        vo->setCanteenName(detail_res->getString("canteen_name"));
-        vo->setOrderTime(detail_res->getString("order_time"));
-        vo->setTotalPrice(detail_res->getDouble("total_price"));
-        vo->setDiscountRate(detail_res->getDouble("discount_rate"));
-        vo->setOriginalTotal(detail_res->getDouble("original_total"));
-        vo->setSavedAmount(detail_res->getDouble("saved_amount"));
-
-        // 添加第一个菜品
-        RecentOrderItemVO item;
-        item.setDishId(detail_res->getInt("dish_id"));
-        item.setDishName(detail_res->getString("dish_name"));
-        item.setQuantity(detail_res->getInt("quantity"));
-        item.setUnitPrice(detail_res->getDouble("unit_price"));
-        item.setDiscountPrice(detail_res->getDouble("discount_price"));
-        item.setSubtotal(detail_res->getDouble("subtotal"));
-        vo->addItem(item);
-
-        // 添加剩余菜品
-        while (detail_res->next()) {
-            RecentOrderItemVO item;
-            item.setDishId(detail_res->getInt("dish_id"));
-            item.setDishName(detail_res->getString("dish_name"));
-            item.setQuantity(detail_res->getInt("quantity"));
-            item.setUnitPrice(detail_res->getDouble("unit_price"));
-            item.setDiscountPrice(detail_res->getDouble("discount_price"));
-            item.setSubtotal(detail_res->getDouble("subtotal"));
-            vo->addItem(item);
-        }
-
-        return vo;
+        return result;
     } catch (const std::exception& e) {
-        std::cout << "获取最近订单失败: " << e.what() << std::endl;
-        return nullptr;
+        std::cout << "获取多个最近订单失败: " << e.what() << std::endl;
+        return result;
     }
 }
 

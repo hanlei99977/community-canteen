@@ -1799,15 +1799,15 @@ std::vector<DishPurchaseRankingItem> OrderService::getDishPurchaseRanking(int us
     }
 }
 
-std::shared_ptr<RecentOrderVO> OrderService::getRecentOrder(int user_id, int order_for_user_id, int canteen_id) {
+std::vector<std::shared_ptr<RecentOrderVO>> OrderService::getRecentOrders(int user_id, int order_for_user_id, int canteen_id, int limit) {
     try {
         OrderDAO dao;
         DBConnectionGuard guard;
         auto* conn = guard.get();
-        return dao.getRecentOrder(conn, user_id, order_for_user_id, canteen_id);
+        return dao.getRecentOrders(conn, user_id, order_for_user_id, canteen_id, limit);
     } catch (const std::exception& e) {
-        std::cerr << "获取最近订单失败: " << e.what() << std::endl;
-        return nullptr;
+        std::cerr << "获取多个最近订单失败: " << e.what() << std::endl;
+        return {};
     }
 }
 

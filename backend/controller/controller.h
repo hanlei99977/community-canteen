@@ -107,7 +107,7 @@ private:
     // 获取订单
     static void handleGetOrders(const httplib::Request& req, httplib::Response& res);
     static void handleOrderDetails(const httplib::Request& req, httplib::Response& res);
-    static void handleRecentOrder(const httplib::Request& req, httplib::Response& res);
+    static void handleRecentOrders(const httplib::Request& req, httplib::Response& res);
     static void handleCanteenOrders(const httplib::Request& req, httplib::Response& res);
     // 更新订单状态
     static void handleUpdateOrderStatus(const httplib::Request& req, httplib::Response& res);
